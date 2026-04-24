@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring eTendering</title>
+  <link rel="stylesheet" href="./itkp-etendering.css">
+</head>
+<body>
+  <div class="itkp-etendering-page">
+    <div class="page">
+      <section class="hero">
+        <div class="hero-left">
+          <h1 class="hero-title">Monitoring eTendering</h1>
+          <p class="hero-subtitle">
+            Monitoring paket eTendering, status paket, nilai pagu, BAST, dan capaian indikator ITKP eTendering per perangkat daerah.
+            Sumber data diambil dari sheet <strong>RAW_ETENDERING</strong> dan <strong>SCORE_ITKP_ETENDERING</strong>.
+          </p>
+          <div class="error-box" id="errorBox"></div>
+        </div>
+
+        <div class="hero-actions">
+          <button type="button" class="btn btn-soft" id="btnRefresh">Refresh Data</button>
+          <button type="button" class="btn btn-primary" id="btnExportDetail">Export Detail Paket</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Filter Data</h2>
+        <p class="section-subtitle">Gunakan filter untuk menyaring rekap OPD dan detail paket eTendering.</p>
+
+        <div class="spacer-14"></div>
+
+        <div class="filters">
+          <div class="field span-4">
+            <label for="filterOpd">Satuan Kerja / OPD</label>
+            <select id="filterOpd">
+              <option value="">Semua OPD</option>
+            </select>
+          </div>
+
+          <div class="field span-3">
+            <label for="filterMetode">Metode</label>
+            <select id="filterMetode">
+              <option value="">Semua Metode</option>
+            </select>
+          </div>
+
+          <div class="field span-3">
+            <label for="filterStatus">Status Paket</label>
+            <select id="filterStatus">
+              <option value="">Semua Status</option>
+            </select>
+          </div>
+
+          <div class="field span-2">
+            <label for="filterBast">BAST</label>
+            <select id="filterBast">
+              <option value="">Semua BAST</option>
+              <option value="ADA">Ada BAST</option>
+              <option value="KOSONG">Belum Ada BAST</option>
+            </select>
+          </div>
+
+          <div class="field span-9">
+            <label for="searchKeyword">Cari Nama Paket / Kode RUP / Kode Paket</label>
+            <input type="text" id="searchKeyword" placeholder="Ketik nama paket, kode RUP, kode paket...">
+          </div>
+
+          <div class="field span-3">
+            <div class="toolbar-inline">
+              <button type="button" class="btn btn-soft" id="btnResetFilter">Reset Filter</button>
+            </div>
+          </div>
+
+          <div class="field span-12">
+            <div class="loading-box" id="loadingBox">
+              <div class="loading-line">
+                <span class="loading-dot"></span>
+                <span id="loadingText">Menyiapkan permintaan data...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Jumlah OPD</div>
+          <div class="stat-value" id="statJumlahOpd">0</div>
+          <div class="stat-note">Total satuan kerja pada data rekap.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Jumlah Paket</div>
+          <div class="stat-value" id="statJumlahPaket">0</div>
+          <div class="stat-note">Total paket pada RAW_ETENDERING.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Total Pagu</div>
+          <div class="stat-value" id="statTotalPagu">Rp0</div>
+          <div class="stat-note">Akumulasi pagu seluruh paket eTendering.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Sisa Paket Aktif</div>
+          <div class="stat-value" id="statPaketAktif">0</div>
+          <div class="stat-note">Dihitung dari status Berlangsung pada RAW_ETENDERING.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Paket Selesai</div>
+          <div class="stat-value" id="statPaketSelesai">0</div>
+          <div class="stat-note">Dihitung dari status Selesai pada RAW_ETENDERING.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Rata-rata Nilai ITKP</div>
+          <div class="stat-value" id="statAvgItkp">0</div>
+          <div class="stat-note">Rata-rata nilai indikator ITKP eTendering.</div>
+        </div>
+      </section>
+
+      <section class="mini-insights">
+        <div class="insight-card insight-blue">
+          <div class="insight-label">Capai Target Max</div>
+          <div class="insight-value"><span id="maxCount">0</span> OPD</div>
+          <div class="insight-note">OPD yang sudah mencapai nilai ITKP maksimal eTendering.</div>
+          <button type="button" class="btn btn-mini" id="btnShowMaxList">Lihat OPD</button>
+        </div>
+
+        <div class="insight-card insight-red">
+          <div class="insight-label">Skor ITKP 0</div>
+          <div class="insight-value"><span id="zeroCount">0</span> OPD</div>
+          <div class="insight-note">OPD yang nilai indikator eTendering-nya masih 0.</div>
+          <button type="button" class="btn btn-mini" id="btnShowZeroList">Lihat OPD</button>
+        </div>
+
+        <div class="insight-card insight-green">
+          <div class="insight-label">Status Dominan</div>
+          <div class="insight-value" id="dominantStatus">-</div>
+          <div class="insight-note" id="dominantStatusNote">Belum ada data</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="section-title">Rekap ITKP eTendering per OPD</h2>
+            <p class="section-subtitle">Nilai paket aktif, paket selesai, prosentase, dan ITKP mengikuti sheet <strong>SCORE_ITKP_ETENDERING</strong>.</p>
+          </div>
+          <div class="pagination-info" id="rekapPaginationInfo">0-0 dari 0 data • Page 1 / 1</div>
+        </div>
+
+        <div class="spacer-14"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:60px;">No</th>
+                <th style="min-width:360px;">Satuan Kerja</th>
+                <th>Paket Aktif</th>
+                <th>Paket Selesai</th>
+                <th>Prosentase</th>
+                <th>Nilai ITKP</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="rekapTableBody">
+              <tr>
+                <td colspan="7" class="center-cell">Belum ada data.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="rekapPagination"></div>
+      </section>
+
+      <section class="panel detail-panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="section-title" id="detailTitle">Detail Paket eTendering</h2>
+            <p class="section-subtitle" id="detailSubtitle">Pilih OPD pada tabel rekap untuk melihat daftar paket.</p>
+          </div>
+
+          <div class="toolbar-inline">
+            <button type="button" class="btn btn-soft" id="btnClearDetail">Tutup Detail</button>
+            <button type="button" class="btn btn-primary" id="btnExportCurrentDetail">Export Detail OPD Ini</button>
+          </div>
+        </div>
+
+        <div class="spacer-14"></div>
+
+        <div class="table-wrap detail-content-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:60px;">No</th>
+                <th style="min-width:260px;">Satuan Kerja</th>
+                <th>Kode RUP</th>
+                <th>Kode Paket</th>
+                <th style="min-width:320px;">Nama Paket</th>
+                <th>Metode</th>
+                <th>Pagu</th>
+                <th>BAST</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="detailTableBody">
+              <tr>
+                <td colspan="9" class="center-cell">Belum ada detail paket untuk ditampilkan.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="detail-footer">
+          <div class="pagination-info" id="detailPaginationInfo">Belum ada data detail.</div>
+          <div class="pagination" id="detailPagination"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="global-loading-overlay" id="globalLoadingOverlay">
+      <div class="global-loading-card">
+        <div class="global-spinner"></div>
+        <div class="global-loading-title">Memuat Monitoring eTendering</div>
+        <div class="global-loading-text" id="globalLoadingText">Menyiapkan permintaan data...</div>
+      </div>
+    </div>
+
+    <div class="opd-modal" id="opdModal" hidden>
+      <div class="opd-modal-card">
+        <div class="opd-modal-head">
+          <div>
+            <h3 id="modalTitle">Daftar OPD</h3>
+            <p id="modalSubtitle">Daftar OPD sesuai kategori.</p>
+          </div>
+          <button type="button" class="modal-close" id="btnCloseModal">×</button>
+        </div>
+        <div class="modal-count" id="modalCount">0 OPD</div>
+        <div class="modal-list" id="modalList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./itkp-etendering.js"></script>
+</body>
+</html>
