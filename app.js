@@ -90,6 +90,8 @@ const sidebarToggleButton = document.getElementById('sidebarToggleButton');
 let activeModuleToken = 0;
 let currentModuleDestroy = null;
 let activeFlyout = null;
+let activePageKey = '';
+let loadingPageKey = '';
 
 function escapeHtml(text) {
   return String(text || '')
@@ -426,15 +428,15 @@ async function renderModulePage(page) {
     if (Array.isArray(page.externalScripts) && page.externalScripts.length) {
       for (const src of page.externalScripts) {
         await loadExternalScriptOnce(src);
-        if (token !== activeModuleToken) return;
+        if (token !== activeModuleToken) return false;
       }
     }
 
     const rawHtml = await fetchModuleHtml(page.html);
-    if (token !== activeModuleToken) return;
+    if (token !== activeModuleToken) return false;
 
     await loadModuleCss(page.css);
-    if (token !== activeModuleToken) return;
+    if (token !== activeModuleToken) return false;
 
     const moduleContent = extractModuleBody(rawHtml);
 
@@ -445,10 +447,10 @@ async function renderModulePage(page) {
     `;
 
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    if (token !== activeModuleToken) return;
+    if (token !== activeModuleToken) return false;
 
     await loadModuleJs(page.js);
-    if (token !== activeModuleToken) return;
+    if (token !== activeModuleToken) return false;
 
     const moduleContainer = contentArea.querySelector('.module-page--native') || contentArea;
 
@@ -462,10 +464,12 @@ async function renderModulePage(page) {
     } else {
       currentModuleDestroy = null;
     }
+
+    return true;
   } catch (error) {
     console.error('Gagal memuat module:', error);
 
-    if (token !== activeModuleToken) return;
+    if (token !== activeModuleToken) return false;
 
     contentArea.innerHTML = `
       <section class="card">
@@ -474,34 +478,64 @@ async function renderModulePage(page) {
         <p><b>Detail:</b> ${escapeHtml(error.message)}</p>
       </section>
     `;
+
+    return false;
   }
 }
 
 async function loadPage(key) {
   const page = APP_ROUTES[key] || APP_ROUTES.dashboard;
 
-  activeModuleToken++;
+  /*
+    FIX UTAMA:
+    - Kalau menu yang sama sedang loading, klik kedua diabaikan.
+    - Kalau menu yang sama sudah aktif, klik lagi tidak reset modul.
+    - activeModuleToken TIDAK dinaikkan dobel untuk module.
+  */
+  if (loadingPageKey === key) {
+    return;
+  }
+
+  if (activePageKey === key) {
+    updateActiveMenu(key);
+    return;
+  }
+
+  loadingPageKey = key;
   updateActiveMenu(key);
 
-  if (page.type !== 'module') {
-    cleanupDynamicModule();
-    contentArea.classList.remove('module-mode');
-  } else {
-    contentArea.classList.add('module-mode');
-  }
+  try {
+    let success = true;
 
-  if (page.type === 'iframe') {
-    renderIframePage(page);
-  } else if (page.type === 'module') {
-    await renderModulePage(page);
-  } else if (page.type === 'placeholder') {
-    renderPlaceholderPage(key, page);
-  } else {
-    renderDashboard();
-  }
+    if (page.type !== 'module') {
+      activeModuleToken++;
+      cleanupDynamicModule();
+      contentArea.classList.remove('module-mode');
+    } else {
+      contentArea.classList.add('module-mode');
+    }
 
-  if (window.innerWidth <= 980 && sidebar) {
-    sidebar.classList.remove('mobile-open');
+    if (page.type === 'iframe') {
+      renderIframePage(page);
+    } else if (page.type === 'module') {
+      success = await renderModulePage(page);
+    } else if (page.type === 'placeholder') {
+      renderPlaceholderPage(key, page);
+    } else {
+      renderDashboard();
+    }
+
+    if (success) {
+      activePageKey = key;
+    }
+
+    if (window.innerWidth <= 980 && sidebar) {
+      sidebar.classList.remove('mobile-open');
+    }
+  } finally {
+    if (loadingPageKey === key) {
+      loadingPageKey = '';
+    }
   }
 }
 
