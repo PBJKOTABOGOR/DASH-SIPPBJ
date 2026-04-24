@@ -206,7 +206,7 @@ function renderDashboard() {
       ${renderQuickCard('🗓️', 'linear-gradient(135deg,#ef8d21,#f8b14c)', 'Simulasi Timeline', 'Simulasikan jadwal pengadaan secara terstruktur.', 'simulasi-timeline')}
     </section>
 
-    <div class="footer-note">© 2026 SIPPBJ - Simulasi & Monitoring Pengadaan Barang/Jasa</div>
+    <div class="footer-note">© BenRama 2026 SIPPBJ - Simulasi & Monitoring Pengadaan Barang/Jasa</div>
   `;
 
   contentArea.querySelectorAll('[data-quick]').forEach((item) => {
