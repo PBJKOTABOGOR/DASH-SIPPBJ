@@ -15,13 +15,11 @@ window.__moduleInit = function ({ container }) {
   const state = {
     rawRows: [],
     scoreRows: [],
-    mergedRows: [],
     filteredRekap: [],
     selectedOpd: '',
     selectedDetailRows: [],
     rekapPage: 1,
-    detailPage: 1,
-    modalItems: []
+    detailPage: 1
   };
 
   const EL = {
@@ -73,6 +71,8 @@ window.__moduleInit = function ({ container }) {
     listeners.push(() => target.removeEventListener(event, handler));
   };
 
+  setSummaryCardLabels();
+
   on(EL.filterOpd, 'change', () => {
     state.selectedOpd = EL.filterOpd.value;
     state.rekapPage = 1;
@@ -107,12 +107,16 @@ window.__moduleInit = function ({ container }) {
   on(EL.btnExportCurrentDetail, 'click', () => exportRows(state.selectedDetailRows, `detail-ekatalog-${slugify(state.selectedOpd || 'semua-opd')}.csv`));
 
   on(EL.btnShowMaxList, 'click', () => {
-    const items = state.mergedRows.filter(row => row.nilai_itkp >= 4).map(row => row.satuan_kerja);
+    const items = state.filteredRekap
+      .filter(row => row.nilai_itkp >= 4)
+      .map(row => row.satuan_kerja);
     openModal('Daftar OPD Capai Target Max', 'OPD yang sudah mencapai nilai ITKP maksimal eKatalog yaitu 4 poin.', items);
   });
 
   on(EL.btnShowZeroList, 'click', () => {
-    const items = state.mergedRows.filter(row => row.nilai_itkp <= 0).map(row => row.satuan_kerja);
+    const items = state.filteredRekap
+      .filter(row => row.nilai_itkp <= 0)
+      .map(row => row.satuan_kerja);
     openModal('Daftar OPD Skor ITKP 0', 'OPD yang indikator pemanfaatan eKatalog-nya masih 0.', items);
   });
 
@@ -137,6 +141,7 @@ window.__moduleInit = function ({ container }) {
     try {
       showError('');
       setLoading('Menghubungkan ke Google Sheet...', useOverlay);
+
       const [rawResult, scoreResult] = await Promise.allSettled([
         fetchCsv(buildCsvUrl(EKATALOG_SHEET_CONFIG.rawGid)),
         fetchCsv(buildCsvUrl(EKATALOG_SHEET_CONFIG.scoreGid))
@@ -162,7 +167,6 @@ window.__moduleInit = function ({ container }) {
 
       state.rawRows = normalizeRawRows(rawRows);
       state.scoreRows = normalizeScoreRows(scoreRows);
-      state.mergedRows = mergeRows(state.rawRows, state.scoreRows);
       state.rekapPage = 1;
       state.detailPage = 1;
 
@@ -177,8 +181,26 @@ window.__moduleInit = function ({ container }) {
       showError(`Data eKatalog gagal dimuat. Detail: ${error.message}. Pastikan sheet bisa diakses publik.`);
     } finally {
       const elapsed = Date.now() - startedAt;
-      if (elapsed < EKATALOG_MIN_LOADING_MS) await wait(EKATALOG_MIN_LOADING_MS - elapsed);
+      if (elapsed < EKATALOG_MIN_LOADING_MS) {
+        await wait(EKATALOG_MIN_LOADING_MS - elapsed);
+      }
       clearLoading();
+    }
+  }
+
+  function setSummaryCardLabels() {
+    const activeCard = EL.statPaketAktif?.closest('.stat-card');
+    if (activeCard) {
+      const label = activeCard.querySelector('.stat-label');
+      const note = activeCard.querySelector('.stat-note');
+      if (label) label.textContent = 'Sisa Paket yang Masih Aktif';
+      if (note) note.textContent = 'Dihitung dari status ON_PROCESS dan ON_ADDENDUM pada RAW_ECAT.';
+    }
+
+    const selesaiCard = EL.statPaketSelesai?.closest('.stat-card');
+    if (selesaiCard) {
+      const note = selesaiCard.querySelector('.stat-note');
+      if (note) note.textContent = 'Status selesai dihitung dari paket selesai / payment out pada RAW_ECAT.';
     }
   }
 
@@ -187,19 +209,29 @@ window.__moduleInit = function ({ container }) {
     const statusValue = normalizeStatus(EL.filterStatus.value || '');
     const keyword = (EL.searchKeyword.value || '').trim().toLowerCase();
 
-    state.filteredRekap = state.mergedRows.filter(row => {
+    state.filteredRekap = state.scoreRows.filter(row => {
       if (opdValue && row.satuan_kerja.toLowerCase() !== opdValue) return false;
+
       if (keyword) {
         const inOpd = row.satuan_kerja.toLowerCase().includes(keyword);
-        const rawMatch = state.rawRows.some(item => item.satuan_kerja === row.satuan_kerja && (
-          item.nama_paket.toLowerCase().includes(keyword) || item.nomor_paket.toLowerCase().includes(keyword)
-        ));
+        const rawMatch = state.rawRows.some(item =>
+          item.satuan_kerja === row.satuan_kerja &&
+          (
+            item.nama_paket.toLowerCase().includes(keyword) ||
+            item.nomor_paket.toLowerCase().includes(keyword)
+          )
+        );
         if (!inOpd && !rawMatch) return false;
       }
+
       if (statusValue) {
-        const hasStatus = state.rawRows.some(item => item.satuan_kerja === row.satuan_kerja && item.status_normalized === statusValue);
+        const hasStatus = state.rawRows.some(item =>
+          item.satuan_kerja === row.satuan_kerja &&
+          item.status_normalized === statusValue
+        );
         if (!hasStatus) return false;
       }
+
       return true;
     });
 
@@ -220,27 +252,42 @@ window.__moduleInit = function ({ container }) {
   }
 
   function buildFilterOptions() {
-    fillSelect(EL.filterOpd, state.mergedRows.map(row => row.satuan_kerja), 'Semua OPD');
-    fillSelect(EL.filterStatus, getUniqueStatuses(state.rawRows), 'Semua Status');
+    fillSelect(
+      EL.filterOpd,
+      state.scoreRows.map(row => row.satuan_kerja),
+      'Semua OPD'
+    );
+
+    fillSelect(
+      EL.filterStatus,
+      getUniqueStatuses(state.rawRows),
+      'Semua Status'
+    );
   }
 
   function renderSummaryStats() {
     const visibleRaw = getFilteredRawRows();
-    const paketAktif = visibleRaw.filter(row => isActiveStatus(row.status_normalized)).length;
-    const paketSelesai = visibleRaw.filter(row => isFinishedStatus(row.status_normalized)).length;
+    const sisaMasihAktif = visibleRaw.filter(row => isStillActiveStatus(row.status_normalized)).length;
+    const paketSelesaiRaw = visibleRaw.filter(row => isFinishedStatus(row.status_normalized)).length;
     const avgItkp = average(state.filteredRekap.map(row => row.nilai_itkp));
 
     EL.statJumlahOpd.textContent = formatInt(state.filteredRekap.length);
     EL.statJumlahPaket.textContent = formatInt(visibleRaw.length);
     EL.statTotalPagu.textContent = formatCurrency(sum(visibleRaw.map(row => row.pagu)));
-    EL.statPaketAktif.textContent = formatInt(paketAktif);
-    EL.statPaketSelesai.textContent = formatInt(paketSelesai);
+    EL.statPaketAktif.textContent = formatInt(sisaMasihAktif);
+    EL.statPaketSelesai.textContent = formatInt(paketSelesaiRaw);
     EL.statAvgItkp.textContent = formatDecimal(avgItkp, 2);
   }
 
   function renderInsights() {
-    const maxItems = state.filteredRekap.filter(row => row.nilai_itkp >= 4).map(row => row.satuan_kerja);
-    const zeroItems = state.filteredRekap.filter(row => row.nilai_itkp <= 0).map(row => row.satuan_kerja);
+    const maxItems = state.filteredRekap
+      .filter(row => row.nilai_itkp >= 4)
+      .map(row => row.satuan_kerja);
+
+    const zeroItems = state.filteredRekap
+      .filter(row => row.nilai_itkp <= 0)
+      .map(row => row.satuan_kerja);
+
     EL.maxCount.textContent = formatInt(maxItems.length);
     EL.zeroCount.textContent = formatInt(zeroItems.length);
 
@@ -254,6 +301,7 @@ window.__moduleInit = function ({ container }) {
     const totalItems = rows.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / EKATALOG_PAGE_SIZE));
     state.rekapPage = Math.min(state.rekapPage, totalPages);
+
     const start = (state.rekapPage - 1) * EKATALOG_PAGE_SIZE;
     const end = start + EKATALOG_PAGE_SIZE;
     const pageRows = rows.slice(start, end);
@@ -287,6 +335,7 @@ window.__moduleInit = function ({ container }) {
     const from = totalItems ? start + 1 : 0;
     const to = totalItems ? Math.min(end, totalItems) : 0;
     EL.rekapPaginationInfo.textContent = `${from}-${to} dari ${totalItems} data • Page ${state.rekapPage} / ${totalPages}`;
+
     renderPagination(EL.rekapPagination, state.rekapPage, totalPages, (page) => {
       state.rekapPage = page;
       renderRekapTable();
@@ -298,6 +347,7 @@ window.__moduleInit = function ({ container }) {
     const totalItems = rows.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / EKATALOG_DETAIL_PAGE_SIZE));
     state.detailPage = Math.min(state.detailPage, totalPages);
+
     const start = (state.detailPage - 1) * EKATALOG_DETAIL_PAGE_SIZE;
     const end = start + EKATALOG_DETAIL_PAGE_SIZE;
     const pageRows = rows.slice(start, end);
@@ -344,10 +394,12 @@ window.__moduleInit = function ({ container }) {
       if (state.selectedOpd && row.satuan_kerja !== state.selectedOpd) return false;
       if (!state.selectedOpd && opdValue && row.satuan_kerja.toLowerCase() !== opdValue) return false;
       if (statusValue && row.status_normalized !== statusValue) return false;
+
       if (keyword) {
         const hay = `${row.satuan_kerja} ${row.nama_paket} ${row.nomor_paket}`.toLowerCase();
         if (!hay.includes(keyword)) return false;
       }
+
       return true;
     });
   }
@@ -481,55 +533,26 @@ function normalizeScoreRows(rows) {
   })).filter(row => row.satuan_kerja);
 }
 
-function mergeRows(rawRows, scoreRows) {
-  const rawMap = new Map();
-  rawRows.forEach(row => {
-    const key = row.satuan_kerja;
-    if (!rawMap.has(key)) {
-      rawMap.set(key, {
-        satuan_kerja: key,
-        paket_aktif: 0,
-        paket_selesai: 0,
-        total_paket: 0
-      });
-    }
-    const item = rawMap.get(key);
-    item.total_paket += 1;
-    if (isActiveStatus(row.status_normalized)) item.paket_aktif += 1;
-    if (isFinishedStatus(row.status_normalized)) item.paket_selesai += 1;
-  });
-
-  const scoreMap = new Map(scoreRows.map(row => [row.satuan_kerja, row]));
-  const keys = Array.from(new Set([...rawMap.keys(), ...scoreMap.keys()])).sort((a, b) => a.localeCompare(b, 'id'));
-
-  return keys.map(key => {
-    const raw = rawMap.get(key) || { satuan_kerja: key, paket_aktif: 0, paket_selesai: 0, total_paket: 0 };
-    const score = scoreMap.get(key) || { nilai_itkp: 0 };
-    const prosentase = raw.paket_aktif > 0 ? (raw.paket_selesai / raw.paket_aktif) * 100 : 0;
-    return {
-      satuan_kerja: key,
-      paket_aktif: raw.paket_aktif,
-      paket_selesai: raw.paket_selesai,
-      prosentase,
-      nilai_itkp: toNumber(score.nilai_itkp)
-    };
-  });
-}
-
 function normalizeStatus(status) {
-  const value = String(status || '').trim().toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
+  const value = String(status || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '_')
+    .replace(/-/g, '_');
+
   if (!value) return '';
   if (value.includes('PAYMENT_OUTSIDE_SYSTEM')) return 'PAYMENT_OUTSIDE_SYSTEM';
   if (value.includes('PAYMENT_OUT')) return 'PAYMENT_OUT';
   if (value.includes('COMPLETED')) return 'COMPLETED';
+  if (value.includes('ON_ADDENDUM')) return 'ON_ADDENDUM';
   if (value.includes('ON_PROCESS')) return 'ON_PROCESS';
   if (value.includes('FAILED') || value.includes('GAGAL')) return 'FAILED';
   if (value.includes('DRAFT')) return 'DRAFT';
   return value;
 }
 
-function isActiveStatus(status) {
-  return status === 'ON_PROCESS';
+function isStillActiveStatus(status) {
+  return status === 'ON_PROCESS' || status === 'ON_ADDENDUM';
 }
 
 function isFinishedStatus(status) {
@@ -542,14 +565,19 @@ function getUniqueStatuses(rows) {
 
 function getDominantStatus(rows) {
   const map = new Map();
+
   rows.forEach(row => {
     const key = row.status_normalized || 'LAINNYA';
     map.set(key, (map.get(key) || 0) + 1);
   });
-  return Array.from(map.entries())
-    .sort((a, b) => b[1] - a[1])[0]
-    ? { status: Array.from(map.entries()).sort((a, b) => b[1] - a[1])[0][0], count: Array.from(map.entries()).sort((a, b) => b[1] - a[1])[0][1] }
-    : null;
+
+  const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  if (!sorted.length) return null;
+
+  return {
+    status: sorted[0][0],
+    count: sorted[0][1]
+  };
 }
 
 function renderPagination(container, currentPage, totalPages, onChange) {
@@ -557,12 +585,12 @@ function renderPagination(container, currentPage, totalPages, onChange) {
   container.innerHTML = '';
   if (totalPages <= 1) return;
 
-  const buttons = [];
-  buttons.push(makePageButton('«', currentPage > 1, () => onChange(1)));
-  buttons.push(makePageButton('‹', currentPage > 1, () => onChange(currentPage - 1)));
+  container.appendChild(makePageButton('«', currentPage > 1, () => onChange(1)));
+  container.appendChild(makePageButton('‹', currentPage > 1, () => onChange(currentPage - 1)));
 
   const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
   const sorted = Array.from(pages).filter(p => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+
   let last = 0;
   sorted.forEach(page => {
     if (page - last > 1) {
@@ -593,8 +621,9 @@ function renderPagination(container, currentPage, totalPages, onChange) {
 function fillSelect(select, items, placeholder) {
   if (!select) return;
   const currentValue = select.value;
-  select.innerHTML = `<option value="">${placeholder}</option>` + items.map(item => `<option value="${escapeAttr(item)}">${escapeHtml(item)}</option>`).join('');
-  if (items.includes(currentValue)) select.value = currentValue;
+  const uniqueItems = Array.from(new Set(items.filter(Boolean))).sort((a, b) => a.localeCompare(b, 'id'));
+  select.innerHTML = `<option value="">${placeholder}</option>` + uniqueItems.map(item => `<option value="${escapeAttr(item)}">${escapeHtml(item)}</option>`).join('');
+  if (uniqueItems.includes(currentValue)) select.value = currentValue;
 }
 
 function setLoading(message, useOverlay = false) {
@@ -603,6 +632,7 @@ function setLoading(message, useOverlay = false) {
   const loadingText = root?.querySelector('#loadingText');
   const overlay = root?.querySelector('#globalLoadingOverlay');
   const overlayText = root?.querySelector('#globalLoadingText');
+
   if (loadingText) loadingText.textContent = message;
   if (overlayText) overlayText.textContent = message;
   if (loadingBox) loadingBox.classList.add('show');
@@ -618,6 +648,7 @@ function clearLoading() {
 function showError(message) {
   const errorBox = document.querySelector('.itkp-ekatalog-page #errorBox');
   if (!errorBox) return;
+
   if (message) {
     errorBox.textContent = message;
     errorBox.classList.add('show');
@@ -640,10 +671,12 @@ function renderItkpBadge(value) {
 function renderStatusBadge(status) {
   const label = status || '-';
   let klass = 'badge-blue';
-  if (status === 'ON_PROCESS') klass = 'badge-blue';
+
+  if (status === 'ON_PROCESS' || status === 'ON_ADDENDUM') klass = 'badge-blue';
   else if (isFinishedStatus(status)) klass = 'badge-green';
   else if (status === 'FAILED' || status === 'DRAFT') klass = 'badge-red';
   else klass = 'badge-yellow';
+
   return `<span class="badge ${klass}">${escapeHtml(label)}</span>`;
 }
 
@@ -652,8 +685,12 @@ function exportRows(rows, filename) {
     alert('Tidak ada data yang bisa diexport.');
     return;
   }
+
   const headers = Object.keys(rows[0]);
-  const csv = [headers.join(',')].concat(rows.map(row => headers.map(key => csvEscape(row[key])).join(','))).join('\n');
+  const csv = [headers.join(',')]
+    .concat(rows.map(row => headers.map(key => csvEscape(row[key])).join(',')))
+    .join('\n');
+
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -662,6 +699,7 @@ function exportRows(rows, filename) {
   document.body.appendChild(a);
   a.click();
   a.remove();
+
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -676,6 +714,7 @@ function toNumber(value) {
     .replace(/\./g, '')
     .replace(/,/g, '.')
     .replace(/[^0-9.-]/g, '');
+
   const num = parseFloat(clean);
   return Number.isFinite(num) ? num : 0;
 }
