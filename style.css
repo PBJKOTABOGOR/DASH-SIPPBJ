@@ -39,6 +39,7 @@ body{
   background:
     radial-gradient(circle at top right, rgba(15,118,110,.08), transparent 28%),
     linear-gradient(180deg,#f8fbff 0%,#eef4fb 100%);
+  zoom:.75;
 }
 
 button,
