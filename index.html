@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRAXPBJ - Portal Utama</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-block">
+        <div class="brand-left">
+          <div class="brand-logo">TP</div>
+          <div class="brand-text">
+            <h1>TRAXPBJ</h1>
+            <p>Simulasi &amp; Monitoring PBJ</p>
+          </div>
+        </div>
+        <button
+          class="sidebar-toggle-button"
+          id="sidebarToggleButton"
+          type="button"
+          aria-label="Minimize sidebar"
+        >
+          ☰
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">MENU UTAMA</div>
+
+        <button class="nav-link active" data-page="dashboard">
+          <span class="nav-left">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">Dashboard</span>
+          </span>
+        </button>
+
+        <div class="nav-group open" data-group="itkp">
+          <button class="nav-link nav-toggle" data-toggle-group="itkp">
+            <span class="nav-left">
+              <span class="nav-icon">📊</span>
+              <span class="nav-text">ITKP</span>
+            </span>
+            <span class="nav-caret">⌄</span>
+          </button>
+
+          <div class="submenu">
+            <button class="submenu-link" data-page="monitoring-sirup">SiRUP</button>
+            <button class="submenu-link" data-page="monitoring-ekatalog">eKatalog</button>
+            <button class="submenu-link" data-page="monitoring-etendering">eTendering</button>
+            <button class="submenu-link" data-page="monitoring-ekontrak">eKontrak</button>
+            <button class="submenu-link" data-page="monitoring-nontender">Non eTendering/Non ePurchasing</button>
+          </div>
+        </div>
+
+        <button class="nav-link" data-page="rapor-pbj">
+          <span class="nav-left">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">Rapor PBJ</span>
+          </span>
+        </button>
+
+        <div class="nav-group open" data-group="realisasi">
+          <button class="nav-link nav-toggle" data-toggle-group="realisasi">
+            <span class="nav-left">
+              <span class="nav-icon">📦</span>
+              <span class="nav-text">Realisasi Paket</span>
+            </span>
+            <span class="nav-caret">⌄</span>
+          </button>
+
+          <div class="submenu">
+            <button class="submenu-link" data-page="monitoring-perencanaan">Monitoring Realisasi</button>
+            <button class="submenu-link" data-page="monitoring-konsolidasi">Konsolidasi</button>
+          </div>
+        </div>
+
+        <div class="nav-group open" data-group="simulasi">
+          <button class="nav-link nav-toggle" data-toggle-group="simulasi">
+            <span class="nav-left">
+              <span class="nav-icon">🧪</span>
+              <span class="nav-text">Simulasi</span>
+            </span>
+            <span class="nav-caret">⌄</span>
+          </button>
+
+          <div class="submenu">
+            <button class="submenu-link" data-page="simulasi-timeline">Timeline Pengadaan</button>
+            <button class="submenu-link" data-page="simulasi-nontender">Pencatatan Non Tender</button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-help">
+        <h3>Butuh Bantuan?</h3>
+        <p>Hubungi admin/helpdesk untuk informasi penggunaan portal TRAXPBJ.</p>
+        <button class="help-button" type="button">Hubungi Helpdesk</button>
+      </div>
+    </aside>
+
+    <main class="content-area" id="contentArea"></main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
