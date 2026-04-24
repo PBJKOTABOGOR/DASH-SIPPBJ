@@ -193,7 +193,7 @@ window.__moduleInit = function ({ container }) {
     if (activeCard) {
       const label = activeCard.querySelector('.stat-label');
       const note = activeCard.querySelector('.stat-note');
-      if (label) label.textContent = 'Sisa Paket yang Masih Aktif';
+      if (label) label.textContent = 'Sisa Paket Aktif';
       if (note) note.textContent = 'Dihitung dari status ON_PROCESS dan ON_ADDENDUM pada RAW_ECAT.';
     }
 
