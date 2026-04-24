@@ -244,12 +244,28 @@
   line-height:1.2;
 }
 
+.itkp-ekatalog-page .insight-value-small{
+  font-size:15px;
+  line-height:1.4;
+  font-weight:800;
+  color:#123a72;
+  word-break:break-word;
+}
+
 .itkp-ekatalog-page .stat-note,
 .itkp-ekatalog-page .insight-note{
   margin-top:6px;
   font-size:12px;
   color:#64748b;
   line-height:1.5;
+}
+
+.itkp-ekatalog-page .insight-note-list{
+  font-size:11px;
+  line-height:1.6;
+  color:#475569;
+  white-space:normal;
+  word-break:break-word;
 }
 
 .itkp-ekatalog-page .mini-insights{
