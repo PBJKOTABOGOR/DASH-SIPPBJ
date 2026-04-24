@@ -14,11 +14,14 @@ const APP_ROUTES = {
     js: 'modules/monitoring/itkp-sirup/itkp-sirup.js'
   },
 
-  'monitoring-ekatalog': {
-    title: 'Monitoring eKatalog',
-    subtitle: 'Halaman ini sedang disiapkan untuk monitoring indikator pemanfaatan eKatalog.',
-    type: 'placeholder'
-  },
+'monitoring-ekatalog': {
+  title: 'Monitoring eKatalog',
+  subtitle: 'Monitoring paket eKatalog serta rekap indikator ITKP eKatalog per Satuan Kerja.',
+  type: 'module',
+  html: 'modules/monitoring/itkp-ekatalog/itkp-ekatalog.html',
+  css: 'modules/monitoring/itkp-ekatalog/itkp-ekatalog.css',
+  js: 'modules/monitoring/itkp-ekatalog/itkp-ekatalog.js'
+},
 
   'monitoring-etendering': {
     title: 'Monitoring eTendering',
