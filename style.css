@@ -74,7 +74,7 @@ textarea{
     padding .25s ease,
     background .25s ease,
     box-shadow .25s ease;
-  overflow:visible;
+  overflow:hidden;
   z-index:100;
   display:flex;
   flex-direction:column;
@@ -156,6 +156,10 @@ textarea{
   flex-direction:column;
   gap:8px;
   min-height:0;
+  flex:1;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:4px;
 }
 
 .nav-section-label{
@@ -300,7 +304,8 @@ textarea{
 }
 
 .sidebar-help{
-  margin-top:auto;
+  margin-top:12px;
+  flex-shrink:0;
   padding:16px;
   border-radius:20px;
   background:linear-gradient(135deg,#123a72 0%,#245a9b 70%,#2f9a8f 100%);
