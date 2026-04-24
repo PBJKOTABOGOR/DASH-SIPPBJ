@@ -155,8 +155,8 @@ textarea{
   display:flex;
   flex-direction:column;
   gap:8px;
-  min-height:0;
   flex:1;
+  min-height:0;
   overflow-y:auto;
   overflow-x:hidden;
   padding-right:4px;
@@ -304,7 +304,7 @@ textarea{
 }
 
 .sidebar-help{
-  margin-top:12px;
+  margin-top:auto;
   flex-shrink:0;
   padding:16px;
   border-radius:20px;
