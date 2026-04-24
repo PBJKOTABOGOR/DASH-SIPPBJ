@@ -1,3 +1,4 @@
+(function () {
 const EKATALOG_SHEET_CONFIG = {
   spreadsheetId: '1tRYoFQ2obJLoQfIBmZQ_qIw72ZCMV9fKIpBA3DlsIxE',
   rawGid: '230159837',
@@ -19,7 +20,8 @@ window.__moduleInit = function ({ container }) {
     selectedOpd: '',
     selectedDetailRows: [],
     rekapPage: 1,
-    detailPage: 1
+    detailPage: 1,
+    destroyed: false
   };
 
   const EL = {
@@ -65,6 +67,7 @@ window.__moduleInit = function ({ container }) {
   };
 
   const listeners = [];
+
   const on = (target, event, handler) => {
     if (!target) return;
     target.addEventListener(event, handler);
@@ -110,20 +113,32 @@ window.__moduleInit = function ({ container }) {
     const items = state.filteredRekap
       .filter(row => row.nilai_itkp >= 4)
       .map(row => row.satuan_kerja);
-    openModal('Daftar OPD Capai Target Max', 'OPD yang sudah mencapai nilai ITKP maksimal eKatalog yaitu 4 poin.', items);
+
+    openModal(
+      'Daftar OPD Capai Target Max',
+      'OPD yang sudah mencapai nilai ITKP maksimal eKatalog yaitu 4 poin.',
+      items
+    );
   });
 
   on(EL.btnShowZeroList, 'click', () => {
     const items = state.filteredRekap
       .filter(row => row.nilai_itkp <= 0)
       .map(row => row.satuan_kerja);
-    openModal('Daftar OPD Skor ITKP 0', 'OPD yang indikator pemanfaatan eKatalog-nya masih 0.', items);
+
+    openModal(
+      'Daftar OPD Skor ITKP 0',
+      'OPD yang indikator pemanfaatan eKatalog-nya masih 0.',
+      items
+    );
   });
 
   on(EL.btnCloseModal, 'click', closeModal);
+
   on(EL.opdModal, 'click', (event) => {
     if (event.target === EL.opdModal) closeModal();
   });
+
   on(document, 'keydown', (event) => {
     if (event.key === 'Escape') closeModal();
   });
@@ -131,8 +146,10 @@ window.__moduleInit = function ({ container }) {
   initMonitoring(true);
 
   return () => {
+    state.destroyed = true;
     listeners.forEach(off => off());
     closeModal();
+    clearLoading();
   };
 
   async function initMonitoring(useOverlay = false) {
@@ -146,6 +163,8 @@ window.__moduleInit = function ({ container }) {
         fetchCsv(buildCsvUrl(EKATALOG_SHEET_CONFIG.rawGid)),
         fetchCsv(buildCsvUrl(EKATALOG_SHEET_CONFIG.scoreGid))
       ]);
+
+      if (state.destroyed) return;
 
       let rawRows = [];
       let scoreRows = [];
@@ -181,10 +200,14 @@ window.__moduleInit = function ({ container }) {
       showError(`Data eKatalog gagal dimuat. Detail: ${error.message}. Pastikan sheet bisa diakses publik.`);
     } finally {
       const elapsed = Date.now() - startedAt;
+
       if (elapsed < EKATALOG_MIN_LOADING_MS) {
         await wait(EKATALOG_MIN_LOADING_MS - elapsed);
       }
-      clearLoading();
+
+      if (!state.destroyed) {
+        clearLoading();
+      }
     }
   }
 
@@ -221,6 +244,7 @@ window.__moduleInit = function ({ container }) {
             item.nomor_paket.toLowerCase().includes(keyword)
           )
         );
+
         if (!inOpd && !rawMatch) return false;
       }
 
@@ -229,6 +253,7 @@ window.__moduleInit = function ({ container }) {
           item.satuan_kerja === row.satuan_kerja &&
           item.status_normalized === statusValue
         );
+
         if (!hasStatus) return false;
       }
 
@@ -271,12 +296,12 @@ window.__moduleInit = function ({ container }) {
     const paketSelesaiRaw = visibleRaw.filter(row => isFinishedStatus(row.status_normalized)).length;
     const avgItkp = average(state.filteredRekap.map(row => row.nilai_itkp));
 
-    EL.statJumlahOpd.textContent = formatInt(state.filteredRekap.length);
-    EL.statJumlahPaket.textContent = formatInt(visibleRaw.length);
-    EL.statTotalPagu.textContent = formatCurrency(sum(visibleRaw.map(row => row.pagu)));
-    EL.statPaketAktif.textContent = formatInt(sisaMasihAktif);
-    EL.statPaketSelesai.textContent = formatInt(paketSelesaiRaw);
-    EL.statAvgItkp.textContent = formatDecimal(avgItkp, 2);
+    if (EL.statJumlahOpd) EL.statJumlahOpd.textContent = formatInt(state.filteredRekap.length);
+    if (EL.statJumlahPaket) EL.statJumlahPaket.textContent = formatInt(visibleRaw.length);
+    if (EL.statTotalPagu) EL.statTotalPagu.textContent = formatCurrency(sum(visibleRaw.map(row => row.pagu)));
+    if (EL.statPaketAktif) EL.statPaketAktif.textContent = formatInt(sisaMasihAktif);
+    if (EL.statPaketSelesai) EL.statPaketSelesai.textContent = formatInt(paketSelesaiRaw);
+    if (EL.statAvgItkp) EL.statAvgItkp.textContent = formatDecimal(avgItkp, 2);
   }
 
   function renderInsights() {
@@ -288,12 +313,12 @@ window.__moduleInit = function ({ container }) {
       .filter(row => row.nilai_itkp <= 0)
       .map(row => row.satuan_kerja);
 
-    EL.maxCount.textContent = formatInt(maxItems.length);
-    EL.zeroCount.textContent = formatInt(zeroItems.length);
+    if (EL.maxCount) EL.maxCount.textContent = formatInt(maxItems.length);
+    if (EL.zeroCount) EL.zeroCount.textContent = formatInt(zeroItems.length);
 
     const dominant = getDominantStatus(getFilteredRawRows());
-    EL.dominantStatus.textContent = dominant ? dominant.status : '-';
-    EL.dominantStatusNote.textContent = dominant ? `${formatInt(dominant.count)} paket` : 'Belum ada data';
+    if (EL.dominantStatus) EL.dominantStatus.textContent = dominant ? dominant.status : '-';
+    if (EL.dominantStatusNote) EL.dominantStatusNote.textContent = dominant ? `${formatInt(dominant.count)} paket` : 'Belum ada data';
   }
 
   function renderRekapTable() {
@@ -306,6 +331,8 @@ window.__moduleInit = function ({ container }) {
     const end = start + EKATALOG_PAGE_SIZE;
     const pageRows = rows.slice(start, end);
 
+    if (!EL.rekapTableBody) return;
+
     if (!pageRows.length) {
       EL.rekapTableBody.innerHTML = `<tr><td class="center-cell" colspan="7">Tidak ada data rekap yang sesuai filter.</td></tr>`;
     } else {
@@ -317,24 +344,39 @@ window.__moduleInit = function ({ container }) {
           <td>${formatInt(row.paket_selesai)}</td>
           <td>${renderPercentBadge(row.prosentase)}</td>
           <td>${renderItkpBadge(row.nilai_itkp)}</td>
-          <td><button class="action-btn" type="button" data-opd="${escapeAttr(row.satuan_kerja)}">Lihat Paket</button></td>
+          <td>
+            <button class="action-btn" type="button" data-opd="${escapeAttr(row.satuan_kerja)}">
+              Lihat Paket
+            </button>
+          </td>
         </tr>
       `).join('');
 
       EL.rekapTableBody.querySelectorAll('[data-opd]').forEach(btn => {
         on(btn, 'click', () => {
           state.selectedOpd = btn.dataset.opd;
-          if (EL.filterOpd) EL.filterOpd.value = btn.dataset.opd;
+
+          if (EL.filterOpd) {
+            EL.filterOpd.value = btn.dataset.opd;
+          }
+
           state.detailPage = 1;
           applyFilters();
-          root.querySelector('.detail-content-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+          root.querySelector('.detail-content-wrap')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
         });
       });
     }
 
     const from = totalItems ? start + 1 : 0;
     const to = totalItems ? Math.min(end, totalItems) : 0;
-    EL.rekapPaginationInfo.textContent = `${from}-${to} dari ${totalItems} data • Page ${state.rekapPage} / ${totalPages}`;
+
+    if (EL.rekapPaginationInfo) {
+      EL.rekapPaginationInfo.textContent = `${from}-${to} dari ${totalItems} data • Page ${state.rekapPage} / ${totalPages}`;
+    }
 
     renderPagination(EL.rekapPagination, state.rekapPage, totalPages, (page) => {
       state.rekapPage = page;
@@ -352,10 +394,19 @@ window.__moduleInit = function ({ container }) {
     const end = start + EKATALOG_DETAIL_PAGE_SIZE;
     const pageRows = rows.slice(start, end);
 
-    EL.detailTitle.textContent = state.selectedOpd ? `Detail Paket eKatalog - ${state.selectedOpd}` : 'Detail Paket eKatalog';
-    EL.detailSubtitle.textContent = state.selectedOpd
-      ? `Menampilkan ${formatInt(totalItems)} paket pada OPD terpilih.`
-      : 'Pilih OPD pada tabel rekap untuk melihat daftar paket.';
+    if (EL.detailTitle) {
+      EL.detailTitle.textContent = state.selectedOpd
+        ? `Detail Paket eKatalog - ${state.selectedOpd}`
+        : 'Detail Paket eKatalog';
+    }
+
+    if (EL.detailSubtitle) {
+      EL.detailSubtitle.textContent = state.selectedOpd
+        ? `Menampilkan ${formatInt(totalItems)} paket pada OPD terpilih.`
+        : 'Pilih OPD pada tabel rekap untuk melihat daftar paket.';
+    }
+
+    if (!EL.detailTableBody) return;
 
     if (!pageRows.length) {
       EL.detailTableBody.innerHTML = `<tr><td class="center-cell" colspan="7">Belum ada detail paket untuk ditampilkan.</td></tr>`;
@@ -375,9 +426,12 @@ window.__moduleInit = function ({ container }) {
 
     const from = totalItems ? start + 1 : 0;
     const to = totalItems ? Math.min(end, totalItems) : 0;
-    EL.detailPaginationInfo.textContent = totalItems
-      ? `${from}-${to} dari ${totalItems} paket • Page ${state.detailPage} / ${totalPages}`
-      : 'Belum ada data detail.';
+
+    if (EL.detailPaginationInfo) {
+      EL.detailPaginationInfo.textContent = totalItems
+        ? `${from}-${to} dari ${totalItems} paket • Page ${state.detailPage} / ${totalPages}`
+        : 'Belum ada data detail.';
+    }
 
     renderPagination(EL.detailPagination, state.detailPage, totalPages, (page) => {
       state.detailPage = page;
@@ -405,19 +459,52 @@ window.__moduleInit = function ({ container }) {
   }
 
   function openModal(title, subtitle, items) {
-    EL.modalTitle.textContent = title;
-    EL.modalSubtitle.textContent = subtitle;
-    EL.modalCount.textContent = `${formatInt(items.length)} OPD`;
-    EL.modalList.innerHTML = items.length
-      ? items.map(item => `<div class="modal-item">${escapeHtml(item)}</div>`).join('')
-      : `<div class="modal-item">Belum ada OPD.</div>`;
+    if (!EL.opdModal) return;
+
+    if (EL.modalTitle) EL.modalTitle.textContent = title;
+    if (EL.modalSubtitle) EL.modalSubtitle.textContent = subtitle;
+    if (EL.modalCount) EL.modalCount.textContent = `${formatInt(items.length)} OPD`;
+
+    if (EL.modalList) {
+      EL.modalList.innerHTML = items.length
+        ? items.map(item => `<div class="modal-item">${escapeHtml(item)}</div>`).join('')
+        : `<div class="modal-item">Belum ada OPD.</div>`;
+    }
+
     EL.opdModal.hidden = false;
     document.body.style.overflow = 'hidden';
   }
 
   function closeModal() {
-    EL.opdModal.hidden = true;
+    if (EL.opdModal) {
+      EL.opdModal.hidden = true;
+    }
+
     document.body.style.overflow = '';
+  }
+
+  function setLoading(message, useOverlay = false) {
+    if (EL.loadingText) EL.loadingText.textContent = message;
+    if (EL.globalLoadingText) EL.globalLoadingText.textContent = message;
+    if (EL.loadingBox) EL.loadingBox.classList.add('show');
+    if (useOverlay && EL.globalLoadingOverlay) EL.globalLoadingOverlay.classList.add('show');
+  }
+
+  function clearLoading() {
+    if (EL.loadingBox) EL.loadingBox.classList.remove('show');
+    if (EL.globalLoadingOverlay) EL.globalLoadingOverlay.classList.remove('show');
+  }
+
+  function showError(message) {
+    if (!EL.errorBox) return;
+
+    if (message) {
+      EL.errorBox.textContent = message;
+      EL.errorBox.classList.add('show');
+    } else {
+      EL.errorBox.textContent = '';
+      EL.errorBox.classList.remove('show');
+    }
   }
 };
 
@@ -432,23 +519,29 @@ function buildCsvUrl(gid) {
 async function fetchCsv(url) {
   const response = await fetch(url, { method: 'GET', cache: 'no-store' });
   if (!response.ok) throw new Error(`HTTP ${response.status} saat mengambil ${url}`);
+
   const text = await response.text();
   if (!text || !text.trim()) throw new Error(`CSV kosong dari ${url}`);
   if (/<!doctype html>|<html/i.test(text)) throw new Error(`Response bukan CSV. Kemungkinan sheet masih belum public: ${url}`);
+
   return text;
 }
 
 function csvToObjects(csvText) {
   const rows = parseCsv(csvText);
   if (!rows.length) return [];
+
   const headers = rows[0].map(h => normalizeHeader(h));
+
   return rows.slice(1)
     .filter(row => row.some(cell => String(cell || '').trim() !== ''))
     .map(row => {
       const obj = {};
+
       headers.forEach((header, index) => {
         obj[header] = row[index] != null ? String(row[index]).trim() : '';
       });
+
       return obj;
     });
 }
@@ -505,12 +598,14 @@ function pick(row, keys) {
   for (const key of keys) {
     if (row[key] != null && String(row[key]).trim() !== '') return String(row[key]).trim();
   }
+
   return '';
 }
 
 function normalizeRawRows(rows) {
   return rows.map(row => {
     const status = pick(row, ['status_paket', 'status']);
+
     return {
       satuan_kerja: pick(row, ['satuan_kerja', 'satker']),
       nomor_paket: pick(row, ['nomor_paket', 'kode_paket', 'nomor']),
@@ -548,6 +643,7 @@ function normalizeStatus(status) {
   if (value.includes('ON_PROCESS')) return 'ON_PROCESS';
   if (value.includes('FAILED') || value.includes('GAGAL')) return 'FAILED';
   if (value.includes('DRAFT')) return 'DRAFT';
+
   return value;
 }
 
@@ -582,6 +678,7 @@ function getDominantStatus(rows) {
 
 function renderPagination(container, currentPage, totalPages, onChange) {
   if (!container) return;
+
   container.innerHTML = '';
   if (totalPages <= 1) return;
 
@@ -592,6 +689,7 @@ function renderPagination(container, currentPage, totalPages, onChange) {
   const sorted = Array.from(pages).filter(p => p >= 1 && p <= totalPages).sort((a, b) => a - b);
 
   let last = 0;
+
   sorted.forEach(page => {
     if (page - last > 1) {
       const gap = document.createElement('span');
@@ -600,6 +698,7 @@ function renderPagination(container, currentPage, totalPages, onChange) {
       gap.style.pointerEvents = 'none';
       container.appendChild(gap);
     }
+
     container.appendChild(makePageButton(String(page), true, () => onChange(page), page === currentPage));
     last = page;
   });
@@ -620,42 +719,15 @@ function renderPagination(container, currentPage, totalPages, onChange) {
 
 function fillSelect(select, items, placeholder) {
   if (!select) return;
+
   const currentValue = select.value;
   const uniqueItems = Array.from(new Set(items.filter(Boolean))).sort((a, b) => a.localeCompare(b, 'id'));
-  select.innerHTML = `<option value="">${placeholder}</option>` + uniqueItems.map(item => `<option value="${escapeAttr(item)}">${escapeHtml(item)}</option>`).join('');
+
+  select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>` + uniqueItems
+    .map(item => `<option value="${escapeAttr(item)}">${escapeHtml(item)}</option>`)
+    .join('');
+
   if (uniqueItems.includes(currentValue)) select.value = currentValue;
-}
-
-function setLoading(message, useOverlay = false) {
-  const root = document.querySelector('.itkp-ekatalog-page');
-  const loadingBox = root?.querySelector('#loadingBox');
-  const loadingText = root?.querySelector('#loadingText');
-  const overlay = root?.querySelector('#globalLoadingOverlay');
-  const overlayText = root?.querySelector('#globalLoadingText');
-
-  if (loadingText) loadingText.textContent = message;
-  if (overlayText) overlayText.textContent = message;
-  if (loadingBox) loadingBox.classList.add('show');
-  if (useOverlay && overlay) overlay.classList.add('show');
-}
-
-function clearLoading() {
-  const root = document.querySelector('.itkp-ekatalog-page');
-  root?.querySelector('#loadingBox')?.classList.remove('show');
-  root?.querySelector('#globalLoadingOverlay')?.classList.remove('show');
-}
-
-function showError(message) {
-  const errorBox = document.querySelector('.itkp-ekatalog-page #errorBox');
-  if (!errorBox) return;
-
-  if (message) {
-    errorBox.textContent = message;
-    errorBox.classList.add('show');
-  } else {
-    errorBox.textContent = '';
-    errorBox.classList.remove('show');
-  }
 }
 
 function renderPercentBadge(value) {
@@ -694,6 +766,7 @@ function exportRows(rows, filename) {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -762,3 +835,4 @@ function escapeHtml(value) {
 function escapeAttr(value) {
   return escapeHtml(value);
 }
+})();
