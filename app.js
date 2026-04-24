@@ -90,11 +90,35 @@ const sidebarToggleButton = document.getElementById('sidebarToggleButton');
 let activeModuleToken = 0;
 let currentModuleDestroy = null;
 let activeFlyout = null;
+let isPageLoading = false;
+
+function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function cacheBust(url) {
+  const joiner = url.includes('?') ? '&' : '?';
+  return `${url}${joiner}v=${Date.now()}`;
+}
+
+function showModuleLoading(title = 'Memuat modul...') {
+  contentArea.innerHTML = `
+    <section class="card">
+      <h3>${escapeHtml(title)}</h3>
+      <p>Mohon tunggu sebentar, sistem sedang menyiapkan tampilan dan data.</p>
+    </section>
+  `;
+}
 
 function renderDashboard() {
   contentArea.innerHTML = `
     <section class="hero-card">
-      <h3>Selamat datang di TRAXPBJ</h3>
+      <h3>Selamat datang di SIPPBJ</h3>
       <p>Ringkasan utama untuk monitoring, analisis, simulasi, dan pelaporan pengadaan barang/jasa.</p>
 
       <div class="stats-grid">
@@ -109,9 +133,9 @@ function renderDashboard() {
           <div class="desc">Paket terkonsolidasi</div>
         </div>
         <div class="stat-card">
-          <div class="label">Modul Monitoring</div>
-          <div class="value">7</div>
-          <div class="desc">Modul aktif dalam portal</div>
+          <div class="label">Paket Belum Berjalan</div>
+          <div class="value">6.666</div>
+          <div class="desc">Breakdown realisasi paket</div>
         </div>
         <div class="stat-card">
           <div class="label">Rapor PBJ</div>
@@ -126,7 +150,7 @@ function renderDashboard() {
         <h3>Ringkasan Dashboard</h3>
         <div class="summary-panels">
           <div class="mini-card">
-            <h4>ITKP</h4>
+            <h4>Skor ITKP</h4>
             <div class="big-number">86,42%</div>
             <div class="progress-scale">
               <div class="progress-track">
@@ -134,31 +158,23 @@ function renderDashboard() {
               </div>
             </div>
             <div class="dimensions">
-              ${renderDimension('Perencanaan', 92.10)}
-              ${renderDimension('Pengadaan', 84.33)}
-              ${renderDimension('Pengelolaan Kontrak', 83.21)}
-              ${renderDimension('Manajemen Risiko', 79.45)}
-              ${renderDimension('Kelembagaan', 88.60)}
+              ${renderDimension('SiRUP', 92.10)}
+              ${renderDimension('eKatalog', 84.33)}
+              ${renderDimension('eTendering', 83.21)}
+              ${renderDimension('eKontrak', 79.45)}
+              ${renderDimension('Non Tender', 88.60)}
             </div>
           </div>
 
           <div class="mini-card">
-            <h4>Konsolidasi</h4>
-            <div class="donut-wrap">
-              <div class="donut"></div>
-              <div class="legend">
-                <span><i class="dot" style="background:#1f60e0"></i> Terkonsolidasi 45,1%</span>
-                <span><i class="dot" style="background:#27b0c2"></i> Dalam proses 26,1%</span>
-                <span><i class="dot" style="background:#cfd8e5"></i> Belum konsolidasi 28,8%</span>
-              </div>
-            </div>
+            <h4>Belum Berjalan per Metode</h4>
             <div class="table-lite">
-              <div class="table-row table-head"><div>OPD</div><div>Jumlah Paket</div></div>
-              <div class="table-row"><div>Badan Kepegawaian</div><div>24</div></div>
-              <div class="table-row"><div>Dinas PUPR</div><div>18</div></div>
-              <div class="table-row"><div>Dinas Kesehatan</div><div>15</div></div>
-              <div class="table-row"><div>Dinas Pendidikan</div><div>14</div></div>
-              <div class="table-row"><div>Sekretariat Daerah</div><div>11</div></div>
+              <div class="table-row table-head"><div>Metode</div><div>Jumlah</div></div>
+              <div class="table-row"><div>Pengadaan Langsung</div><div>3.821</div></div>
+              <div class="table-row"><div>e-Purchasing</div><div>1.744</div></div>
+              <div class="table-row"><div>Tender</div><div>633</div></div>
+              <div class="table-row"><div>Seleksi</div><div>214</div></div>
+              <div class="table-row"><div>Lainnya</div><div>254</div></div>
             </div>
           </div>
         </div>
@@ -168,22 +184,22 @@ function renderDashboard() {
         <h3>Aktivitas / Informasi</h3>
         <div class="activities">
           ${renderActivity('#2ab56f', '✓', 'Rapor PBJ Bulan April 2026 telah tersedia', 'Laporan rapor untuk 10 OPD telah berhasil dibuat.', '2 jam lalu')}
-          ${renderActivity('#4c7df2', '👥', 'Paket konsolidasi baru ditambahkan', 'Dinas Kesehatan menambahkan 5 paket baru.', '3 jam lalu')}
-          ${renderActivity('#8e61e9', '📝', 'Update ITKP', 'Nilai ITKP bulan April meningkat 4,12%.', '5 jam lalu')}
-          ${renderActivity('#ef8d21', '🛒', 'Proses eTendering dimulai', 'Paket pembangunan RSUD memasuki tahap tender.', '1 hari lalu')}
-          ${renderActivity('#12a8a1', '📄', 'Kontrak ditandatangani', 'Paket pengadaan alat laboratorium selesai dikontrak.', '1 hari lalu')}
+          ${renderActivity('#4c7df2', '📊', 'Update Dashboard ITKP', 'Data monitoring ITKP diperbarui pada portal.', '3 jam lalu')}
+          ${renderActivity('#8e61e9', '🧾', 'Monitoring Realisasi diperbarui', 'Sinkronisasi data realisasi paket berhasil dimuat.', '5 jam lalu')}
+          ${renderActivity('#ef8d21', '📜', 'Konsolidasi sedang disiapkan', 'Menu konsolidasi masih dalam proses pengembangan.', '1 hari lalu')}
+          ${renderActivity('#12a8a1', '📝', 'Rapor PBJ aktif', 'Portal rapor PBJ tetap dapat diakses.', '1 hari lalu')}
         </div>
       </div>
     </section>
 
     <section class="quick-grid">
-      ${renderQuickCard('📋', 'linear-gradient(135deg,#2665df,#3a8bff)', 'Monitoring Perencanaan', 'Pantau progres perencanaan pengadaan di seluruh OPD.', 'monitoring-perencanaan')}
-      ${renderQuickCard('🧾', 'linear-gradient(135deg,#11a6a2,#4cc7bc)', 'Rapor PBJ', 'Lihat dan unduh laporan rapor kinerja PBJ per OPD.', 'rapor-pbj')}
-      ${renderQuickCard('🗓️', 'linear-gradient(135deg,#7c54e9,#a075f3)', 'Simulasi Timeline', 'Simulasikan jadwal pengadaan secara terstruktur.', 'simulasi-timeline')}
-      ${renderQuickCard('✍️', 'linear-gradient(135deg,#ef8d21,#f8b14c)', 'Pencatatan Non Tender', 'Catat dan kelola paket pengadaan non tender.', 'simulasi-nontender')}
+      ${renderQuickCard('📊', 'linear-gradient(135deg,#2665df,#3a8bff)', 'ITKP - SiRUP', 'Lihat monitoring indikator ITKP dari modul SiRUP.', 'monitoring-sirup')}
+      ${renderQuickCard('🧾', 'linear-gradient(135deg,#11a6a2,#4cc7bc)', 'Rapor PBJ', 'Lihat dan unduh laporan rapor kinerja PBJ.', 'rapor-pbj')}
+      ${renderQuickCard('📦', 'linear-gradient(135deg,#7c54e9,#a075f3)', 'Monitoring Realisasi', 'Pantau progres realisasi paket perangkat daerah.', 'monitoring-perencanaan')}
+      ${renderQuickCard('🗓️', 'linear-gradient(135deg,#ef8d21,#f8b14c)', 'Simulasi Timeline', 'Simulasikan jadwal pengadaan secara terstruktur.', 'simulasi-timeline')}
     </section>
 
-    <div class="footer-note">© 2026 TRAXPBJ - Simulasi & Monitoring Pengadaan Barang/Jasa</div>
+    <div class="footer-note">© 2026 SIPPBJ - Simulasi & Monitoring Pengadaan Barang/Jasa</div>
   `;
 
   contentArea.querySelectorAll('[data-quick]').forEach((item) => {
@@ -194,7 +210,7 @@ function renderDashboard() {
 function renderIframePage(page) {
   contentArea.innerHTML = `
     <section class="embed-card">
-      <h3>${page.title}</h3>
+      <h3>${escapeHtml(page.title)}</h3>
       <div class="page-note">Halaman dimuat dari project/modul yang sudah ada.</div>
       <div class="embed-frame-wrap">
         <iframe
@@ -211,7 +227,7 @@ function renderIframePage(page) {
 function renderPlaceholderPage(pageKey, page) {
   contentArea.innerHTML = `
     <section class="card">
-      <h3>${page.title}</h3>
+      <h3>${escapeHtml(page.title)}</h3>
       <div class="placeholder-grid">
         <div class="placeholder-box">
           <h4>Modul belum dihubungkan</h4>
@@ -219,7 +235,7 @@ function renderPlaceholderPage(pageKey, page) {
         </div>
         <div class="placeholder-box">
           <h4>Langkah berikutnya</h4>
-          <p>Cari route <b>${pageKey}</b> pada objek <b>APP_ROUTES</b>, lalu ubah <b>type</b> menjadi <b>iframe</b> atau <b>module</b>.</p>
+          <p>Cari route <b>${escapeHtml(pageKey)}</b> pada objek <b>APP_ROUTES</b>, lalu ubah <b>type</b> menjadi <b>iframe</b> atau <b>module</b>.</p>
         </div>
       </div>
     </section>
@@ -295,12 +311,17 @@ function cleanupDynamicModule() {
     try {
       currentModuleDestroy();
     } catch (err) {
-      console.error('Gagal destroy module lama:', err);
+      console.warn('Cleanup module lama gagal:', err);
     }
   }
 
   currentModuleDestroy = null;
-  window.__moduleInit = undefined;
+
+  try {
+    delete window.__moduleInit;
+  } catch (err) {
+    window.__moduleInit = undefined;
+  }
 
   document.querySelectorAll('[data-dynamic-module-css]').forEach((el) => el.remove());
   document.querySelectorAll('[data-dynamic-module-js]').forEach((el) => el.remove());
@@ -308,7 +329,7 @@ function cleanupDynamicModule() {
 
 function loadExternalScriptOnce(src) {
   return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[data-dynamic-external-script="true"][src="${src}"]`);
+    const existing = document.querySelector(`script[data-external-src="${src}"]`);
 
     if (existing) {
       if (existing.dataset.loaded === 'true') {
@@ -317,14 +338,14 @@ function loadExternalScriptOnce(src) {
       }
 
       existing.addEventListener('load', () => resolve(), { once: true });
-      existing.addEventListener('error', () => reject(new Error(`Gagal memuat ${src}`)), { once: true });
+      existing.addEventListener('error', () => reject(new Error(`Gagal memuat external script: ${src}`)), { once: true });
       return;
     }
 
     const script = document.createElement('script');
     script.src = src;
     script.async = false;
-    script.dataset.dynamicExternalScript = 'true';
+    script.dataset.externalSrc = src;
     script.dataset.loaded = 'false';
 
     script.onload = () => {
@@ -332,36 +353,92 @@ function loadExternalScriptOnce(src) {
       resolve();
     };
 
-    script.onerror = () => reject(new Error(`Gagal memuat ${src}`));
+    script.onerror = () => reject(new Error(`Gagal memuat external script: ${src}`));
     document.body.appendChild(script);
   });
 }
 
+function loadModuleCss(href) {
+  return new Promise((resolve, reject) => {
+    if (!href) {
+      resolve();
+      return;
+    }
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = cacheBust(href);
+    link.setAttribute('data-dynamic-module-css', 'true');
+
+    link.onload = () => resolve();
+    link.onerror = () => reject(new Error(`Gagal memuat CSS: ${href}`));
+
+    document.head.appendChild(link);
+  });
+}
+
+function loadModuleJs(src) {
+  return new Promise((resolve, reject) => {
+    if (!src) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = cacheBust(src);
+    script.async = false;
+    script.setAttribute('data-dynamic-module-js', 'true');
+
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Gagal memuat JS: ${src}`));
+
+    document.body.appendChild(script);
+  });
+}
+
+async function fetchModuleHtml(path) {
+  const response = await fetch(cacheBust(path), { cache: 'no-store' });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} saat memuat HTML: ${path}`);
+  }
+
+  return response.text();
+}
+
+function extractModuleBody(rawHtml) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(rawHtml, 'text/html');
+
+  if (doc.body && doc.body.innerHTML.trim()) {
+    return doc.body.innerHTML;
+  }
+
+  return rawHtml;
+}
+
 async function renderModulePage(page) {
   const token = ++activeModuleToken;
+  isPageLoading = true;
+
   cleanupDynamicModule();
+  showModuleLoading(page.title || 'Memuat modul...');
 
   try {
     if (Array.isArray(page.externalScripts) && page.externalScripts.length) {
       for (const src of page.externalScripts) {
         await loadExternalScriptOnce(src);
+        if (token !== activeModuleToken) return;
       }
     }
 
-    const response = await fetch(page.html, { cache: 'no-cache' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} saat memuat ${page.html}`);
-    }
-
-    const rawHtml = await response.text();
+    const rawHtml = await fetchModuleHtml(page.html);
     if (token !== activeModuleToken) return;
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(rawHtml, 'text/html');
+    await loadModuleCss(page.css);
+    if (token !== activeModuleToken) return;
 
-    const moduleContent = doc.body && doc.body.innerHTML.trim()
-      ? doc.body.innerHTML
-      : rawHtml;
+    const moduleContent = extractModuleBody(rawHtml);
 
     contentArea.innerHTML = `
       <section class="module-page module-page--native">
@@ -372,41 +449,14 @@ async function renderModulePage(page) {
     await new Promise((resolve) => requestAnimationFrame(resolve));
     if (token !== activeModuleToken) return;
 
-    if (page.css) {
-      await new Promise((resolve, reject) => {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = `${page.css}?v=${Date.now()}`;
-        link.setAttribute('data-dynamic-module-css', 'true');
-
-        link.onload = resolve;
-        link.onerror = () => reject(new Error(`Gagal memuat CSS ${page.css}`));
-
-        document.head.appendChild(link);
-      });
-    }
-
+    await loadModuleJs(page.js);
     if (token !== activeModuleToken) return;
 
-    if (page.js) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = `${page.js}?v=${Date.now()}`;
-        script.defer = true;
-        script.setAttribute('data-dynamic-module-js', 'true');
-
-        script.onload = resolve;
-        script.onerror = () => reject(new Error(`Gagal memuat JS ${page.js}`));
-
-        document.body.appendChild(script);
-      });
-    }
-
-    if (token !== activeModuleToken) return;
+    const moduleContainer = contentArea.querySelector('.module-page--native') || contentArea;
 
     if (typeof window.__moduleInit === 'function') {
       const destroyFn = window.__moduleInit({
-        container: contentArea,
+        container: moduleContainer,
         route: page
       });
 
@@ -416,18 +466,27 @@ async function renderModulePage(page) {
     }
   } catch (error) {
     console.error('Gagal memuat module:', error);
+
+    if (token !== activeModuleToken) return;
+
     contentArea.innerHTML = `
       <section class="card">
         <h3>Gagal memuat modul</h3>
-        <p>File modul tidak bisa dimuat. Cek path HTML, CSS, JS, atau inisialisasi modul.</p>
-        <p><b>Detail:</b> ${error.message}</p>
+        <p>File modul tidak bisa dimuat atau script modul gagal dijalankan.</p>
+        <p><b>Detail:</b> ${escapeHtml(error.message)}</p>
       </section>
     `;
+  } finally {
+    if (token === activeModuleToken) {
+      isPageLoading = false;
+    }
   }
 }
 
 async function loadPage(key) {
   const page = APP_ROUTES[key] || APP_ROUTES.dashboard;
+
+  activeModuleToken++;
   updateActiveMenu(key);
 
   if (page.type !== 'module') {
@@ -454,7 +513,11 @@ async function loadPage(key) {
 
 function bindMenu() {
   document.querySelectorAll('[data-page]').forEach((button) => {
-    button.addEventListener('click', () => loadPage(button.dataset.page));
+    button.addEventListener('click', () => {
+      const pageKey = button.dataset.page;
+      if (!pageKey) return;
+      loadPage(pageKey);
+    });
   });
 
   document.querySelectorAll('[data-toggle-group]').forEach((button) => {
@@ -489,6 +552,7 @@ function bindMenu() {
 
     const clickedInsideFlyout = activeFlyout.contains(event.target);
     const clickedToggle = event.target.closest('[data-toggle-group]');
+
     if (!clickedInsideFlyout && !clickedToggle) {
       closeFlyout();
     }
@@ -529,12 +593,12 @@ function toggleFlyout(toggleButton, groupName) {
   };
 
   flyout.innerHTML = `
-    <div class="sidebar-flyout-title">${titleMap[groupName] || 'Menu'}</div>
+    <div class="sidebar-flyout-title">${escapeHtml(titleMap[groupName] || 'Menu')}</div>
     ${Array.from(submenuLinks).map((link) => {
       const isActive = link.classList.contains('active') ? ' active' : '';
       return `
-        <button class="flyout-link${isActive}" type="button" data-page="${link.dataset.page}">
-          ${link.textContent}
+        <button class="flyout-link${isActive}" type="button" data-page="${escapeHtml(link.dataset.page)}">
+          ${escapeHtml(link.textContent)}
         </button>
       `;
     }).join('')}
