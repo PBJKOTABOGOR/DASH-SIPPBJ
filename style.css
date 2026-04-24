@@ -340,6 +340,12 @@ textarea{
   color:rgba(255,255,255,.86);
 }
 
+.sidebar-help-link{
+  display:block;
+  text-decoration:none;
+  color:inherit;
+}
+
 .help-button{
   display:flex;
   align-items:center;
