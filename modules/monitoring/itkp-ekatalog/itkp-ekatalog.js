@@ -478,21 +478,27 @@
     EL.statPaketSelesai.textContent = formatNumber(paketSelesai);
     EL.statAvgItkp.textContent = formatNumber(avgItkp);
 
-    if (filteredScore.length) {
-      const sortedByItkp = [...filteredScore].sort((a,b) => b.nilai_itkp - a.nilai_itkp);
-      const top = sortedByItkp[0];
-      const low = [...sortedByItkp].sort((a,b) => a.nilai_itkp - b.nilai_itkp)[0];
+    const maxTargetRows = filteredScore.filter(row => Number(row.nilai_itkp) >= 4);
+    const zeroScoreRows = filteredScore.filter(row => Number(row.nilai_itkp) === 0);
 
-      EL.insightTopOpd.textContent = top.satuan_kerja || '-';
-      EL.insightTopNote.textContent = `Nilai ITKP ${formatNumber(top.nilai_itkp)} • Prosentase ${formatPercent(top.prosentase)}`;
-
-      EL.insightLowOpd.textContent = low.satuan_kerja || '-';
-      EL.insightLowNote.textContent = `Nilai ITKP ${formatNumber(low.nilai_itkp)} • Prosentase ${formatPercent(low.prosentase)}`;
+    if (maxTargetRows.length) {
+      EL.insightTopOpd.textContent = `${formatNumber(maxTargetRows.length)} OPD`;
+      EL.insightTopNote.innerHTML = maxTargetRows
+        .map(row => escapeHtml(row.satuan_kerja))
+        .join('<br>');
     } else {
-      EL.insightTopOpd.textContent = '-';
-      EL.insightTopNote.textContent = 'Belum ada data';
-      EL.insightLowOpd.textContent = '-';
-      EL.insightLowNote.textContent = 'Belum ada data';
+      EL.insightTopOpd.textContent = '0 OPD';
+      EL.insightTopNote.textContent = 'Belum ada OPD yang mencapai target maksimal.';
+    }
+
+    if (zeroScoreRows.length) {
+      EL.insightLowOpd.textContent = `${formatNumber(zeroScoreRows.length)} OPD`;
+      EL.insightLowNote.innerHTML = zeroScoreRows
+        .map(row => escapeHtml(row.satuan_kerja))
+        .join('<br>');
+    } else {
+      EL.insightLowOpd.textContent = '0 OPD';
+      EL.insightLowNote.textContent = 'Belum ada OPD dengan skor 0.';
     }
 
     if (filteredRaw.length) {
