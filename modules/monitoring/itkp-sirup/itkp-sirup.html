@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <title>Monitoring SIRUP</title>
+  <link rel="stylesheet" href="./itkp-sirup.css">
+</head>
+<body>
+  <div class="itkp-sirup-page">
+    <div class="page">
+      <section class="hero">
+        <div class="hero-left">
+          <h1 class="hero-title">Monitoring SIRUP</h1>
+          <p class="hero-subtitle">
+            Monitoring paket perencanaan yang diumumkan di SIRUP serta rekap perhitungan indikator ITKP SIRUP per Satuan Kerja.
+          </p>
+
+          <div
+            class="error-box"
+            id="errorBox"
+          ></div>
+        </div>
+
+        <div class="hero-actions">
+          <button
+            type="button"
+            class="btn btn-soft"
+            id="btnRefresh"
+          >
+            Refresh Data
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="btnExportRekap"
+          >
+            Export Rekap OPD
+          </button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Filter Monitoring</h2>
+        <p class="section-subtitle">
+          Gunakan filter untuk menyaring rekap OPD dan detail paket.
+        </p>
+
+        <div class="spacer-14"></div>
+
+        <div class="filters">
+          <div class="field span-3">
+            <label for="filterOpd">Satuan Kerja</label>
+            <select id="filterOpd">
+              <option value="">Semua Satuan Kerja</option>
+            </select>
+          </div>
+
+          <div class="field span-2">
+            <label for="filterMetode">Metode Pemilihan</label>
+            <select id="filterMetode">
+              <option value="">Semua Metode</option>
+            </select>
+          </div>
+
+          <div class="field span-2">
+            <label for="filterSumberDana">Sumber Dana</label>
+            <select id="filterSumberDana">
+              <option value="">Semua Sumber Dana</option>
+            </select>
+          </div>
+
+          <div class="field span-2">
+            <label for="filterWaktu">Waktu Pemilihan</label>
+            <select id="filterWaktu">
+              <option value="">Semua Waktu</option>
+            </select>
+          </div>
+
+          <div class="field span-3">
+            <label for="searchPaket">Cari Paket / Program / Kegiatan</label>
+            <input
+              type="text"
+              id="searchPaket"
+              placeholder="Ketik nama paket, program, kegiatan, kode RUP..."
+            >
+          </div>
+
+          <div class="field span-12">
+            <div class="toolbar-inline">
+              <button
+                type="button"
+                class="btn btn-soft"
+                id="btnResetFilter"
+              >
+                Reset Filter
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="btnExportDetail"
+              >
+                Export Detail Paket
+              </button>
+            </div>
+
+            <div
+              class="loading-box"
+              id="loadingBox"
+            >
+              <div class="loading-line">
+                <span class="loading-dot"></span>
+                <span id="loadingText">Menyiapkan permintaan data...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Jumlah OPD</div>
+          <div
+            class="stat-value"
+            id="statJumlahOpd"
+          >
+            0
+          </div>
+          <div
+            class="stat-note"
+            id="statJumlahOpdNote"
+          >
+            Total satuan kerja pada data rekap
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Jumlah Paket</div>
+          <div
+            class="stat-value"
+            id="statJumlahPaket"
+          >
+            0
+          </div>
+          <div
+            class="stat-note"
+            id="statJumlahPaketNote"
+          >
+            Total paket pada RAW SIRUP
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Total RUP Diumumkan</div>
+          <div
+            class="stat-value"
+            id="statTotalRup"
+          >
+            Rp0
+          </div>
+          <div
+            class="stat-note"
+            id="statTotalRupNote"
+          >
+            Akumulasi total RUP diumumkan
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Total Komitmen SIRUP</div>
+          <div
+            class="stat-value"
+            id="statTotalKomitmen"
+          >
+            Rp0
+          </div>
+          <div
+            class="stat-note"
+            id="statTotalKomitmenNote"
+          >
+            Akumulasi total komitmen
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Rata-rata Persentase</div>
+          <div
+            class="stat-value"
+            id="statAvgPersen"
+          >
+            0%
+          </div>
+          <div class="stat-note">
+            Rata-rata prosentase seluruh OPD
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Rata-rata Nilai ITKP</div>
+          <div
+            class="stat-value"
+            id="statAvgItkp"
+          >
+            0
+          </div>
+          <div class="stat-note">
+            Rata-rata nilai indikator ITKP
+          </div>
+        </div>
+      </section>
+
+      <section class="mini-insights">
+        <div class="insight-card">
+          <div class="insight-label">OPD Tertinggi</div>
+          <div
+            class="insight-value"
+            id="insightTopOpd"
+          >
+            -
+          </div>
+          <div
+            class="insight-note"
+            id="insightTopNote"
+          >
+            Belum ada data
+          </div>
+        </div>
+
+        <div class="insight-card">
+          <div class="insight-label">OPD Terendah</div>
+          <div
+            class="insight-value"
+            id="insightLowOpd"
+          >
+            -
+          </div>
+          <div
+            class="insight-note"
+            id="insightLowNote"
+          >
+            Belum ada data
+          </div>
+        </div>
+
+        <div class="insight-card">
+          <div class="insight-label">Metode Dominan</div>
+          <div
+            class="insight-value"
+            id="insightMetode"
+          >
+            -
+          </div>
+          <div
+            class="insight-note"
+            id="insightMetodeNote"
+          >
+            Belum ada data
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head-inline">
+          <div>
+            <h2 class="section-title">Rekap ITKP SIRUP per OPD</h2>
+            <p class="section-subtitle">
+              Sumber: sheet <strong>SCORE_ITKP_SIRUP</strong>
+            </p>
+          </div>
+
+          <div
+            class="pagination-info"
+            id="rekapPaginationInfo"
+          >
+            0-0 dari 0 data • Page 1 / 1
+          </div>
+        </div>
+
+        <div class="spacer-14"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:60px;">No</th>
+                <th style="min-width:300px;">Satuan Kerja</th>
+                <th>Penyedia</th>
+                <th>Swakelola</th>
+                <th>Total RUP</th>
+                <th>Total Komitmen</th>
+                <th>Prosentase</th>
+                <th>Nilai ITKP</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+
+            <tbody id="rekapTableBody">
+              <tr>
+                <td
+                  colspan="9"
+                  class="cell-muted center-cell"
+                >
+                  Belum ada data.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="spacer-14"></div>
+
+        <div class="pagination-bar">
+          <div
+            class="pagination-info"
+            id="rekapPaginationInfoBottom"
+            style="display:none;"
+          ></div>
+
+          <div
+            class="pagination-buttons"
+            id="rekapPagination"
+          ></div>
+        </div>
+      </section>
+
+      <section class="panel detail-panel">
+        <div class="detail-header">
+          <div>
+            <h2
+              class="detail-title"
+              id="detailTitle"
+            >
+              Detail Paket SIRUP
+            </h2>
+            <p
+              class="detail-subtitle"
+              id="detailSubtitle"
+            >
+              Pilih salah satu OPD pada tabel rekap untuk melihat detail paket.
+            </p>
+          </div>
+
+          <div class="toolbar-inline">
+            <button
+              type="button"
+              class="btn btn-soft"
+              id="btnClearSelected"
+            >
+              Tutup Detail
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="btnExportCurrentDetail"
+            >
+              Export Detail OPD Ini
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="pagination-info"
+          id="detailPaginationInfo"
+          style="margin-top:10px; margin-bottom:10px;"
+        >
+          0-0 dari 0 data • Page 1 / 1
+        </div>
+
+        <div id="detailContent">
+          <div class="empty-state">
+            Detail paket belum ditampilkan.<br>
+            Klik tombol <strong>Lihat Paket</strong> pada salah satu OPD.
+          </div>
+        </div>
+
+        <div class="spacer-14"></div>
+
+        <div
+          class="pagination-buttons"
+          id="detailPagination"
+        ></div>
+      </section>
+    </div>
+
+    <div
+      class="global-loading-overlay"
+      id="globalLoadingOverlay"
+    >
+      <div class="global-loading-card">
+        <div class="global-spinner"></div>
+        <div class="global-loading-title">Memuat Monitoring SIRUP</div>
+        <div
+          class="global-loading-text"
+          id="globalLoadingText"
+        >
+          Menyiapkan permintaan data...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./itkp-sirup.js"></script>
+</body>
+</html>

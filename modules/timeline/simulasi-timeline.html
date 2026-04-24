@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SIPPBJ - Simulasi Timeline Pengadaan</title>
+  <link rel="stylesheet" href="simulasi-timeline.css">
+</head>
+<body>
+  <div class="timeline-module">
+    <div class="app no-sidebar">
+      <main class="main">
+        <div class="content" id="printArea">
+          <div class="print-only print-heading"></div>
+
+          <section class="hero">
+            <h1>Simulasi Timeline Proses Pengadaan</h1>
+            <p>
+              Isi jenis pengadaan, pagu, ketersediaan katalog, metode, durasi pekerjaan, dan target mulai pelaksanaan.
+              Sistem akan membantu menilai kesesuaian metode, memberi saran, lalu menghitung timeline pengadaan.
+            </p>
+          </section>
+
+          <div class="grid">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Form Simulasi</h2>
+                  <p class="card-subtitle">Isi parameter, lalu klik tombol Simulasikan.</p>
+                </div>
+                <span class="badge">Menu Simulasi</span>
+              </div>
+
+              <div class="card-body">
+                <div class="form-grid">
+                  <div class="inline-grid">
+                    <div class="field">
+                      <label for="tahunAnggaran">Tahun Anggaran</label>
+                      <input
+                        type="number"
+                        id="tahunAnggaran"
+                        class="input"
+                        value="2026"
+                        min="2020"
+                        max="2100"
+                      >
+                    </div>
+
+                    <div class="field">
+                      <label for="jenisKontrak">Jenis Kontrak</label>
+                      <select id="jenisKontrak" class="select">
+                        <option value="single">Kontrak Tahunan (Single Year)</option>
+                        <option value="multi">Kontrak Jamak (Multi Year)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="inline-grid">
+                    <div class="field">
+                      <label for="jenisPengadaan">Jenis Pengadaan</label>
+                      <select id="jenisPengadaan" class="select">
+                        <option value="Barang">Barang</option>
+                        <option value="Pekerjaan Konstruksi">Pekerjaan Konstruksi</option>
+                        <option value="Jasa Konsultansi">Jasa Konsultansi</option>
+                        <option value="Jasa Lainnya">Jasa Lainnya</option>
+                      </select>
+                    </div>
+
+                    <div class="field">
+                      <label for="paguPaket">Pagu Paket (Rp)</label>
+                      <input
+                        type="text"
+                        id="paguPaket"
+                        class="input"
+                        value="150.000.000"
+                        inputmode="numeric"
+                        placeholder="Contoh: 150.000.000"
+                      >
+                    </div>
+                  </div>
+
+                  <div class="inline-grid">
+                    <div class="field">
+                      <label for="tersediaKatalog">Tersedia di Katalog?</label>
+                      <select id="tersediaKatalog" class="select">
+                        <option value="tidak">Tidak</option>
+                        <option value="ya">Ya</option>
+                      </select>
+                    </div>
+
+                    <div class="field">
+                      <label for="metodePemilihan">Metode Pemilihan</label>
+                      <select id="metodePemilihan" class="select"></select>
+                      <small id="helpMetode">
+                        Metode akan disesuaikan dengan jenis pengadaan, pagu, dan ketersediaan katalog.
+                      </small>
+
+                      <div class="method-help-actions">
+                        <button type="button" class="btn btn-light btn-small" id="btnWhyMethod">
+                          Kenapa metode ini tidak tampil?
+                        </button>
+                      </div>
+
+                      <div class="why-method-box" id="whyMethodBox" style="display:none;">
+                        <div class="why-method-title">Penjelasan Sistem</div>
+                        <div class="why-method-text" id="whyMethodText">-</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="inline-grid">
+                    <div class="field">
+                      <label for="durasiPemilihan">Durasi Pemilihan (hari)</label>
+                      <input
+                        type="number"
+                        id="durasiPemilihan"
+                        class="input"
+                        value="7"
+                        min="1"
+                      >
+                      <small id="helpDurasiPemilihan">
+                        Sistem memberi default sesuai metode, tetapi tetap bisa diubah manual.
+                      </small>
+                    </div>
+
+                    <div class="field">
+                      <label for="waktuPersiapanAwal">Waktu Persiapan Awal (hari)</label>
+                      <input
+                        type="number"
+                        id="waktuPersiapanAwal"
+                        class="input"
+                        value="7"
+                        min="0"
+                      >
+                    </div>
+                  </div>
+
+                  <div class="inline-grid">
+                    <div class="field">
+                      <label for="durasiPekerjaan">Durasi Pekerjaan (bulan)</label>
+                      <select id="durasiPekerjaan" class="select">
+                        <option value="1">1 Bulan</option>
+                        <option value="2">2 Bulan</option>
+                        <option value="3">3 Bulan</option>
+                        <option value="4">4 Bulan</option>
+                        <option value="5">5 Bulan</option>
+                        <option value="6">6 Bulan</option>
+                        <option value="7">7 Bulan</option>
+                        <option value="8">8 Bulan</option>
+                        <option value="9">9 Bulan</option>
+                        <option value="10">10 Bulan</option>
+                        <option value="11">11 Bulan</option>
+                        <option value="12" selected>12 Bulan</option>
+                      </select>
+                    </div>
+
+                    <div class="field">
+                      <label for="mulaiPelaksanaan">Target Mulai Pelaksanaan</label>
+                      <input
+                        type="date"
+                        id="mulaiPelaksanaan"
+                        class="input"
+                        value="2026-04-01"
+                      >
+                    </div>
+                  </div>
+
+                  <div class="actions no-print">
+                    <button class="btn btn-primary" id="btnSimulasikan" type="button">Simulasikan</button>
+                    <button class="btn btn-outline" id="btnExportPdf" type="button">Export PDF</button>
+                    <button class="btn btn-light" id="btnReset" type="button">Reset</button>
+                  </div>
+
+                  <div class="info-note" id="infoRule">
+                    Sistem akan membantu menyarankan metode yang lebih sesuai agar user tidak salah pilih metode.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="right-panel">
+              <div class="card">
+                <div class="card-header">
+                  <div>
+                    <h2 class="card-title">Ringkasan Hasil Simulasi</h2>
+                    <p class="card-subtitle">Hasil penilaian metode dan perhitungan jadwal otomatis.</p>
+                  </div>
+                  <span class="badge" id="badgeMetode">-</span>
+                </div>
+
+                <div class="card-body">
+                  <div class="summary-grid">
+                    <div class="summary-box">
+                      <div class="label">Pagu Paket</div>
+                      <div class="value" id="outPaguPaket">-</div>
+                      <div class="sub">Nilai pagu yang digunakan dalam simulasi.</div>
+                    </div>
+
+                    <div class="summary-box">
+                      <div class="label">Mulai Persiapan</div>
+                      <div class="value" id="outMulaiPersiapan">-</div>
+                      <div class="sub">Tahap persiapan awal sebelum pemilihan dimulai.</div>
+                    </div>
+
+                    <div class="summary-box">
+                      <div class="label">Mulai Pemilihan</div>
+                      <div class="value" id="outMulaiPemilihan">-</div>
+                      <div class="sub">Awal proses pemilihan penyedia.</div>
+                    </div>
+
+                    <div class="summary-box">
+                      <div class="label">Selesai Pemilihan</div>
+                      <div class="value" id="outSelesaiPemilihan">-</div>
+                      <div class="sub">Perkiraan akhir proses pemilihan.</div>
+                    </div>
+
+                    <div class="summary-box">
+                      <div class="label">Mulai Kontrak</div>
+                      <div class="value" id="outMulaiKontrak">-</div>
+                      <div class="sub">Umumnya sama dengan mulai pelaksanaan.</div>
+                    </div>
+
+                    <div class="summary-box">
+                      <div class="label">Selesai Pelaksanaan</div>
+                      <div class="value" id="outSelesaiPelaksanaan">-</div>
+                      <div class="sub">Perkiraan akhir masa pekerjaan/kontrak.</div>
+                    </div>
+
+                    <div class="summary-box">
+                      <div class="label">Durasi Total</div>
+                      <div class="value" id="outDurasiTotal">-</div>
+                      <div class="sub">Akumulasi persiapan, pemilihan, dan pelaksanaan.</div>
+                    </div>
+                  </div>
+
+                  <div class="advice-grid">
+                    <div class="mini-card">
+                      <div class="mini-title">Status Metode</div>
+                      <div class="mini-value" id="outStatusMetode">-</div>
+                    </div>
+                    <div class="mini-card">
+                      <div class="mini-title">Saran Metode</div>
+                      <div class="mini-text" id="outSaranMetode">-</div>
+                    </div>
+                  </div>
+
+                  <div class="advice-grid">
+                    <div class="mini-card">
+                      <div class="mini-title">Status Jadwal</div>
+                      <div class="mini-value" id="outStatusJadwal">-</div>
+                    </div>
+                    <div class="mini-card">
+                      <div class="mini-title">Saran Sistem</div>
+                      <div class="mini-text" id="outSaranSistem">-</div>
+                    </div>
+                  </div>
+
+                  <div class="status-wrap">
+                    <div id="statusBox" class="status-box status-warning">
+                      Silakan isi parameter simulasi, lalu klik tombol <strong>Simulasikan</strong>.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <div>
+                    <h2 class="card-title">Visual Timeline Sederhana</h2>
+                    <p class="card-subtitle">
+                      Timeline mengikuti susunan tahun anggaran sebelumnya dan tahun anggaran berkenaan.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <div class="timeline-wrapper">
+                    <div class="timeline-super-header" id="timelineSuperHeader"></div>
+                    <div class="timeline-header" id="timelineHeader"></div>
+
+                    <div class="timeline-row">
+                      <div class="timeline-label">Persiapan</div>
+                      <div class="timeline-track timeline-track-16" id="rowPersiapan"></div>
+                    </div>
+
+                    <div class="timeline-row">
+                      <div class="timeline-label">Pemilihan</div>
+                      <div class="timeline-track timeline-track-16" id="rowPemilihan"></div>
+                    </div>
+
+                    <div class="timeline-row">
+                      <div class="timeline-label">Pelaksanaan</div>
+                      <div class="timeline-track timeline-track-16" id="rowPelaksanaan"></div>
+                    </div>
+
+                    <div class="timeline-row">
+                      <div class="timeline-label">Akhir / Buffer</div>
+                      <div class="timeline-track timeline-track-16" id="rowAkhir"></div>
+                    </div>
+                  </div>
+
+                  <div class="legend">
+                    <div class="legend-item">
+                      <span class="legend-dot dot-persiapan"></span>
+                      <span>Persiapan</span>
+                    </div>
+
+                    <div class="legend-item">
+                      <span class="legend-dot dot-pemilihan"></span>
+                      <span>Pemilihan</span>
+                    </div>
+
+                    <div class="legend-item">
+                      <span class="legend-dot dot-pelaksanaan"></span>
+                      <span>Pelaksanaan</span>
+                    </div>
+
+                    <div class="legend-item">
+                      <span class="legend-dot dot-akhir"></span>
+                      <span>Buffer / akhir tahun</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <div>
+                    <h2 class="card-title">Detail Perhitungan</h2>
+                    <p class="card-subtitle">Rincian input, metode, dan hasil validasi.</p>
+                  </div>
+                </div>
+
+                <div class="card-body">
+                  <table class="detail-table">
+                    <tbody>
+                      <tr>
+                        <th>Tahun Anggaran</th>
+                        <td id="detailTahun">-</td>
+                      </tr>
+                      <tr>
+                        <th>Jenis Pengadaan</th>
+                        <td id="detailJenisPengadaan">-</td>
+                      </tr>
+                      <tr>
+                        <th>Pagu Paket</th>
+                        <td id="detailPaguPaket">-</td>
+                      </tr>
+                      <tr>
+                        <th>Tersedia di Katalog</th>
+                        <td id="detailKatalog">-</td>
+                      </tr>
+                      <tr>
+                        <th>Metode Pemilihan</th>
+                        <td id="detailMetode">-</td>
+                      </tr>
+                      <tr>
+                        <th>Jenis Kontrak</th>
+                        <td id="detailJenisKontrak">-</td>
+                      </tr>
+                      <tr>
+                        <th>Durasi Pemilihan</th>
+                        <td id="detailDurasiPemilihan">-</td>
+                      </tr>
+                      <tr>
+                        <th>Waktu Persiapan Awal</th>
+                        <td id="detailWaktuPersiapanAwal">-</td>
+                      </tr>
+                      <tr>
+                        <th>Durasi Pekerjaan</th>
+                        <td id="detailDurasiPekerjaan">-</td>
+                      </tr>
+                      <tr>
+                        <th>Mulai Pelaksanaan</th>
+                        <td id="detailMulaiPelaksanaan">-</td>
+                      </tr>
+                      <tr>
+                        <th>Kesimpulan</th>
+                        <td id="detailKesimpulan">-</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div class="info-note" id="catatanTambahan">
+                    Belum ada hasil simulasi.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="simulasi-timeline.js"></script>
+</body>
+</html>
