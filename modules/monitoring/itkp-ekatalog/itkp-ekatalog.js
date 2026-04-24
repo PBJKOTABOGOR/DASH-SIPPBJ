@@ -1,898 +1,725 @@
-(function(){
-  const MODULE_KEY = '__ITKP_EKATALOG_MODULE__';
+const EKATALOG_SHEET_CONFIG = {
+  spreadsheetId: '1tRYoFQ2obJLoQfIBmZQ_qIw72ZCMV9fKIpBA3DlsIxE',
+  rawGid: '230159837',
+  scoreGid: '208380252'
+};
 
-  if (window[MODULE_KEY] && typeof window[MODULE_KEY].cleanup === 'function') {
-    try {
-      window[MODULE_KEY].cleanup();
-    } catch (e) {
-      console.warn('Cleanup modul lama eKatalog gagal:', e);
-    }
-  }
+const EKATALOG_MIN_LOADING_MS = 700;
+const EKATALOG_PAGE_SIZE = 50;
+const EKATALOG_DETAIL_PAGE_SIZE = 10;
 
-  function ensurePapaLoaded() {
-    return new Promise((resolve, reject) => {
-      if (window.Papa) {
-        resolve();
-        return;
-      }
+window.__moduleInit = function ({ container }) {
+  const root = container.querySelector('.itkp-ekatalog-page');
+  if (!root) return null;
 
-      const existing = document.querySelector('script[data-papa-parse="true"]');
-      if (existing) {
-        existing.addEventListener('load', () => resolve(), { once:true });
-        existing.addEventListener('error', () => reject(new Error('Gagal memuat PapaParse.')), { once:true });
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
-      script.setAttribute('data-papa-parse', 'true');
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Gagal memuat PapaParse.'));
-      document.body.appendChild(script);
-    });
-  }
-
-  const CONFIG = {
-    SHEET_ID: '1tRYoFQ2obJLoQfIBmZQ_qIw72ZCMV9fKIpBA3DlsIxE',
-    SHEETS: {
-      raw: 'RAW_ECAT',
-      score: 'SCORE_ITKP_ECAT'
-    },
-    REKAP_PAGE_SIZE: 10,
-    DETAIL_PAGE_SIZE: 50
-  };
-
-  const APP_STATE = {
+  const state = {
     rawRows: [],
     scoreRows: [],
-    filteredScoreRows: [],
+    mergedRows: [],
+    filteredRekap: [],
     selectedOpd: '',
     selectedDetailRows: [],
     rekapPage: 1,
     detailPage: 1,
-    initialized: false
+    modalItems: []
   };
 
   const EL = {
-    errorBox: document.getElementById('errorBox'),
-    loadingBox: document.getElementById('loadingBox'),
-    loadingText: document.getElementById('loadingText'),
-    globalLoadingOverlay: document.getElementById('globalLoadingOverlay'),
-    globalLoadingText: document.getElementById('globalLoadingText'),
-
-    filterOpd: document.getElementById('filterOpd'),
-    filterStatus: document.getElementById('filterStatus'),
-    filterBulan: document.getElementById('filterBulan'),
-    filterTahun: document.getElementById('filterTahun'),
-    searchPaket: document.getElementById('searchPaket'),
-
-    btnResetFilter: document.getElementById('btnResetFilter'),
-    btnRefresh: document.getElementById('btnRefresh'),
-    btnExportRekap: document.getElementById('btnExportRekap'),
-    btnExportDetail: document.getElementById('btnExportDetail'),
-    btnExportCurrentDetail: document.getElementById('btnExportCurrentDetail'),
-    btnClearSelected: document.getElementById('btnClearSelected'),
-
-    statJumlahOpd: document.getElementById('statJumlahOpd'),
-    statJumlahPaket: document.getElementById('statJumlahPaket'),
-    statTotalPagu: document.getElementById('statTotalPagu'),
-    statPaketAktif: document.getElementById('statPaketAktif'),
-    statPaketSelesai: document.getElementById('statPaketSelesai'),
-    statAvgItkp: document.getElementById('statAvgItkp'),
-
-    insightTopOpd: document.getElementById('insightTopOpd'),
-    insightTopNote: document.getElementById('insightTopNote'),
-    insightLowOpd: document.getElementById('insightLowOpd'),
-    insightLowNote: document.getElementById('insightLowNote'),
-    insightStatus: document.getElementById('insightStatus'),
-    insightStatusNote: document.getElementById('insightStatusNote'),
-
-    rekapTableBody: document.getElementById('rekapTableBody'),
-    rekapCountInfo: document.getElementById('rekapCountInfo'),
-    rekapPaginationInfo: document.getElementById('rekapPaginationInfo'),
-    rekapPagination: document.getElementById('rekapPagination'),
-
-    detailTitle: document.getElementById('detailTitle'),
-    detailSubtitle: document.getElementById('detailSubtitle'),
-    detailContent: document.getElementById('detailContent')
+    root,
+    loadingBox: root.querySelector('#loadingBox'),
+    loadingText: root.querySelector('#loadingText'),
+    errorBox: root.querySelector('#errorBox'),
+    globalLoadingOverlay: root.querySelector('#globalLoadingOverlay'),
+    globalLoadingText: root.querySelector('#globalLoadingText'),
+    filterOpd: root.querySelector('#filterOpd'),
+    filterStatus: root.querySelector('#filterStatus'),
+    searchKeyword: root.querySelector('#searchKeyword'),
+    btnResetFilter: root.querySelector('#btnResetFilter'),
+    btnRefresh: root.querySelector('#btnRefresh'),
+    btnExportDetail: root.querySelector('#btnExportDetail'),
+    btnExportCurrentDetail: root.querySelector('#btnExportCurrentDetail'),
+    statJumlahOpd: root.querySelector('#statJumlahOpd'),
+    statJumlahPaket: root.querySelector('#statJumlahPaket'),
+    statTotalPagu: root.querySelector('#statTotalPagu'),
+    statPaketAktif: root.querySelector('#statPaketAktif'),
+    statPaketSelesai: root.querySelector('#statPaketSelesai'),
+    statAvgItkp: root.querySelector('#statAvgItkp'),
+    maxCount: root.querySelector('#maxCount'),
+    zeroCount: root.querySelector('#zeroCount'),
+    dominantStatus: root.querySelector('#dominantStatus'),
+    dominantStatusNote: root.querySelector('#dominantStatusNote'),
+    btnShowMaxList: root.querySelector('#btnShowMaxList'),
+    btnShowZeroList: root.querySelector('#btnShowZeroList'),
+    rekapTableBody: root.querySelector('#rekapTableBody'),
+    rekapPaginationInfo: root.querySelector('#rekapPaginationInfo'),
+    rekapPagination: root.querySelector('#rekapPagination'),
+    detailTitle: root.querySelector('#detailTitle'),
+    detailSubtitle: root.querySelector('#detailSubtitle'),
+    detailTableBody: root.querySelector('#detailTableBody'),
+    detailPaginationInfo: root.querySelector('#detailPaginationInfo'),
+    detailPagination: root.querySelector('#detailPagination'),
+    opdModal: root.querySelector('#opdModal'),
+    modalTitle: root.querySelector('#modalTitle'),
+    modalSubtitle: root.querySelector('#modalSubtitle'),
+    modalCount: root.querySelector('#modalCount'),
+    modalList: root.querySelector('#modalList'),
+    btnCloseModal: root.querySelector('#btnCloseModal')
   };
 
   const listeners = [];
+  const on = (target, event, handler) => {
+    if (!target) return;
+    target.addEventListener(event, handler);
+    listeners.push(() => target.removeEventListener(event, handler));
+  };
 
-  function addListener(el, event, handler) {
-    if (!el) return;
-    el.addEventListener(event, handler);
-    listeners.push(() => el.removeEventListener(event, handler));
-  }
+  on(EL.filterOpd, 'change', () => {
+    state.selectedOpd = EL.filterOpd.value;
+    state.rekapPage = 1;
+    state.detailPage = 1;
+    applyFilters();
+  });
 
-  function cleanup() {
+  on(EL.filterStatus, 'change', () => {
+    state.rekapPage = 1;
+    state.detailPage = 1;
+    applyFilters();
+  });
+
+  on(EL.searchKeyword, 'input', () => {
+    state.rekapPage = 1;
+    state.detailPage = 1;
+    applyFilters();
+  });
+
+  on(EL.btnResetFilter, 'click', () => {
+    EL.filterOpd.value = '';
+    EL.filterStatus.value = '';
+    EL.searchKeyword.value = '';
+    state.selectedOpd = '';
+    state.rekapPage = 1;
+    state.detailPage = 1;
+    applyFilters();
+  });
+
+  on(EL.btnRefresh, 'click', () => initMonitoring(true));
+  on(EL.btnExportDetail, 'click', () => exportRows(getFilteredRawRows(), 'detail-ekatalog-semua-filter.csv'));
+  on(EL.btnExportCurrentDetail, 'click', () => exportRows(state.selectedDetailRows, `detail-ekatalog-${slugify(state.selectedOpd || 'semua-opd')}.csv`));
+
+  on(EL.btnShowMaxList, 'click', () => {
+    const items = state.mergedRows.filter(row => row.nilai_itkp >= 4).map(row => row.satuan_kerja);
+    openModal('Daftar OPD Capai Target Max', 'OPD yang sudah mencapai nilai ITKP maksimal eKatalog yaitu 4 poin.', items);
+  });
+
+  on(EL.btnShowZeroList, 'click', () => {
+    const items = state.mergedRows.filter(row => row.nilai_itkp <= 0).map(row => row.satuan_kerja);
+    openModal('Daftar OPD Skor ITKP 0', 'OPD yang indikator pemanfaatan eKatalog-nya masih 0.', items);
+  });
+
+  on(EL.btnCloseModal, 'click', closeModal);
+  on(EL.opdModal, 'click', (event) => {
+    if (event.target === EL.opdModal) closeModal();
+  });
+  on(document, 'keydown', (event) => {
+    if (event.key === 'Escape') closeModal();
+  });
+
+  initMonitoring(true);
+
+  return () => {
     listeners.forEach(off => off());
-    listeners.length = 0;
+    closeModal();
+  };
+
+  async function initMonitoring(useOverlay = false) {
+    const startedAt = Date.now();
+
+    try {
+      showError('');
+      setLoading('Menghubungkan ke Google Sheet...', useOverlay);
+      const [rawResult, scoreResult] = await Promise.allSettled([
+        fetchCsv(buildCsvUrl(EKATALOG_SHEET_CONFIG.rawGid)),
+        fetchCsv(buildCsvUrl(EKATALOG_SHEET_CONFIG.scoreGid))
+      ]);
+
+      let rawRows = [];
+      let scoreRows = [];
+      const errors = [];
+
+      if (rawResult.status === 'fulfilled') {
+        rawRows = csvToObjects(rawResult.value);
+      } else {
+        errors.push('RAW_ECAT gagal dimuat');
+        console.error(rawResult.reason);
+      }
+
+      if (scoreResult.status === 'fulfilled') {
+        scoreRows = csvToObjects(scoreResult.value);
+      } else {
+        errors.push('SCORE_ITKP_ECAT gagal dimuat');
+        console.error(scoreResult.reason);
+      }
+
+      state.rawRows = normalizeRawRows(rawRows);
+      state.scoreRows = normalizeScoreRows(scoreRows);
+      state.mergedRows = mergeRows(state.rawRows, state.scoreRows);
+      state.rekapPage = 1;
+      state.detailPage = 1;
+
+      buildFilterOptions();
+      applyFilters();
+
+      if (errors.length) {
+        showError(errors.join(' + ') + '. Sebagian data berhasil dimuat, sebagian gagal.');
+      }
+    } catch (error) {
+      console.error(error);
+      showError(`Data eKatalog gagal dimuat. Detail: ${error.message}. Pastikan sheet bisa diakses publik.`);
+    } finally {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < EKATALOG_MIN_LOADING_MS) await wait(EKATALOG_MIN_LOADING_MS - elapsed);
+      clearLoading();
+    }
   }
 
-  function showError(message) {
-    if (!EL.errorBox) return;
-    EL.errorBox.textContent = message || '';
-    EL.errorBox.classList.toggle('show', Boolean(message));
-  }
+  function applyFilters() {
+    const opdValue = (EL.filterOpd.value || '').trim().toLowerCase();
+    const statusValue = normalizeStatus(EL.filterStatus.value || '');
+    const keyword = (EL.searchKeyword.value || '').trim().toLowerCase();
 
-  function showLoading(message) {
-    if (EL.loadingBox) EL.loadingBox.classList.add('show');
-    if (EL.loadingText) EL.loadingText.textContent = message || 'Memuat data...';
-  }
-
-  function hideLoading() {
-    if (EL.loadingBox) EL.loadingBox.classList.remove('show');
-  }
-
-  function showGlobalLoading(message) {
-    if (EL.globalLoadingOverlay) EL.globalLoadingOverlay.classList.add('show');
-    if (EL.globalLoadingText) EL.globalLoadingText.textContent = message || 'Memuat data...';
-  }
-
-  function hideGlobalLoading() {
-    if (EL.globalLoadingOverlay) EL.globalLoadingOverlay.classList.remove('show');
-  }
-
-  function csvUrlBySheetName(sheetId, sheetName) {
-    return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-  }
-
-  function fetchSheet(sheetName) {
-    return new Promise((resolve, reject) => {
-      Papa.parse(csvUrlBySheetName(CONFIG.SHEET_ID, sheetName), {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete(results) {
-          resolve(results.data || []);
-        },
-        error(err) {
-          reject(err);
-        }
-      });
+    state.filteredRekap = state.mergedRows.filter(row => {
+      if (opdValue && row.satuan_kerja.toLowerCase() !== opdValue) return false;
+      if (keyword) {
+        const inOpd = row.satuan_kerja.toLowerCase().includes(keyword);
+        const rawMatch = state.rawRows.some(item => item.satuan_kerja === row.satuan_kerja && (
+          item.nama_paket.toLowerCase().includes(keyword) || item.nomor_paket.toLowerCase().includes(keyword)
+        ));
+        if (!inOpd && !rawMatch) return false;
+      }
+      if (statusValue) {
+        const hasStatus = state.rawRows.some(item => item.satuan_kerja === row.satuan_kerja && item.status_normalized === statusValue);
+        if (!hasStatus) return false;
+      }
+      return true;
     });
-  }
 
-  function normalizeHeader(text) {
-    return String(text || '')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '_')
-      .replace(/[^\w]/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_+|_+$/g, '');
-  }
-
-  function normalizeRows(rawRows) {
-    return (rawRows || []).map(row => {
-      const out = {};
-      Object.keys(row || {}).forEach(key => {
-        out[normalizeHeader(key)] = row[key];
-      });
-      return out;
-    });
-  }
-
-  function normalizeOpdName(value) {
-    return String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, ' ')
-      .replace(/[^\w\s]/g, '');
-  }
-
-  function parseMoney(value) {
-    if (value == null || value === '') return 0;
-    if (typeof value === 'number') return value;
-
-    let str = String(value).trim();
-    if (!str || str === '-') return 0;
-
-    str = str
-      .replace(/Rp/gi, '')
-      .replace(/\s/g, '')
-      .replace(/\./g, '')
-      .replace(/,/g, '.')
-      .replace(/[^\d.-]/g, '');
-
-    const num = parseFloat(str);
-    return Number.isNaN(num) ? 0 : num;
-  }
-
-  function parseInteger(value) {
-    return Math.round(parseMoney(value));
-  }
-
-  function formatMoney(value) {
-    return 'Rp' + Number(value || 0).toLocaleString('id-ID', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
-  }
-
-  function formatNumber(value) {
-    return Number(value || 0).toLocaleString('id-ID', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
-  }
-
-  function formatPercent(value) {
-    return Number(value || 0).toLocaleString('id-ID', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }) + '%';
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  function monthNameFromDate(value) {
-    if (!value) return '';
-    const str = String(value).trim();
-
-    const monthMap = {
-      january: 'Januari',
-      february: 'Februari',
-      march: 'Maret',
-      april: 'April',
-      may: 'Mei',
-      june: 'Juni',
-      july: 'Juli',
-      august: 'Agustus',
-      september: 'September',
-      october: 'Oktober',
-      november: 'November',
-      december: 'Desember'
-    };
-
-    const matchMonthName = str.match(/(January|February|March|April|May|June|July|August|September|October|November|December)/i);
-    if (matchMonthName) {
-      return monthMap[matchMonthName[1].toLowerCase()] || matchMonthName[1];
+    if (state.selectedOpd && !state.filteredRekap.some(row => row.satuan_kerja === state.selectedOpd)) {
+      state.selectedOpd = '';
     }
 
-    const matchNumeric = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
-    if (matchNumeric) {
-      const monthIndex = Number(matchNumeric[2]);
-      const names = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-      return names[monthIndex] || '';
+    if (!state.selectedOpd && state.filteredRekap.length === 1) {
+      state.selectedOpd = state.filteredRekap[0].satuan_kerja;
     }
 
-    return '';
+    state.selectedDetailRows = getFilteredRawRows();
+
+    renderSummaryStats();
+    renderInsights();
+    renderRekapTable();
+    renderDetailTable();
   }
 
-  function yearFromDate(value) {
-    if (!value) return '';
-    const str = String(value).trim();
-    const yearMatch = str.match(/(20\d{2}|19\d{2})/);
-    return yearMatch ? yearMatch[1] : '';
+  function buildFilterOptions() {
+    fillSelect(EL.filterOpd, state.mergedRows.map(row => row.satuan_kerja), 'Semua OPD');
+    fillSelect(EL.filterStatus, getUniqueStatuses(state.rawRows), 'Semua Status');
   }
 
-  function normalizeRawRows(rows) {
-    return normalizeRows(rows).map((row, index) => ({
-      row_no: index + 1,
-      satuan_kerja: String(
-        row.satuan_kerja ||
-        row.nama_satker ||
-        row.satker ||
-        ''
-      ).trim(),
-      satuan_kerja_norm: normalizeOpdName(
-        row.satuan_kerja ||
-        row.nama_satker ||
-        row.satker ||
-        ''
-      ),
-      nomor_paket: String(
-        row.nomor_paket ||
-        row.kode_paket ||
-        row.no_paket ||
-        ''
-      ).trim(),
-      nama_paket: String(
-        row.nama_paket ||
-        row.paket ||
-        ''
-      ).trim(),
-      pagu: parseMoney(
-        row.pagu ||
-        row.nilai_pagu ||
-        0
-      ),
-      status_paket: String(
-        row.status_paket ||
-        row.status ||
-        ''
-      ).trim(),
-      tanggal_buat_paket: String(
-        row.tanggal_buat_paket ||
-        row.tanggal_buat ||
-        row.tanggal ||
-        ''
-      ).trim(),
-      bulan_buat: monthNameFromDate(
-        row.tanggal_buat_paket ||
-        row.tanggal_buat ||
-        row.tanggal ||
-        ''
-      ),
-      tahun_buat: yearFromDate(
-        row.tanggal_buat_paket ||
-        row.tanggal_buat ||
-        row.tanggal ||
-        ''
-      )
-    }));
+  function renderSummaryStats() {
+    const visibleRaw = getFilteredRawRows();
+    const paketAktif = visibleRaw.filter(row => isActiveStatus(row.status_normalized)).length;
+    const paketSelesai = visibleRaw.filter(row => isFinishedStatus(row.status_normalized)).length;
+    const avgItkp = average(state.filteredRekap.map(row => row.nilai_itkp));
+
+    EL.statJumlahOpd.textContent = formatInt(state.filteredRekap.length);
+    EL.statJumlahPaket.textContent = formatInt(visibleRaw.length);
+    EL.statTotalPagu.textContent = formatCurrency(sum(visibleRaw.map(row => row.pagu)));
+    EL.statPaketAktif.textContent = formatInt(paketAktif);
+    EL.statPaketSelesai.textContent = formatInt(paketSelesai);
+    EL.statAvgItkp.textContent = formatDecimal(avgItkp, 2);
   }
 
-  function normalizeScoreRows(rows) {
-    return normalizeRows(rows).map((row, index) => ({
-      row_no: index + 1,
-      satuan_kerja: String(
-        row.satuan_kerja ||
-        row.nama_satker ||
-        row.satker ||
-        ''
-      ).trim(),
-      satuan_kerja_norm: normalizeOpdName(
-        row.satuan_kerja ||
-        row.nama_satker ||
-        row.satker ||
-        ''
-      ),
-      paket_aktif: parseInteger(row.paket_aktif || 0),
-      paket_selesai: parseInteger(row.paket_selesai || 0),
-      prosentase: parseMoney(row.prosentase || 0),
-      nilai_itkp: parseMoney(
-        row.nilai_itkp ||
-        row.nilai ||
-        0
-      )
-    }));
+  function renderInsights() {
+    const maxItems = state.filteredRekap.filter(row => row.nilai_itkp >= 4).map(row => row.satuan_kerja);
+    const zeroItems = state.filteredRekap.filter(row => row.nilai_itkp <= 0).map(row => row.satuan_kerja);
+    EL.maxCount.textContent = formatInt(maxItems.length);
+    EL.zeroCount.textContent = formatInt(zeroItems.length);
+
+    const dominant = getDominantStatus(getFilteredRawRows());
+    EL.dominantStatus.textContent = dominant ? dominant.status : '-';
+    EL.dominantStatusNote.textContent = dominant ? `${formatInt(dominant.count)} paket` : 'Belum ada data';
+  }
+
+  function renderRekapTable() {
+    const rows = state.filteredRekap.slice();
+    const totalItems = rows.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / EKATALOG_PAGE_SIZE));
+    state.rekapPage = Math.min(state.rekapPage, totalPages);
+    const start = (state.rekapPage - 1) * EKATALOG_PAGE_SIZE;
+    const end = start + EKATALOG_PAGE_SIZE;
+    const pageRows = rows.slice(start, end);
+
+    if (!pageRows.length) {
+      EL.rekapTableBody.innerHTML = `<tr><td class="center-cell" colspan="7">Tidak ada data rekap yang sesuai filter.</td></tr>`;
+    } else {
+      EL.rekapTableBody.innerHTML = pageRows.map((row, index) => `
+        <tr>
+          <td>${start + index + 1}</td>
+          <td class="cell-strong">${escapeHtml(row.satuan_kerja)}</td>
+          <td>${formatInt(row.paket_aktif)}</td>
+          <td>${formatInt(row.paket_selesai)}</td>
+          <td>${renderPercentBadge(row.prosentase)}</td>
+          <td>${renderItkpBadge(row.nilai_itkp)}</td>
+          <td><button class="action-btn" type="button" data-opd="${escapeAttr(row.satuan_kerja)}">Lihat Paket</button></td>
+        </tr>
+      `).join('');
+
+      EL.rekapTableBody.querySelectorAll('[data-opd]').forEach(btn => {
+        on(btn, 'click', () => {
+          state.selectedOpd = btn.dataset.opd;
+          if (EL.filterOpd) EL.filterOpd.value = btn.dataset.opd;
+          state.detailPage = 1;
+          applyFilters();
+          root.querySelector('.detail-content-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+    }
+
+    const from = totalItems ? start + 1 : 0;
+    const to = totalItems ? Math.min(end, totalItems) : 0;
+    EL.rekapPaginationInfo.textContent = `${from}-${to} dari ${totalItems} data • Page ${state.rekapPage} / ${totalPages}`;
+    renderPagination(EL.rekapPagination, state.rekapPage, totalPages, (page) => {
+      state.rekapPage = page;
+      renderRekapTable();
+    });
+  }
+
+  function renderDetailTable() {
+    const rows = state.selectedDetailRows.slice();
+    const totalItems = rows.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / EKATALOG_DETAIL_PAGE_SIZE));
+    state.detailPage = Math.min(state.detailPage, totalPages);
+    const start = (state.detailPage - 1) * EKATALOG_DETAIL_PAGE_SIZE;
+    const end = start + EKATALOG_DETAIL_PAGE_SIZE;
+    const pageRows = rows.slice(start, end);
+
+    EL.detailTitle.textContent = state.selectedOpd ? `Detail Paket eKatalog - ${state.selectedOpd}` : 'Detail Paket eKatalog';
+    EL.detailSubtitle.textContent = state.selectedOpd
+      ? `Menampilkan ${formatInt(totalItems)} paket pada OPD terpilih.`
+      : 'Pilih OPD pada tabel rekap untuk melihat daftar paket.';
+
+    if (!pageRows.length) {
+      EL.detailTableBody.innerHTML = `<tr><td class="center-cell" colspan="7">Belum ada detail paket untuk ditampilkan.</td></tr>`;
+    } else {
+      EL.detailTableBody.innerHTML = pageRows.map((row, index) => `
+        <tr>
+          <td>${start + index + 1}</td>
+          <td class="cell-strong">${escapeHtml(row.satuan_kerja)}</td>
+          <td>${escapeHtml(row.nomor_paket)}</td>
+          <td>${escapeHtml(row.nama_paket)}</td>
+          <td>${formatCurrency(row.pagu)}</td>
+          <td>${renderStatusBadge(row.status_normalized)}</td>
+          <td>${escapeHtml(row.tanggal_buat_paket || '-')}</td>
+        </tr>
+      `).join('');
+    }
+
+    const from = totalItems ? start + 1 : 0;
+    const to = totalItems ? Math.min(end, totalItems) : 0;
+    EL.detailPaginationInfo.textContent = totalItems
+      ? `${from}-${to} dari ${totalItems} paket • Page ${state.detailPage} / ${totalPages}`
+      : 'Belum ada data detail.';
+
+    renderPagination(EL.detailPagination, state.detailPage, totalPages, (page) => {
+      state.detailPage = page;
+      renderDetailTable();
+    });
   }
 
   function getFilteredRawRows() {
-    const opd = EL.filterOpd?.value || '';
-    const status = EL.filterStatus?.value || '';
-    const bulan = EL.filterBulan?.value || '';
-    const tahun = EL.filterTahun?.value || '';
-    const keyword = (EL.searchPaket?.value || '').trim().toLowerCase();
+    const opdValue = (EL.filterOpd.value || '').trim().toLowerCase();
+    const statusValue = normalizeStatus(EL.filterStatus.value || '');
+    const keyword = (EL.searchKeyword.value || '').trim().toLowerCase();
 
-    return APP_STATE.rawRows.filter(row => {
-      if (opd && row.satuan_kerja_norm !== opd) return false;
-      if (status && row.status_paket !== status) return false;
-      if (bulan && row.bulan_buat !== bulan) return false;
-      if (tahun && row.tahun_buat !== tahun) return false;
-
+    return state.rawRows.filter(row => {
+      if (state.selectedOpd && row.satuan_kerja !== state.selectedOpd) return false;
+      if (!state.selectedOpd && opdValue && row.satuan_kerja.toLowerCase() !== opdValue) return false;
+      if (statusValue && row.status_normalized !== statusValue) return false;
       if (keyword) {
-        const haystack = [
-          row.satuan_kerja,
-          row.nomor_paket,
-          row.nama_paket,
-          row.status_paket,
-          row.tanggal_buat_paket
-        ].join(' ').toLowerCase();
-
-        if (!haystack.includes(keyword)) return false;
+        const hay = `${row.satuan_kerja} ${row.nama_paket} ${row.nomor_paket}`.toLowerCase();
+        if (!hay.includes(keyword)) return false;
       }
-
       return true;
     });
   }
 
-  function getFilteredScoreRows() {
-    const opd = EL.filterOpd?.value || '';
-    if (!opd) return [...APP_STATE.scoreRows];
-    return APP_STATE.scoreRows.filter(row => row.satuan_kerja_norm === opd);
+  function openModal(title, subtitle, items) {
+    EL.modalTitle.textContent = title;
+    EL.modalSubtitle.textContent = subtitle;
+    EL.modalCount.textContent = `${formatInt(items.length)} OPD`;
+    EL.modalList.innerHTML = items.length
+      ? items.map(item => `<div class="modal-item">${escapeHtml(item)}</div>`).join('')
+      : `<div class="modal-item">Belum ada OPD.</div>`;
+    EL.opdModal.hidden = false;
+    document.body.style.overflow = 'hidden';
   }
 
-  function fillSelect(selectEl, items, placeholder) {
-    if (!selectEl) return;
-    const oldVal = selectEl.value;
-    selectEl.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>`;
+  function closeModal() {
+    EL.opdModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+};
 
-    items.forEach(item => {
-      const opt = document.createElement('option');
-      opt.value = item.value;
-      opt.textContent = item.label;
-      selectEl.appendChild(opt);
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function buildCsvUrl(gid) {
+  return `https://docs.google.com/spreadsheets/d/${EKATALOG_SHEET_CONFIG.spreadsheetId}/export?format=csv&gid=${gid}`;
+}
+
+async function fetchCsv(url) {
+  const response = await fetch(url, { method: 'GET', cache: 'no-store' });
+  if (!response.ok) throw new Error(`HTTP ${response.status} saat mengambil ${url}`);
+  const text = await response.text();
+  if (!text || !text.trim()) throw new Error(`CSV kosong dari ${url}`);
+  if (/<!doctype html>|<html/i.test(text)) throw new Error(`Response bukan CSV. Kemungkinan sheet masih belum public: ${url}`);
+  return text;
+}
+
+function csvToObjects(csvText) {
+  const rows = parseCsv(csvText);
+  if (!rows.length) return [];
+  const headers = rows[0].map(h => normalizeHeader(h));
+  return rows.slice(1)
+    .filter(row => row.some(cell => String(cell || '').trim() !== ''))
+    .map(row => {
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = row[index] != null ? String(row[index]).trim() : '';
+      });
+      return obj;
     });
+}
 
-    const stillExists = [...selectEl.options].some(opt => opt.value === oldVal);
-    if (stillExists) selectEl.value = oldVal;
-  }
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
 
-  function buildFilterOptions() {
-    const opdItems = [...new Map(
-      APP_STATE.scoreRows
-        .filter(r => r.satuan_kerja_norm)
-        .map(r => [r.satuan_kerja_norm, { value: r.satuan_kerja_norm, label: r.satuan_kerja }])
-    ).values()].sort((a,b) => a.label.localeCompare(b.label, 'id'));
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
 
-    const statusItems = [...new Set(APP_STATE.rawRows.map(r => r.status_paket).filter(Boolean))]
-      .sort((a,b) => a.localeCompare(b, 'id'))
-      .map(v => ({ value: v, label: v }));
-
-    const bulanOrder = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-
-    const bulanItems = [...new Set(APP_STATE.rawRows.map(r => r.bulan_buat).filter(Boolean))]
-      .sort((a,b) => bulanOrder.indexOf(a) - bulanOrder.indexOf(b))
-      .map(v => ({ value: v, label: v }));
-
-    const tahunItems = [...new Set(APP_STATE.rawRows.map(r => r.tahun_buat).filter(Boolean))]
-      .sort((a,b) => Number(a) - Number(b))
-      .map(v => ({ value: v, label: v }));
-
-    fillSelect(EL.filterOpd, opdItems, 'Semua Satuan Kerja');
-    fillSelect(EL.filterStatus, statusItems, 'Semua Status');
-    fillSelect(EL.filterBulan, bulanItems, 'Semua Bulan');
-    fillSelect(EL.filterTahun, tahunItems, 'Semua Tahun');
-  }
-
-  function getStatusBadge(status) {
-    const val = String(status || '').trim().toUpperCase();
-
-    if (val.includes('COMPLETE')) {
-      return `<span class="badge b-green">${escapeHtml(status)}</span>`;
-    }
-
-    if (val.includes('PAYMENT')) {
-      return `<span class="badge b-blue">${escapeHtml(status)}</span>`;
-    }
-
-    if (val.includes('PROCESS')) {
-      return `<span class="badge b-yellow">${escapeHtml(status)}</span>`;
-    }
-
-    if (!status) {
-      return `<span class="badge b-red">-</span>`;
-    }
-
-    return `<span class="badge b-blue">${escapeHtml(status)}</span>`;
-  }
-
-  function renderStatsAndInsights() {
-    const filteredRaw = getFilteredRawRows();
-    const filteredScore = getFilteredScoreRows();
-
-    const jumlahOpd = filteredScore.length;
-    const jumlahPaket = filteredRaw.length;
-    const totalPagu = filteredRaw.reduce((sum, row) => sum + row.pagu, 0);
-    const paketAktif = filteredScore.reduce((sum, row) => sum + row.paket_aktif, 0);
-    const paketSelesai = filteredScore.reduce((sum, row) => sum + row.paket_selesai, 0);
-    const avgItkp = filteredScore.length
-      ? filteredScore.reduce((sum, row) => sum + row.nilai_itkp, 0) / filteredScore.length
-      : 0;
-
-    EL.statJumlahOpd.textContent = formatNumber(jumlahOpd);
-    EL.statJumlahPaket.textContent = formatNumber(jumlahPaket);
-    EL.statTotalPagu.textContent = formatMoney(totalPagu);
-    EL.statPaketAktif.textContent = formatNumber(paketAktif);
-    EL.statPaketSelesai.textContent = formatNumber(paketSelesai);
-    EL.statAvgItkp.textContent = formatNumber(avgItkp);
-
-    const maxTargetRows = filteredScore.filter(row => Number(row.nilai_itkp) >= 4);
-    const zeroScoreRows = filteredScore.filter(row => Number(row.nilai_itkp) === 0);
-
-    if (maxTargetRows.length) {
-      EL.insightTopOpd.textContent = `${formatNumber(maxTargetRows.length)} OPD`;
-      EL.insightTopNote.innerHTML = maxTargetRows
-        .map(row => escapeHtml(row.satuan_kerja))
-        .join('<br>');
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        cell += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push(cell);
+      cell = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i++;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
     } else {
-      EL.insightTopOpd.textContent = '0 OPD';
-      EL.insightTopNote.textContent = 'Belum ada OPD yang mencapai target maksimal.';
+      cell += char;
     }
+  }
 
-    if (zeroScoreRows.length) {
-      EL.insightLowOpd.textContent = `${formatNumber(zeroScoreRows.length)} OPD`;
-      EL.insightLowNote.innerHTML = zeroScoreRows
-        .map(row => escapeHtml(row.satuan_kerja))
-        .join('<br>');
-    } else {
-      EL.insightLowOpd.textContent = '0 OPD';
-      EL.insightLowNote.textContent = 'Belum ada OPD dengan skor 0.';
-    }
+  if (cell.length || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
 
-    if (filteredRaw.length) {
-      const statusMap = {};
-      filteredRaw.forEach(row => {
-        const key = row.status_paket || '(Kosong)';
-        statusMap[key] = (statusMap[key] || 0) + 1;
+  return rows;
+}
+
+function normalizeHeader(header) {
+  return String(header || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[()%./-]/g, '')
+    .replace(/__+/g, '_');
+}
+
+function pick(row, keys) {
+  for (const key of keys) {
+    if (row[key] != null && String(row[key]).trim() !== '') return String(row[key]).trim();
+  }
+  return '';
+}
+
+function normalizeRawRows(rows) {
+  return rows.map(row => {
+    const status = pick(row, ['status_paket', 'status']);
+    return {
+      satuan_kerja: pick(row, ['satuan_kerja', 'satker']),
+      nomor_paket: pick(row, ['nomor_paket', 'kode_paket', 'nomor']),
+      nama_paket: pick(row, ['nama_paket', 'paket']),
+      pagu: toNumber(pick(row, ['pagu', 'nilai_pagu'])),
+      status_paket: status,
+      status_normalized: normalizeStatus(status),
+      tanggal_buat_paket: pick(row, ['tanggal_buat_paket', 'tgl_buat_paket', 'tanggal_buat'])
+    };
+  }).filter(row => row.satuan_kerja && row.nama_paket);
+}
+
+function normalizeScoreRows(rows) {
+  return rows.map(row => ({
+    satuan_kerja: pick(row, ['satuan_kerja', 'satker']),
+    paket_aktif: toNumber(pick(row, ['paket_aktif'])),
+    paket_selesai: toNumber(pick(row, ['paket_selesai'])),
+    prosentase: toNumber(pick(row, ['prosentase', 'persentase'])),
+    nilai_itkp: toNumber(pick(row, ['nilai_itkp']))
+  })).filter(row => row.satuan_kerja);
+}
+
+function mergeRows(rawRows, scoreRows) {
+  const rawMap = new Map();
+  rawRows.forEach(row => {
+    const key = row.satuan_kerja;
+    if (!rawMap.has(key)) {
+      rawMap.set(key, {
+        satuan_kerja: key,
+        paket_aktif: 0,
+        paket_selesai: 0,
+        total_paket: 0
       });
-
-      const dominant = Object.entries(statusMap).sort((a,b) => b[1] - a[1])[0];
-      EL.insightStatus.textContent = dominant ? dominant[0] : '-';
-      EL.insightStatusNote.textContent = dominant ? `${formatNumber(dominant[1])} paket` : 'Belum ada data';
-    } else {
-      EL.insightStatus.textContent = '-';
-      EL.insightStatusNote.textContent = 'Belum ada data';
     }
-  }
-
-  function renderRekapTable() {
-    APP_STATE.filteredScoreRows = getFilteredScoreRows();
-    const rows = APP_STATE.filteredScoreRows;
-    const tbody = EL.rekapTableBody;
-
-    tbody.innerHTML = '';
-
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="cell-muted center-cell">Belum ada data.</td></tr>';
-      EL.rekapCountInfo.textContent = '0 data';
-      renderRekapPagination();
-      return;
-    }
-
-    const startIndex = (APP_STATE.rekapPage - 1) * CONFIG.REKAP_PAGE_SIZE;
-    const pageRows = rows.slice(startIndex, startIndex + CONFIG.REKAP_PAGE_SIZE);
-
-    pageRows.forEach((row, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${startIndex + idx + 1}</td>
-        <td>${escapeHtml(row.satuan_kerja)}</td>
-        <td class="cell-right">${formatNumber(row.paket_aktif)}</td>
-        <td class="cell-right">${formatNumber(row.paket_selesai)}</td>
-        <td class="cell-right">${formatPercent(row.prosentase)}</td>
-        <td class="cell-right">${formatNumber(row.nilai_itkp)}</td>
-        <td>
-          <button class="action-btn" type="button" data-opd="${escapeHtml(row.satuan_kerja_norm)}">
-            Lihat Paket
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    EL.rekapCountInfo.textContent = `${formatNumber(rows.length)} data`;
-
-    tbody.querySelectorAll('[data-opd]').forEach(btn => {
-      addListener(btn, 'click', () => {
-        APP_STATE.selectedOpd = btn.getAttribute('data-opd') || '';
-        APP_STATE.detailPage = 1;
-        renderDetailSection();
-      });
-    });
-
-    renderRekapPagination();
-  }
-
-  function renderRekapPagination() {
-    const totalRows = APP_STATE.filteredScoreRows.length;
-    const totalPages = Math.max(1, Math.ceil(totalRows / CONFIG.REKAP_PAGE_SIZE));
-
-    if (APP_STATE.rekapPage > totalPages) APP_STATE.rekapPage = totalPages;
-
-    EL.rekapPaginationInfo.textContent = `Halaman ${APP_STATE.rekapPage} dari ${totalPages}`;
-    EL.rekapPagination.innerHTML = '';
-
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'page-btn';
-    prevBtn.textContent = 'Prev';
-    prevBtn.disabled = APP_STATE.rekapPage === 1;
-    addListener(prevBtn, 'click', () => {
-      if (APP_STATE.rekapPage > 1) {
-        APP_STATE.rekapPage -= 1;
-        renderRekapTable();
-      }
-    });
-    EL.rekapPagination.appendChild(prevBtn);
-
-    const start = Math.max(1, APP_STATE.rekapPage - 2);
-    const end = Math.min(totalPages, APP_STATE.rekapPage + 2);
-
-    for (let i = start; i <= end; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'page-btn' + (i === APP_STATE.rekapPage ? ' active' : '');
-      btn.textContent = String(i);
-      addListener(btn, 'click', () => {
-        APP_STATE.rekapPage = i;
-        renderRekapTable();
-      });
-      EL.rekapPagination.appendChild(btn);
-    }
-
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'page-btn';
-    nextBtn.textContent = 'Next';
-    nextBtn.disabled = APP_STATE.rekapPage === totalPages;
-    addListener(nextBtn, 'click', () => {
-      if (APP_STATE.rekapPage < totalPages) {
-        APP_STATE.rekapPage += 1;
-        renderRekapTable();
-      }
-    });
-    EL.rekapPagination.appendChild(nextBtn);
-  }
-
-  function renderEmptyDetail() {
-    EL.detailTitle.textContent = 'Detail Paket eKatalog';
-    EL.detailSubtitle.textContent = 'Pilih salah satu OPD pada tabel rekap untuk melihat detail paket.';
-    EL.detailContent.innerHTML = `
-      <div class="empty-state">
-        Detail paket belum ditampilkan.<br>
-        Klik tombol <strong>Lihat Paket</strong> pada salah satu OPD.
-      </div>
-    `;
-  }
-
-  function buildDetailRowsForSelectedOpd() {
-    const filteredRaw = getFilteredRawRows();
-    if (!APP_STATE.selectedOpd) return [];
-    return filteredRaw.filter(row => row.satuan_kerja_norm === APP_STATE.selectedOpd);
-  }
-
-  function renderDetailSection() {
-    if (!APP_STATE.selectedOpd) {
-      renderEmptyDetail();
-      return;
-    }
-
-    APP_STATE.selectedDetailRows = buildDetailRowsForSelectedOpd();
-    const rows = APP_STATE.selectedDetailRows;
-
-    const selectedScore = APP_STATE.scoreRows.find(row => row.satuan_kerja_norm === APP_STATE.selectedOpd);
-    const opdLabel = selectedScore ? selectedScore.satuan_kerja : (rows[0]?.satuan_kerja || '-');
-
-    EL.detailTitle.textContent = `Detail Paket eKatalog - ${opdLabel}`;
-    EL.detailSubtitle.textContent = `${formatNumber(rows.length)} paket ditampilkan sesuai filter aktif.`;
-
-    if (!rows.length) {
-      EL.detailContent.innerHTML = `
-        <div class="empty-state">
-          Tidak ada detail paket untuk OPD ini sesuai filter yang dipilih.
-        </div>
-      `;
-      return;
-    }
-
-    const totalPages = Math.max(1, Math.ceil(rows.length / CONFIG.DETAIL_PAGE_SIZE));
-    if (APP_STATE.detailPage > totalPages) APP_STATE.detailPage = totalPages;
-
-    const startIndex = (APP_STATE.detailPage - 1) * CONFIG.DETAIL_PAGE_SIZE;
-    const pageRows = rows.slice(startIndex, startIndex + CONFIG.DETAIL_PAGE_SIZE);
-
-    EL.detailContent.innerHTML = `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="min-width:60px;">No</th>
-              <th style="min-width:180px;">Nomor Paket</th>
-              <th style="min-width:320px;">Nama Paket</th>
-              <th>Pagu</th>
-              <th>Status Paket</th>
-              <th>Tanggal Buat Paket</th>
-            </tr>
-          </thead>
-          <tbody id="detailTableBody"></tbody>
-        </table>
-      </div>
-      <div class="pagination-bar">
-        <div class="pagination-info" id="detailPaginationInfo"></div>
-        <div class="pagination-actions" id="detailPagination"></div>
-      </div>
-    `;
-
-    const tbody = document.getElementById('detailTableBody');
-    pageRows.forEach((row, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${startIndex + idx + 1}</td>
-        <td>${escapeHtml(row.nomor_paket)}</td>
-        <td>${escapeHtml(row.nama_paket)}</td>
-        <td class="cell-right">${formatMoney(row.pagu)}</td>
-        <td>${getStatusBadge(row.status_paket)}</td>
-        <td>${escapeHtml(row.tanggal_buat_paket || '-')}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    const info = document.getElementById('detailPaginationInfo');
-    const wrap = document.getElementById('detailPagination');
-
-    info.textContent = `${startIndex + 1}-${Math.min(startIndex + CONFIG.DETAIL_PAGE_SIZE, rows.length)} dari ${rows.length} data • Page ${APP_STATE.detailPage} / ${totalPages}`;
-    wrap.innerHTML = '';
-
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'page-btn';
-    prevBtn.textContent = 'Prev';
-    prevBtn.disabled = APP_STATE.detailPage === 1;
-    addListener(prevBtn, 'click', () => {
-      if (APP_STATE.detailPage > 1) {
-        APP_STATE.detailPage -= 1;
-        renderDetailSection();
-      }
-    });
-    wrap.appendChild(prevBtn);
-
-    const start = Math.max(1, APP_STATE.detailPage - 2);
-    const end = Math.min(totalPages, APP_STATE.detailPage + 2);
-
-    for (let i = start; i <= end; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'page-btn' + (i === APP_STATE.detailPage ? ' active' : '');
-      btn.textContent = String(i);
-      addListener(btn, 'click', () => {
-        APP_STATE.detailPage = i;
-        renderDetailSection();
-      });
-      wrap.appendChild(btn);
-    }
-
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'page-btn';
-    nextBtn.textContent = 'Next';
-    nextBtn.disabled = APP_STATE.detailPage === totalPages;
-    addListener(nextBtn, 'click', () => {
-      if (APP_STATE.detailPage < totalPages) {
-        APP_STATE.detailPage += 1;
-        renderDetailSection();
-      }
-    });
-    wrap.appendChild(nextBtn);
-  }
-
-  function toCsv(rows) {
-    return Papa.unparse(rows);
-  }
-
-  function downloadCsv(filename, rows) {
-    const csv = toCsv(rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function handleExportRekap() {
-    const rows = APP_STATE.filteredScoreRows.map((row, idx) => ({
-      No: idx + 1,
-      'Satuan Kerja': row.satuan_kerja,
-      'Paket Aktif': row.paket_aktif,
-      'Paket Selesai': row.paket_selesai,
-      'Prosentase': row.prosentase,
-      'Nilai ITKP': row.nilai_itkp
-    }));
-
-    downloadCsv('rekap-itkp-ekatalog.csv', rows);
-  }
-
-  function handleExportDetail() {
-    const rows = getFilteredRawRows().map((row, idx) => ({
-      No: idx + 1,
-      'Satuan Kerja': row.satuan_kerja,
-      'Nomor Paket': row.nomor_paket,
-      'Nama Paket': row.nama_paket,
-      'Pagu': row.pagu,
-      'Status Paket': row.status_paket,
-      'Tanggal Buat Paket': row.tanggal_buat_paket
-    }));
-
-    downloadCsv('detail-paket-ekatalog.csv', rows);
-  }
-
-  function handleExportCurrentDetail() {
-    if (!APP_STATE.selectedOpd) return;
-
-    const selectedScore = APP_STATE.scoreRows.find(row => row.satuan_kerja_norm === APP_STATE.selectedOpd);
-    const opdLabel = (selectedScore?.satuan_kerja || 'detail-ekatalog')
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .toLowerCase();
-
-    const rows = APP_STATE.selectedDetailRows.map((row, idx) => ({
-      No: idx + 1,
-      'Satuan Kerja': row.satuan_kerja,
-      'Nomor Paket': row.nomor_paket,
-      'Nama Paket': row.nama_paket,
-      'Pagu': row.pagu,
-      'Status Paket': row.status_paket,
-      'Tanggal Buat Paket': row.tanggal_buat_paket
-    }));
-
-    downloadCsv(`detail-ekatalog-${opdLabel}.csv`, rows);
-  }
-
-  function resetFilters() {
-    if (EL.filterOpd) EL.filterOpd.value = '';
-    if (EL.filterStatus) EL.filterStatus.value = '';
-    if (EL.filterBulan) EL.filterBulan.value = '';
-    if (EL.filterTahun) EL.filterTahun.value = '';
-    if (EL.searchPaket) EL.searchPaket.value = '';
-
-    APP_STATE.rekapPage = 1;
-    APP_STATE.detailPage = 1;
-    APP_STATE.selectedOpd = '';
-
-    renderAll();
-  }
-
-  function applyFilters() {
-    APP_STATE.rekapPage = 1;
-    APP_STATE.detailPage = 1;
-
-    if (APP_STATE.selectedOpd) {
-      const stillExists = getFilteredRawRows().some(row => row.satuan_kerja_norm === APP_STATE.selectedOpd);
-      if (!stillExists) {
-        APP_STATE.selectedOpd = '';
-      }
-    }
-
-    renderAll();
-  }
-
-  function renderAll() {
-    renderStatsAndInsights();
-    renderRekapTable();
-    renderDetailSection();
-  }
-
-  async function initMonitoringEkatalog() {
-    try {
-      showError('');
-      showLoading('Memuat data Google Sheet...');
-      showGlobalLoading('Menyiapkan permintaan data...');
-
-      await ensurePapaLoaded();
-
-      const [rawRows, scoreRows] = await Promise.all([
-        fetchSheet(CONFIG.SHEETS.raw),
-        fetchSheet(CONFIG.SHEETS.score)
-      ]);
-
-      APP_STATE.rawRows = normalizeRawRows(rawRows);
-      APP_STATE.scoreRows = normalizeScoreRows(scoreRows);
-      APP_STATE.rekapPage = 1;
-      APP_STATE.detailPage = 1;
-      APP_STATE.selectedOpd = '';
-
-      buildFilterOptions();
-      renderAll();
-      APP_STATE.initialized = true;
-    } catch (error) {
-      console.error(error);
-      showError('Gagal memuat data monitoring eKatalog: ' + (error.message || String(error)));
-    } finally {
-      hideLoading();
-      hideGlobalLoading();
-    }
-  }
-
-  addListener(EL.filterOpd, 'change', applyFilters);
-  addListener(EL.filterStatus, 'change', applyFilters);
-  addListener(EL.filterBulan, 'change', applyFilters);
-  addListener(EL.filterTahun, 'change', applyFilters);
-  addListener(EL.searchPaket, 'input', applyFilters);
-
-  addListener(EL.btnResetFilter, 'click', resetFilters);
-  addListener(EL.btnRefresh, 'click', initMonitoringEkatalog);
-  addListener(EL.btnExportRekap, 'click', handleExportRekap);
-  addListener(EL.btnExportDetail, 'click', handleExportDetail);
-  addListener(EL.btnExportCurrentDetail, 'click', handleExportCurrentDetail);
-  addListener(EL.btnClearSelected, 'click', () => {
-    APP_STATE.selectedOpd = '';
-    APP_STATE.detailPage = 1;
-    renderDetailSection();
+    const item = rawMap.get(key);
+    item.total_paket += 1;
+    if (isActiveStatus(row.status_normalized)) item.paket_aktif += 1;
+    if (isFinishedStatus(row.status_normalized)) item.paket_selesai += 1;
   });
 
-  initMonitoringEkatalog();
+  const scoreMap = new Map(scoreRows.map(row => [row.satuan_kerja, row]));
+  const keys = Array.from(new Set([...rawMap.keys(), ...scoreMap.keys()])).sort((a, b) => a.localeCompare(b, 'id'));
 
-  window[MODULE_KEY] = { cleanup };
-  window.__moduleInit = function() {
-    return cleanup;
-  };
-})();
+  return keys.map(key => {
+    const raw = rawMap.get(key) || { satuan_kerja: key, paket_aktif: 0, paket_selesai: 0, total_paket: 0 };
+    const score = scoreMap.get(key) || { nilai_itkp: 0 };
+    const prosentase = raw.paket_aktif > 0 ? (raw.paket_selesai / raw.paket_aktif) * 100 : 0;
+    return {
+      satuan_kerja: key,
+      paket_aktif: raw.paket_aktif,
+      paket_selesai: raw.paket_selesai,
+      prosentase,
+      nilai_itkp: toNumber(score.nilai_itkp)
+    };
+  });
+}
+
+function normalizeStatus(status) {
+  const value = String(status || '').trim().toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
+  if (!value) return '';
+  if (value.includes('PAYMENT_OUTSIDE_SYSTEM')) return 'PAYMENT_OUTSIDE_SYSTEM';
+  if (value.includes('PAYMENT_OUT')) return 'PAYMENT_OUT';
+  if (value.includes('COMPLETED')) return 'COMPLETED';
+  if (value.includes('ON_PROCESS')) return 'ON_PROCESS';
+  if (value.includes('FAILED') || value.includes('GAGAL')) return 'FAILED';
+  if (value.includes('DRAFT')) return 'DRAFT';
+  return value;
+}
+
+function isActiveStatus(status) {
+  return status === 'ON_PROCESS';
+}
+
+function isFinishedStatus(status) {
+  return ['PAYMENT_OUTSIDE_SYSTEM', 'PAYMENT_OUT', 'COMPLETED', 'SELESAI', 'FINISHED', 'DONE'].includes(status);
+}
+
+function getUniqueStatuses(rows) {
+  return Array.from(new Set(rows.map(row => row.status_normalized).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'id'));
+}
+
+function getDominantStatus(rows) {
+  const map = new Map();
+  rows.forEach(row => {
+    const key = row.status_normalized || 'LAINNYA';
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return Array.from(map.entries())
+    .sort((a, b) => b[1] - a[1])[0]
+    ? { status: Array.from(map.entries()).sort((a, b) => b[1] - a[1])[0][0], count: Array.from(map.entries()).sort((a, b) => b[1] - a[1])[0][1] }
+    : null;
+}
+
+function renderPagination(container, currentPage, totalPages, onChange) {
+  if (!container) return;
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const buttons = [];
+  buttons.push(makePageButton('«', currentPage > 1, () => onChange(1)));
+  buttons.push(makePageButton('‹', currentPage > 1, () => onChange(currentPage - 1)));
+
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+  const sorted = Array.from(pages).filter(p => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+  let last = 0;
+  sorted.forEach(page => {
+    if (page - last > 1) {
+      const gap = document.createElement('span');
+      gap.className = 'page-btn';
+      gap.textContent = '...';
+      gap.style.pointerEvents = 'none';
+      container.appendChild(gap);
+    }
+    container.appendChild(makePageButton(String(page), true, () => onChange(page), page === currentPage));
+    last = page;
+  });
+
+  container.appendChild(makePageButton('›', currentPage < totalPages, () => onChange(currentPage + 1)));
+  container.appendChild(makePageButton('»', currentPage < totalPages, () => onChange(totalPages)));
+
+  function makePageButton(label, enabled, handler, active = false) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `page-btn${active ? ' active' : ''}`;
+    btn.textContent = label;
+    btn.disabled = !enabled;
+    btn.addEventListener('click', handler);
+    return btn;
+  }
+}
+
+function fillSelect(select, items, placeholder) {
+  if (!select) return;
+  const currentValue = select.value;
+  select.innerHTML = `<option value="">${placeholder}</option>` + items.map(item => `<option value="${escapeAttr(item)}">${escapeHtml(item)}</option>`).join('');
+  if (items.includes(currentValue)) select.value = currentValue;
+}
+
+function setLoading(message, useOverlay = false) {
+  const root = document.querySelector('.itkp-ekatalog-page');
+  const loadingBox = root?.querySelector('#loadingBox');
+  const loadingText = root?.querySelector('#loadingText');
+  const overlay = root?.querySelector('#globalLoadingOverlay');
+  const overlayText = root?.querySelector('#globalLoadingText');
+  if (loadingText) loadingText.textContent = message;
+  if (overlayText) overlayText.textContent = message;
+  if (loadingBox) loadingBox.classList.add('show');
+  if (useOverlay && overlay) overlay.classList.add('show');
+}
+
+function clearLoading() {
+  const root = document.querySelector('.itkp-ekatalog-page');
+  root?.querySelector('#loadingBox')?.classList.remove('show');
+  root?.querySelector('#globalLoadingOverlay')?.classList.remove('show');
+}
+
+function showError(message) {
+  const errorBox = document.querySelector('.itkp-ekatalog-page #errorBox');
+  if (!errorBox) return;
+  if (message) {
+    errorBox.textContent = message;
+    errorBox.classList.add('show');
+  } else {
+    errorBox.textContent = '';
+    errorBox.classList.remove('show');
+  }
+}
+
+function renderPercentBadge(value) {
+  const klass = value >= 100 ? 'badge-green' : value > 0 ? 'badge-yellow' : 'badge-red';
+  return `<span class="badge ${klass}">${formatDecimal(value, 2)}%</span>`;
+}
+
+function renderItkpBadge(value) {
+  const klass = value >= 4 ? 'badge-green' : value > 0 ? 'badge-yellow' : 'badge-red';
+  return `<span class="badge ${klass}">${formatDecimal(value, 0)}</span>`;
+}
+
+function renderStatusBadge(status) {
+  const label = status || '-';
+  let klass = 'badge-blue';
+  if (status === 'ON_PROCESS') klass = 'badge-blue';
+  else if (isFinishedStatus(status)) klass = 'badge-green';
+  else if (status === 'FAILED' || status === 'DRAFT') klass = 'badge-red';
+  else klass = 'badge-yellow';
+  return `<span class="badge ${klass}">${escapeHtml(label)}</span>`;
+}
+
+function exportRows(rows, filename) {
+  if (!Array.isArray(rows) || !rows.length) {
+    alert('Tidak ada data yang bisa diexport.');
+    return;
+  }
+  const headers = Object.keys(rows[0]);
+  const csv = [headers.join(',')].concat(rows.map(row => headers.map(key => csvEscape(row[key])).join(','))).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function csvEscape(value) {
+  const str = String(value == null ? '' : value);
+  if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+  return str;
+}
+
+function toNumber(value) {
+  const clean = String(value == null ? '' : value)
+    .replace(/\./g, '')
+    .replace(/,/g, '.')
+    .replace(/[^0-9.-]/g, '');
+  const num = parseFloat(clean);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function formatInt(value) {
+  return Number(value || 0).toLocaleString('id-ID');
+}
+
+function formatCurrency(value) {
+  return `Rp${Number(value || 0).toLocaleString('id-ID')}`;
+}
+
+function formatDecimal(value, digits = 2) {
+  return Number(value || 0).toLocaleString('id-ID', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  });
+}
+
+function sum(values) {
+  return values.reduce((acc, value) => acc + Number(value || 0), 0);
+}
+
+function average(values) {
+  if (!values.length) return 0;
+  return sum(values) / values.length;
+}
+
+function slugify(text) {
+  return String(text || 'data')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'data';
+}
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value);
+}
