@@ -34,8 +34,11 @@ const APP_ROUTES = {
 
   'monitoring-ekontrak': {
     title: 'Monitoring eKontrak',
-    subtitle: 'Halaman ini disiapkan untuk monitoring indikator pemanfaatan eKontrak.',
-    type: 'placeholder'
+    subtitle: 'Monitoring indikator pemanfaatan eKontrak dalam capaian ITKP Perangkat Daerah.',
+    type: 'module',
+    html: 'modules/monitoring/itkp-ekontrak/itkp-ekontrak.html',
+    css: 'modules/monitoring/itkp-ekontrak/itkp-ekontrak.css',
+    js: 'modules/monitoring/itkp-ekontrak/itkp-ekontrak.js'
   },
 
   'monitoring-nontender': {
