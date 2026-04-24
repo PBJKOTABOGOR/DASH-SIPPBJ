@@ -7,7 +7,7 @@ const APP_ROUTES = {
 
   'monitoring-sirup': {
     title: 'Monitoring SiRUP',
-    subtitle: 'Monitoring paket perencanaan yang diumumkan di SiRUP dan indikator ITKP SiRUP.',
+    subtitle: 'Monitoring indikator pemanfaatan SiRUP dalam capaian ITKP Perangkat Daerah.',
     type: 'module',
     html: 'modules/monitoring/itkp-sirup/itkp-sirup.html',
     css: 'modules/monitoring/itkp-sirup/itkp-sirup.css',
@@ -16,7 +16,7 @@ const APP_ROUTES = {
 
   'monitoring-ekatalog': {
     title: 'Monitoring eKatalog',
-    subtitle: 'Monitoring indikator pemanfaatan eKatalog dan capaian ITKP perangkat daerah.',
+    subtitle: 'Monitoring indikator pemanfaatan eKatalog dalam capaian ITKP Perangkat Daerah.',
     type: 'module',
     html: 'modules/monitoring/itkp-ekatalog/itkp-ekatalog.html',
     css: 'modules/monitoring/itkp-ekatalog/itkp-ekatalog.css',
@@ -25,8 +25,11 @@ const APP_ROUTES = {
 
   'monitoring-etendering': {
     title: 'Monitoring eTendering',
-    subtitle: 'Halaman ini disiapkan untuk monitoring indikator pemanfaatan eTendering.',
-    type: 'placeholder'
+    subtitle: 'Monitoring indikator pemanfaatan eTendering dalam capaian ITKP Perangkat Daerah.',
+    type: 'module',
+    html: 'modules/monitoring/itkp-etendering/itkp-etendering.html',
+    css: 'modules/monitoring/itkp-etendering/itkp-etendering.css',
+    js: 'modules/monitoring/itkp-etendering/itkp-etendering.js'
   },
 
   'monitoring-ekontrak': {
