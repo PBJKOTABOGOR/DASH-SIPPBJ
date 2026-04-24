@@ -1,31 +1,13 @@
 const APP_ROUTES = {
   dashboard: {
-    title: 'Dashboard TRAXPBJ',
-    subtitle: 'Ringkasan informasi utama untuk monitoring dan analisis pengadaan.',
+    title: 'Dashboard SIPPBJ',
+    subtitle: 'Ringkasan profil pengadaan barang/jasa Kota Bogor.',
     type: 'internal'
-  },
-
-  'monitoring-perencanaan': {
-    title: 'Monitoring Perencanaan',
-    subtitle: 'Pemantauan progres perencanaan pengadaan perangkat daerah.',
-    type: 'module',
-    html: 'modules/monitoring/perencanaan/monitoring.html',
-    css: 'modules/monitoring/perencanaan/monitoring.css',
-    js: 'modules/monitoring/perencanaan/monitoring.js',
-    externalScripts: [
-      'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
-    ]
-  },
-
-  'monitoring-konsolidasi': {
-    title: 'Monitoring Paket Konsolidasi',
-    subtitle: 'Halaman ini disiapkan untuk monitoring paket konsolidasi.',
-    type: 'placeholder'
   },
 
   'monitoring-sirup': {
     title: 'Monitoring SiRUP',
-    subtitle: 'Monitoring paket perencanaan yang diumumkan di SIRUP dan indikator ITKP SIRUP.',
+    subtitle: 'Monitoring paket perencanaan yang diumumkan di SiRUP dan indikator ITKP SiRUP.',
     type: 'module',
     html: 'modules/monitoring/itkp-sirup/itkp-sirup.html',
     css: 'modules/monitoring/itkp-sirup/itkp-sirup.css',
@@ -47,15 +29,15 @@ const APP_ROUTES = {
     type: 'placeholder'
   },
 
-  'monitoring-nontender': {
-    title: 'Monitoring Non Tender',
-    subtitle: 'Halaman ini disiapkan untuk monitoring Non eTendering/Non ePurchasing.',
-    type: 'placeholder'
-  },
-
   'monitoring-ekontrak': {
     title: 'Monitoring eKontrak',
     subtitle: 'Halaman ini disiapkan untuk monitoring indikator pemanfaatan eKontrak.',
+    type: 'placeholder'
+  },
+
+  'monitoring-nontender': {
+    title: 'Non eTendering/Non ePurchasing',
+    subtitle: 'Halaman ini disiapkan untuk monitoring Non eTendering/Non ePurchasing.',
     type: 'placeholder'
   },
 
@@ -64,6 +46,24 @@ const APP_ROUTES = {
     subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
     type: 'iframe',
     url: 'https://pbjkotabogor.github.io/raporpbj/'
+  },
+
+  'monitoring-perencanaan': {
+    title: 'Monitoring Realisasi',
+    subtitle: 'Pemantauan progres realisasi paket pengadaan perangkat daerah.',
+    type: 'module',
+    html: 'modules/monitoring/perencanaan/monitoring.html',
+    css: 'modules/monitoring/perencanaan/monitoring.css',
+    js: 'modules/monitoring/perencanaan/monitoring.js',
+    externalScripts: [
+      'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
+    ]
+  },
+
+  'monitoring-konsolidasi': {
+    title: 'Konsolidasi',
+    subtitle: 'Monitoring paket konsolidasi dan informasi konsolidasi pengadaan.',
+    type: 'placeholder'
   },
 
   'simulasi-timeline': {
@@ -90,7 +90,6 @@ const sidebarToggleButton = document.getElementById('sidebarToggleButton');
 let activeModuleToken = 0;
 let currentModuleDestroy = null;
 let activeFlyout = null;
-let isPageLoading = false;
 
 function escapeHtml(text) {
   return String(text || '')
@@ -119,35 +118,35 @@ function renderDashboard() {
   contentArea.innerHTML = `
     <section class="hero-card">
       <h3>Selamat datang di SIPPBJ</h3>
-      <p>Ringkasan utama untuk monitoring, analisis, simulasi, dan pelaporan pengadaan barang/jasa.</p>
+      <p>Ringkasan utama profil pengadaan barang/jasa Kota Bogor, pemanfaatan sistem, realisasi paket, konsolidasi, dan Rapor PBJ.</p>
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="label">ITKP</div>
+          <div class="label">Skor ITKP</div>
           <div class="value">86,42%</div>
-          <div class="desc">Tingkat kematangan PBJ</div>
+          <div class="desc">Indikator pemanfaatan sistem pengadaan</div>
         </div>
         <div class="stat-card">
           <div class="label">Konsolidasi</div>
           <div class="value">128</div>
-          <div class="desc">Paket terkonsolidasi</div>
+          <div class="desc">Paket terindikasi/termonitor konsolidasi</div>
         </div>
         <div class="stat-card">
           <div class="label">Paket Belum Berjalan</div>
           <div class="value">6.666</div>
-          <div class="desc">Breakdown realisasi paket</div>
+          <div class="desc">Breakdown per metode pengadaan</div>
         </div>
         <div class="stat-card">
           <div class="label">Rapor PBJ</div>
           <div class="value">44</div>
-          <div class="desc">Laporan rapor tersedia</div>
+          <div class="desc">Laporan rapor perangkat daerah</div>
         </div>
       </div>
     </section>
 
     <section class="grid-main">
       <div class="card">
-        <h3>Ringkasan Dashboard</h3>
+        <h3>Profil Pengadaan Barang/Jasa Kota Bogor</h3>
         <div class="summary-panels">
           <div class="mini-card">
             <h4>Skor ITKP</h4>
@@ -167,7 +166,7 @@ function renderDashboard() {
           </div>
 
           <div class="mini-card">
-            <h4>Belum Berjalan per Metode</h4>
+            <h4>Paket Belum Berjalan per Metode</h4>
             <div class="table-lite">
               <div class="table-row table-head"><div>Metode</div><div>Jumlah</div></div>
               <div class="table-row"><div>Pengadaan Langsung</div><div>3.821</div></div>
@@ -183,7 +182,7 @@ function renderDashboard() {
       <div class="card">
         <h3>Aktivitas / Informasi</h3>
         <div class="activities">
-          ${renderActivity('#2ab56f', '✓', 'Rapor PBJ Bulan April 2026 telah tersedia', 'Laporan rapor untuk 10 OPD telah berhasil dibuat.', '2 jam lalu')}
+          ${renderActivity('#2ab56f', '✓', 'Rapor PBJ Bulan April 2026 telah tersedia', 'Laporan rapor untuk perangkat daerah telah berhasil dibuat.', '2 jam lalu')}
           ${renderActivity('#4c7df2', '📊', 'Update Dashboard ITKP', 'Data monitoring ITKP diperbarui pada portal.', '3 jam lalu')}
           ${renderActivity('#8e61e9', '🧾', 'Monitoring Realisasi diperbarui', 'Sinkronisasi data realisasi paket berhasil dimuat.', '5 jam lalu')}
           ${renderActivity('#ef8d21', '📜', 'Konsolidasi sedang disiapkan', 'Menu konsolidasi masih dalam proses pengembangan.', '1 hari lalu')}
@@ -245,7 +244,7 @@ function renderPlaceholderPage(pageKey, page) {
 function renderDimension(name, value) {
   return `
     <div class="dim-row">
-      <div>${name}</div>
+      <div>${escapeHtml(name)}</div>
       <div class="bar"><span style="width:${value}%"></span></div>
       <div>${value.toFixed(2).replace('.', ',')}%</div>
     </div>
@@ -257,21 +256,21 @@ function renderActivity(color, icon, title, text, time) {
     <div class="activity-item">
       <div class="activity-icon" style="background:${color}">${icon}</div>
       <div>
-        <div class="activity-title">${title}</div>
-        <div class="activity-text">${text}</div>
+        <div class="activity-title">${escapeHtml(title)}</div>
+        <div class="activity-text">${escapeHtml(text)}</div>
       </div>
-      <div class="activity-time">${time}</div>
+      <div class="activity-time">${escapeHtml(time)}</div>
     </div>
   `;
 }
 
 function renderQuickCard(icon, bg, title, text, route) {
   return `
-    <button class="quick-card" type="button" data-quick="${route}">
+    <button class="quick-card" type="button" data-quick="${escapeHtml(route)}">
       <div class="quick-icon" style="background:${bg}">${icon}</div>
       <div>
-        <div class="quick-title">${title}</div>
-        <div class="quick-text">${text}</div>
+        <div class="quick-title">${escapeHtml(title)}</div>
+        <div class="quick-text">${escapeHtml(text)}</div>
       </div>
       <div class="quick-arrow">›</div>
     </button>
@@ -419,7 +418,6 @@ function extractModuleBody(rawHtml) {
 
 async function renderModulePage(page) {
   const token = ++activeModuleToken;
-  isPageLoading = true;
 
   cleanupDynamicModule();
   showModuleLoading(page.title || 'Memuat modul...');
@@ -476,10 +474,6 @@ async function renderModulePage(page) {
         <p><b>Detail:</b> ${escapeHtml(error.message)}</p>
       </section>
     `;
-  } finally {
-    if (token === activeModuleToken) {
-      isPageLoading = false;
-    }
   }
 }
 
@@ -588,7 +582,8 @@ function toggleFlyout(toggleButton, groupName) {
   flyout.dataset.group = groupName;
 
   const titleMap = {
-    monitoring: 'Monitoring',
+    itkp: 'ITKP',
+    realisasi: 'Realisasi Paket',
     simulasi: 'Simulasi'
   };
 
