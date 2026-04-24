@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring eKatalog</title>
+  <link rel="stylesheet" href="./itkp-ekatalog.css">
+</head>
+<body>
+  <div class="itkp-ekatalog-page">
+    <div class="page">
+      <section class="hero">
+        <div class="hero-left">
+          <h1 class="hero-title">Monitoring eKatalog</h1>
+          <p class="hero-subtitle">
+            Monitoring paket eKatalog serta rekap perhitungan indikator ITKP eKatalog per Satuan Kerja.
+          </p>
+          <div class="error-box" id="errorBox"></div>
+        </div>
+
+        <div class="hero-actions">
+          <button type="button" class="btn btn-soft" id="btnRefresh">Refresh Data</button>
+          <button type="button" class="btn btn-primary" id="btnExportRekap">Export Rekap OPD</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Filter Monitoring</h2>
+        <p class="section-subtitle">Gunakan filter untuk menyaring rekap OPD dan detail paket.</p>
+
+        <div class="spacer-14"></div>
+
+        <div class="filters">
+          <div class="field span-3">
+            <label for="filterOpd">Satuan Kerja</label>
+            <select id="filterOpd">
+              <option value="">Semua Satuan Kerja</option>
+            </select>
+          </div>
+
+          <div class="field span-2">
+            <label for="filterStatus">Status Paket</label>
+            <select id="filterStatus">
+              <option value="">Semua Status</option>
+            </select>
+          </div>
+
+          <div class="field span-2">
+            <label for="filterBulan">Bulan Tanggal Buat</label>
+            <select id="filterBulan">
+              <option value="">Semua Bulan</option>
+            </select>
+          </div>
+
+          <div class="field span-2">
+            <label for="filterTahun">Tahun Tanggal Buat</label>
+            <select id="filterTahun">
+              <option value="">Semua Tahun</option>
+            </select>
+          </div>
+
+          <div class="field span-3">
+            <label for="searchPaket">Cari Paket / Nomor Paket</label>
+            <input type="text" id="searchPaket" placeholder="Ketik nama paket, nomor paket, satuan kerja...">
+          </div>
+
+          <div class="field span-12">
+            <div class="toolbar-inline">
+              <button type="button" class="btn btn-soft" id="btnResetFilter">Reset Filter</button>
+              <button type="button" class="btn btn-primary" id="btnExportDetail">Export Detail Paket</button>
+            </div>
+
+            <div class="loading-box" id="loadingBox">
+              <div class="loading-line">
+                <span class="loading-dot"></span>
+                <span id="loadingText">Menyiapkan permintaan data...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Jumlah OPD</div>
+          <div class="stat-value" id="statJumlahOpd">0</div>
+          <div class="stat-note">Total satuan kerja pada data rekap</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Jumlah Paket</div>
+          <div class="stat-value" id="statJumlahPaket">0</div>
+          <div class="stat-note">Total paket pada RAW_ECAT</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Total Pagu</div>
+          <div class="stat-value" id="statTotalPagu">Rp0</div>
+          <div class="stat-note">Akumulasi pagu paket eKatalog</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Paket Aktif</div>
+          <div class="stat-value" id="statPaketAktif">0</div>
+          <div class="stat-note">Akumulasi paket aktif pada rekap</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Paket Selesai</div>
+          <div class="stat-value" id="statPaketSelesai">0</div>
+          <div class="stat-note">Akumulasi paket selesai pada rekap</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Rata-rata Nilai ITKP</div>
+          <div class="stat-value" id="statAvgItkp">0</div>
+          <div class="stat-note">Rata-rata nilai indikator ITKP</div>
+        </div>
+      </section>
+
+      <section class="mini-insights">
+        <div class="insight-card">
+          <div class="insight-label">OPD Tertinggi</div>
+          <div class="insight-value" id="insightTopOpd">-</div>
+          <div class="insight-note" id="insightTopNote">Belum ada data</div>
+        </div>
+
+        <div class="insight-card">
+          <div class="insight-label">OPD Terendah</div>
+          <div class="insight-value" id="insightLowOpd">-</div>
+          <div class="insight-note" id="insightLowNote">Belum ada data</div>
+        </div>
+
+        <div class="insight-card">
+          <div class="insight-label">Status Dominan</div>
+          <div class="insight-value" id="insightStatus">-</div>
+          <div class="insight-note" id="insightStatusNote">Belum ada data</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Rekap ITKP eKatalog per OPD</h2>
+            <p class="section-subtitle">Sumber: sheet <strong>SCORE_ITKP_ECAT</strong></p>
+          </div>
+          <div class="table-count" id="rekapCountInfo">0 data</div>
+        </div>
+
+        <div class="spacer-14"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:60px;">No</th>
+                <th style="min-width:280px;">Satuan Kerja</th>
+                <th>Paket Aktif</th>
+                <th>Paket Selesai</th>
+                <th>Prosentase</th>
+                <th>Nilai ITKP</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="rekapTableBody">
+              <tr>
+                <td colspan="7" class="cell-muted center-cell">Belum ada data.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar">
+          <div class="pagination-info" id="rekapPaginationInfo">Halaman 1 dari 1</div>
+          <div class="pagination-actions" id="rekapPagination"></div>
+        </div>
+      </section>
+
+      <section class="panel detail-panel">
+        <div class="detail-header">
+          <div>
+            <h2 class="detail-title" id="detailTitle">Detail Paket eKatalog</h2>
+            <p class="detail-subtitle" id="detailSubtitle">
+              Pilih salah satu OPD pada tabel rekap untuk melihat detail paket.
+            </p>
+          </div>
+
+          <div class="toolbar-inline">
+            <button type="button" class="btn btn-soft" id="btnClearSelected">Tutup Detail</button>
+            <button type="button" class="btn btn-primary" id="btnExportCurrentDetail">Export Detail OPD Ini</button>
+          </div>
+        </div>
+
+        <div id="detailContent">
+          <div class="empty-state">
+            Detail paket belum ditampilkan.<br>
+            Klik tombol <strong>Lihat Paket</strong> pada salah satu OPD.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="global-loading-overlay" id="globalLoadingOverlay">
+      <div class="global-loading-card">
+        <div class="global-spinner"></div>
+        <div class="global-loading-title">Memuat Monitoring eKatalog</div>
+        <div class="global-loading-text" id="globalLoadingText">Menyiapkan permintaan data...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./itkp-ekatalog.js"></script>
+</body>
+</html>
