@@ -896,10 +896,11 @@
 
 .panji-assistant{
   position:fixed !important;
-  right:34px !important;
+  right:26px !important;
   top:auto !important;
-  bottom:var(--panji-bottom, 86px) !important;
-  z-index:999999 !important;
+  bottom:var(--panji-bottom, 34px) !important;
+  left:auto !important;
+  z-index:2147483647 !important;
   display:flex !important;
   align-items:flex-end !important;
   gap:14px !important;
@@ -918,9 +919,9 @@
 }
 
 .panji-assistant.panji-hidden{
-  opacity:1 !important;
-  visibility:visible !important;
-  pointer-events:auto !important;
+  opacity:0 !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
   transform:none !important;
 }
 
@@ -1799,7 +1800,7 @@
 @media (max-width:1400px){
   .panji-assistant{
     right:24px !important;
-    bottom:var(--panji-bottom, 82px) !important;
+    bottom:var(--panji-bottom, 34px) !important;
     top:auto !important;
     transform:none !important;
   }
@@ -1840,7 +1841,7 @@
 
   .panji-assistant{
     right:18px !important;
-    bottom:var(--panji-bottom, 78px) !important;
+    bottom:var(--panji-bottom, 34px) !important;
     top:auto !important;
     transform:none !important;
   }
@@ -1868,7 +1869,7 @@
 
   .panji-assistant{
     right:12px !important;
-    bottom:var(--panji-bottom, 92px) !important;
+    bottom:var(--panji-bottom, 76px) !important;
     top:auto !important;
     transform:none !important;
   }
