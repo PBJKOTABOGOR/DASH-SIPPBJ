@@ -587,7 +587,7 @@ function renderDashboardSkeleton() {
   contentArea.innerHTML = `
     <section class="hero-card hero-card--dashboard">
       <div class="hero-glow"></div>
-      <div class="hero-kicker">TRAXPBJ · Kota Bogor Procurement Intelligence</div>
+      <div class="hero-kicker">SIPPBJ · Kota Bogor Procurement</div>
       <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
       <p>Menarik data dari FIX ITKP OPD, D_PERENCANAAN, dan D_REALISASI untuk merangkum profil ITKP, perencanaan, realisasi, metode pengadaan, OPD dominan, serta indikator progress pengadaan.</p>
 
@@ -605,7 +605,7 @@ function renderDashboardSkeleton() {
 function renderDashboardError(error) {
   contentArea.innerHTML = `
     <section class="hero-card hero-card--dashboard">
-      <div class="hero-kicker">TRAXPBJ · Dashboard</div>
+      <div class="hero-kicker">SIPPBJ · Dashboard</div>
       <h3>Data dashboard belum bisa dimuat</h3>
       <p>${escapeHtml(error.message || 'Terjadi kendala saat mengambil data.')}</p>
       <div class="hero-actions">
@@ -667,7 +667,7 @@ function renderDashboardReady(data) {
 
       <div class="hero-topline">
         <div>
-          <div class="hero-kicker">TRAXPBJ · Kota Bogor Procurement Intelligence</div>
+          <div class="hero-kicker">SIPPBJ · Kota Bogor Procurement</div>
           <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
           <p>Ringkasan interaktif dari ITKP Kota Bogor, profil perencanaan, realisasi paket, metode pengadaan, dan performa OPD/Sub OPD berdasarkan data Google Sheet yang tersedia.</p>
         </div>
@@ -852,7 +852,7 @@ function renderDashboardReady(data) {
       ${renderQuickCard('🗓️', 'linear-gradient(135deg,#ef8d21,#f8b14c)', 'Simulasi Timeline', 'Simulasikan jadwal pengadaan secara terstruktur.', 'simulasi-timeline')}
     </section>
 
-    <div class="footer-note">© BenRama 2026 SIPPBJ - Dashboard TRAXPBJ Kota Bogor</div>
+    <div class="footer-note">© BenRama 2026 SIPPBJ - Dashboard SIPPBJ Kota Bogor</div>
   `;
 }
 
