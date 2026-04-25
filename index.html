@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SIPPBJ - Portal Utama</title>
+  <title>TRAXPBJ - Dashboard PBJ Kota Bogor</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,24 +20,35 @@
       <div class="brand-block">
         <div class="brand-left">
           <div class="brand-logo">TP</div>
+
           <div class="brand-text">
-            <h1>SIPPBJ</h1>
-            <p>Simulasi &amp; Monitoring PBJ</p>
+            <h1>TRAXPBJ</h1>
+            <p>Monitoring &amp; Analisis PBJ</p>
           </div>
         </div>
-        <button class="sidebar-toggle-button" id="sidebarToggleButton" type="button" aria-label="Minimize sidebar">☰</button>
+
+        <button
+          class="sidebar-toggle-button"
+          id="sidebarToggleButton"
+          type="button"
+          aria-label="Toggle sidebar"
+        >
+          ☰
+        </button>
       </div>
 
       <nav class="sidebar-nav">
         <div class="nav-section-label">MENU UTAMA</div>
 
-        <button class="nav-link active" data-page="dashboard">
-          <span class="nav-icon">🏠</span>
-          <span class="nav-text">Dashboard</span>
+        <button class="nav-link active" type="button" data-page="dashboard">
+          <span class="nav-left">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">Dashboard</span>
+          </span>
         </button>
 
-        <div class="nav-group" data-group="itkp">
-          <button class="nav-link nav-toggle" data-toggle-group="itkp">
+        <div class="nav-group open" data-group="itkp">
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="itkp">
             <span class="nav-left">
               <span class="nav-icon">📊</span>
               <span class="nav-text">ITKP</span>
@@ -41,21 +57,23 @@
           </button>
 
           <div class="submenu">
-            <button class="submenu-link" data-page="monitoring-sirup">SiRUP</button>
-            <button class="submenu-link" data-page="monitoring-ekatalog">eKatalog</button>
-            <button class="submenu-link" data-page="monitoring-etendering">eTendering</button>
-            <button class="submenu-link" data-page="monitoring-ekontrak">eKontrak</button>
-            <button class="submenu-link" data-page="monitoring-nontender">Non eTendering/Non ePurchasing</button>
+            <button class="submenu-link" type="button" data-page="monitoring-sirup">SiRUP</button>
+            <button class="submenu-link" type="button" data-page="monitoring-ekatalog">eKatalog</button>
+            <button class="submenu-link" type="button" data-page="monitoring-etendering">eTendering</button>
+            <button class="submenu-link" type="button" data-page="monitoring-ekontrak">eKontrak</button>
+            <button class="submenu-link" type="button" data-page="monitoring-nontender">Non Tender</button>
           </div>
         </div>
 
-        <button class="nav-link" data-page="rapor-pbj">
-          <span class="nav-icon">📝</span>
-          <span class="nav-text">Rapor PBJ</span>
+        <button class="nav-link" type="button" data-page="rapor-pbj">
+          <span class="nav-left">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">Rapor PBJ</span>
+          </span>
         </button>
 
         <div class="nav-group" data-group="realisasi">
-          <button class="nav-link nav-toggle" data-toggle-group="realisasi">
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="realisasi">
             <span class="nav-left">
               <span class="nav-icon">📦</span>
               <span class="nav-text">Realisasi Paket</span>
@@ -64,13 +82,13 @@
           </button>
 
           <div class="submenu">
-            <button class="submenu-link" data-page="monitoring-perencanaan">Monitoring Realisasi</button>
-            <button class="submenu-link" data-page="monitoring-konsolidasi">Konsolidasi</button>
+            <button class="submenu-link" type="button" data-page="monitoring-perencanaan">Monitoring Realisasi</button>
+            <button class="submenu-link" type="button" data-page="monitoring-konsolidasi">Konsolidasi</button>
           </div>
         </div>
 
         <div class="nav-group" data-group="simulasi">
-          <button class="nav-link nav-toggle" data-toggle-group="simulasi">
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="simulasi">
             <span class="nav-left">
               <span class="nav-icon">🧪</span>
               <span class="nav-text">Simulasi</span>
@@ -79,8 +97,9 @@
           </button>
 
           <div class="submenu">
-            <button class="submenu-link" data-page="simulasi-timeline">Timeline Pengadaan</button>
-            <button class="submenu-link" data-page="simulasi-nontender">Pencatatan Non Tender</button>
+            <button class="submenu-link" type="button" data-page="simulasi-timeline">Timeline Pengadaan</button>
+            <button class="submenu-link" type="button" data-page="simulasi-nontender">Pencatatan Non Tender</button>
+            <button class="submenu-link" type="button" data-page="simulasi-procurement-stacker">Mini Game</button>
           </div>
         </div>
       </nav>
