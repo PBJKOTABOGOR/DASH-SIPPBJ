@@ -949,11 +949,16 @@
   }
 
   function ensurePanjiMarkup(scope) {
-    if (scope.querySelector('#panjiAssistant')) return;
+    const oldPanji = document.getElementById('panjiAssistant');
+
+    if (oldPanji) {
+      panjiEl = oldPanji;
+      return;
+    }
 
     const panji = document.createElement('div');
     panji.id = 'panjiAssistant';
-    panji.className = 'panji-assistant panji-hidden';
+    panji.className = 'panji-assistant';
     panji.innerHTML = `
       <div class="panji-bubble" id="panjiBubble">
         <button type="button" class="panji-close" id="panjiClose" aria-label="Tutup PANJI">×</button>
@@ -986,20 +991,20 @@
       </button>
     `;
 
-    scope.appendChild(panji);
+    document.body.appendChild(panji);
   }
 
   function initPanji(scope) {
     ensurePanjiMarkup(scope);
 
-    panjiEl = scope.querySelector('#panjiAssistant');
-    panjiTextEl = scope.querySelector('#panjiText');
-    panjiEmoteEl = scope.querySelector('#panjiEmote');
-    panjiBubbleEl = scope.querySelector('#panjiBubble');
-    panjiHintBtn = scope.querySelector('#panjiHintBtn');
-    panjiMiniBtn = scope.querySelector('#panjiMiniBtn');
-    panjiCharacterBtn = scope.querySelector('#panjiCharacter');
-    panjiCloseBtn = scope.querySelector('#panjiClose');
+    panjiEl = document.querySelector('#panjiAssistant');
+    panjiTextEl = document.querySelector('#panjiText');
+    panjiEmoteEl = document.querySelector('#panjiEmote');
+    panjiBubbleEl = document.querySelector('#panjiBubble');
+    panjiHintBtn = document.querySelector('#panjiHintBtn');
+    panjiMiniBtn = document.querySelector('#panjiMiniBtn');
+    panjiCharacterBtn = document.querySelector('#panjiCharacter');
+    panjiCloseBtn = document.querySelector('#panjiClose');
 
     if (!panjiEl || !panjiTextEl) return;
 
@@ -1033,11 +1038,99 @@
         panjiEl.classList.add('panji-hidden');
       });
     }
+
+    forceShowPanji();
+    initPanjiAutoPosition();
+  }
+
+  function forceShowPanji() {
+    if (!panjiEl) return;
+
+    if (panjiEl.parentElement !== document.body) {
+      document.body.appendChild(panjiEl);
+    }
+
+    panjiEl.classList.remove('panji-hidden');
+    panjiEl.classList.remove('panji-minimized');
+
+    panjiEl.style.position = 'fixed';
+    panjiEl.style.right = '26px';
+    panjiEl.style.bottom = 'var(--panji-bottom, 34px)';
+    panjiEl.style.top = 'auto';
+    panjiEl.style.left = 'auto';
+    panjiEl.style.zIndex = '2147483647';
+    panjiEl.style.opacity = '1';
+    panjiEl.style.visibility = 'visible';
+    panjiEl.style.display = 'flex';
+    panjiEl.style.transform = 'none';
+  }
+
+  function updatePanjiAutoBottom() {
+    if (!panjiEl) return;
+
+    const baseBottom = window.innerWidth <= 900 ? 76 : 34;
+    const maxBottom = window.innerWidth <= 900 ? 240 : 340;
+    const gap = 18;
+    let nextBottom = baseBottom;
+
+    const logBox = document.querySelector('.ps-log-box');
+
+    if (logBox) {
+      const logRect = logBox.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const panjiRect = panjiEl.getBoundingClientRect();
+      const panjiHeight = panjiRect.height || 220;
+      const logVisible = logRect.top < viewportHeight && logRect.bottom > 0;
+
+      if (logVisible) {
+        const panjiNormalTop = viewportHeight - baseBottom - panjiHeight;
+        const overlap = logRect.bottom - panjiNormalTop;
+
+        if (overlap > 0 && logRect.top < viewportHeight - 60) {
+          nextBottom = baseBottom + overlap + gap;
+        }
+      }
+    }
+
+    nextBottom = Math.max(baseBottom, Math.min(maxBottom, Math.round(nextBottom)));
+    panjiEl.style.setProperty('--panji-bottom', nextBottom + 'px');
+  }
+
+  function initPanjiAutoPosition() {
+    if (!panjiEl) return;
+
+    if (typeof panjiEl._panjiAutoPositionDestroy === 'function') {
+      panjiEl._panjiAutoPositionDestroy();
+      panjiEl._panjiAutoPositionDestroy = null;
+    }
+
+    let ticking = false;
+
+    const requestUpdate = () => {
+      if (ticking) return;
+
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        ticking = false;
+        updatePanjiAutoBottom();
+      });
+    };
+
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+
+    panjiEl._panjiAutoPositionDestroy = () => {
+      window.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+    };
+
+    requestUpdate();
   }
 
   function showPanji(message, mood = 'thinking') {
     if (!panjiEl || !panjiTextEl) return;
 
+    forceShowPanji();
     clearPanjiTalkTimer();
 
     panjiEl.classList.remove('panji-hidden');
@@ -1312,6 +1405,7 @@
     if (GAME_STATE.stage === 'result') {
       root.innerHTML = renderResultScreen();
       bindResultEvents();
+      requestAnimationFrame(updatePanjiAutoBottom);
       return;
     }
 
@@ -1409,6 +1503,7 @@
     `;
 
     bindGameEvents();
+    requestAnimationFrame(updatePanjiAutoBottom);
   }
 
   function renderPipelineChallenge(challenge) {
@@ -2152,7 +2247,20 @@
       });
 
       if (panjiEl) {
-        panjiEl.classList.add('panji-hidden');
+        if (typeof panjiEl._panjiAutoPositionDestroy === 'function') {
+          panjiEl._panjiAutoPositionDestroy();
+          panjiEl._panjiAutoPositionDestroy = null;
+        }
+
+        panjiEl.remove();
+        panjiEl = null;
+        panjiTextEl = null;
+        panjiEmoteEl = null;
+        panjiBubbleEl = null;
+        panjiHintBtn = null;
+        panjiMiniBtn = null;
+        panjiCharacterBtn = null;
+        panjiCloseBtn = null;
       }
 
       containerRef = null;
