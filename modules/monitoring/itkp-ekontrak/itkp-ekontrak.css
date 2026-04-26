@@ -17,7 +17,9 @@
   --radius:24px;
 }
 
-*{ box-sizing:border-box; }
+*{
+  box-sizing:border-box;
+}
 
 .itkp-ekontrak-page,
 .module-page--native .itkp-ekontrak-page{
@@ -92,7 +94,9 @@
   white-space:nowrap;
 }
 
-.btn:hover{ transform:translateY(-1px); }
+.btn:hover{
+  transform:translateY(-1px);
+}
 
 .btn:disabled{
   opacity:.55;
@@ -145,7 +149,9 @@
   line-height:1.45;
 }
 
-.spacer-14{ height:14px; }
+.spacer-14{
+  height:14px;
+}
 
 .filters{
   display:grid;
@@ -183,11 +189,25 @@
   box-shadow:0 0 0 4px rgba(37,99,235,.10);
 }
 
-.span-2{grid-column:span 2;}
-.span-3{grid-column:span 3;}
-.span-4{grid-column:span 4;}
-.span-9{grid-column:span 9;}
-.span-12{grid-column:span 12;}
+.span-2{
+  grid-column:span 2;
+}
+
+.span-3{
+  grid-column:span 3;
+}
+
+.span-4{
+  grid-column:span 4;
+}
+
+.span-9{
+  grid-column:span 9;
+}
+
+.span-12{
+  grid-column:span 12;
+}
 
 .toolbar-inline{
   display:flex;
@@ -209,7 +229,9 @@
   font-weight:700;
 }
 
-.loading-box.show{ display:block; }
+.loading-box.show{
+  display:block;
+}
 
 .loading-line{
   display:flex;
@@ -226,8 +248,15 @@
 }
 
 @keyframes pulse{
-  0%,100%{opacity:.35;transform:scale(.9);}
-  50%{opacity:1;transform:scale(1.15);}
+  0%,100%{
+    opacity:.35;
+    transform:scale(.9);
+  }
+
+  50%{
+    opacity:1;
+    transform:scale(1.15);
+  }
 }
 
 .error-box{
@@ -242,7 +271,9 @@
   font-weight:700;
 }
 
-.error-box.show{ display:block; }
+.error-box.show{
+  display:block;
+}
 
 .stats{
   display:grid;
@@ -296,8 +327,13 @@
   border-top:4px solid #2563eb;
 }
 
-.insight-red{ border-top-color:#dc2626; }
-.insight-green{ border-top-color:#0f766e; }
+.insight-red{
+  border-top-color:#dc2626;
+}
+
+.insight-green{
+  border-top-color:#0f766e;
+}
 
 .insight-label{
   color:#64748b;
@@ -359,8 +395,13 @@ tbody td{
   vertical-align:top;
 }
 
-tbody tr:hover{ background:#f8fbff; }
-tbody tr:last-child td{ border-bottom:0; }
+tbody tr:hover{
+  background:#f8fbff;
+}
+
+tbody tr:last-child td{
+  border-bottom:0;
+}
 
 .cell-strong{
   font-weight:850;
@@ -383,7 +424,9 @@ tbody tr:last-child td{ border-bottom:0; }
   white-space:nowrap;
 }
 
-.action-btn:hover{ background:#dbeafe; }
+.action-btn:hover{
+  background:#dbeafe;
+}
 
 .badge{
   display:inline-flex;
@@ -465,7 +508,9 @@ tbody tr:last-child td{ border-bottom:0; }
   white-space:nowrap;
 }
 
-.detail-panel{ margin-bottom:0; }
+.detail-panel{
+  margin-bottom:0;
+}
 
 .detail-footer{
   display:flex;
@@ -486,7 +531,9 @@ tbody tr:last-child td{ border-bottom:0; }
   justify-content:center;
 }
 
-.global-loading-overlay.show{ display:flex; }
+.global-loading-overlay.show{
+  display:flex;
+}
 
 .global-loading-card{
   width:min(420px,calc(100% - 28px));
@@ -509,7 +556,9 @@ tbody tr:last-child td{ border-bottom:0; }
 }
 
 @keyframes spin{
-  to{transform:rotate(360deg);}
+  to{
+    transform:rotate(360deg);
+  }
 }
 
 .global-loading-title{
@@ -703,28 +752,50 @@ tbody tr:last-child td{ border-bottom:0; }
 }
 
 @media (max-width:1200px){
-  .stats{ grid-template-columns:repeat(3,1fr); }
-  .mini-insights{ grid-template-columns:1fr; }
+  .stats{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .mini-insights{
+    grid-template-columns:1fr;
+  }
 
   .span-2,
   .span-3,
-  .span-4{ grid-column:span 6; }
+  .span-4{
+    grid-column:span 6;
+  }
 
-  .span-9{ grid-column:span 12; }
+  .span-9{
+    grid-column:span 12;
+  }
 }
 
 @media (max-width:760px){
-  .hero{ flex-direction:column; }
-  .hero-actions{ justify-content:flex-start; }
-  .stats{ grid-template-columns:1fr; }
-  .filters{ grid-template-columns:1fr; }
+  .hero{
+    flex-direction:column;
+  }
+
+  .hero-actions{
+    justify-content:flex-start;
+  }
+
+  .stats{
+    grid-template-columns:1fr;
+  }
+
+  .filters{
+    grid-template-columns:1fr;
+  }
 
   .field,
   .span-2,
   .span-3,
   .span-4,
   .span-9,
-  .span-12{ grid-column:span 1; }
+  .span-12{
+    grid-column:span 1;
+  }
 
   .panel-head,
   .detail-footer{
@@ -732,5 +803,7 @@ tbody tr:last-child td{ border-bottom:0; }
     align-items:flex-start;
   }
 
-  .pagination{ justify-content:flex-start; }
+  .pagination{
+    justify-content:flex-start;
+  }
 }
