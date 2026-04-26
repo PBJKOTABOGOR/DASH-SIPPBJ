@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring Non eTendering / Non ePurchasing</title>
+  <link rel="stylesheet" href="./itkp-nontender.css">
+</head>
+<body>
+  <div class="itkp-nontender-page">
+    <div class="page">
+      <section class="hero">
+        <div class="hero-left">
+          <h1 class="hero-title">Monitoring Non eTendering / Non ePurchasing</h1>
+          <p class="hero-subtitle">
+            Monitoring realisasi paket Non Tender, Pencatatan Non Tender, eKontrak, dan capaian indikator ITKP Non Tender per perangkat daerah.
+            Sumber data diambil dari sheet <strong>M_Pencatatan</strong> dan <strong>SCORE_ITKP_NONT</strong>.
+          </p>
+          <div class="error-box" id="errorBox"></div>
+        </div>
+
+        <div class="hero-actions">
+          <button type="button" class="btn btn-soft" id="btnRefresh">Refresh Data</button>
+          <button type="button" class="btn btn-primary" id="btnExportDetail">Export Detail Paket</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Filter Data</h2>
+        <p class="section-subtitle">Gunakan filter untuk menyaring rekap OPD dan detail paket Non Tender.</p>
+
+        <div class="spacer-14"></div>
+
+        <div class="filters">
+          <div class="field span-4">
+            <label for="filterOpd">Satuan Kerja / OPD</label>
+            <select id="filterOpd">
+              <option value="">Semua OPD</option>
+            </select>
+          </div>
+
+          <div class="field span-3">
+            <label for="filterMetode">Metode</label>
+            <select id="filterMetode">
+              <option value="">Semua Metode</option>
+            </select>
+          </div>
+
+          <div class="field span-3">
+            <label for="filterStatus">Status Realisasi</label>
+            <select id="filterStatus">
+              <option value="">Semua Status</option>
+              <option value="SUDAH_REALISASI">Sudah Realisasi</option>
+              <option value="BELUM_REALISASI">Belum Realisasi</option>
+              <option value="DOBEL_REALISASI">Dobel Realisasi</option>
+            </select>
+          </div>
+
+          <div class="field span-2">
+            <label for="filterItkp">Nilai ITKP</label>
+            <select id="filterItkp">
+              <option value="">Semua Nilai</option>
+              <option value="MAX">Capai Max</option>
+              <option value="ZERO">Nilai 0</option>
+            </select>
+          </div>
+
+          <div class="field span-9">
+            <label for="searchKeyword">Cari Nama Paket / Kode RUP / Program / Kegiatan</label>
+            <input type="text" id="searchKeyword" placeholder="Ketik nama paket, kode RUP, program, kegiatan...">
+          </div>
+
+          <div class="field span-3">
+            <div class="toolbar-inline">
+              <button type="button" class="btn btn-soft" id="btnResetFilter">Reset Filter</button>
+            </div>
+          </div>
+
+          <div class="field span-12">
+            <div class="loading-box" id="loadingBox">
+              <div class="loading-line">
+                <span class="loading-dot"></span>
+                <span id="loadingText">Menyiapkan permintaan data...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Jumlah OPD</div>
+          <div class="stat-value" id="statJumlahOpd">0</div>
+          <div class="stat-note">Total satuan kerja pada data rekap.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Jumlah Paket</div>
+          <div class="stat-value" id="statJumlahPaket">0</div>
+          <div class="stat-note">Total paket pada M_Pencatatan.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Total Pagu</div>
+          <div class="stat-value" id="statTotalPagu">Rp0</div>
+          <div class="stat-note">Akumulasi pagu paket Non Tender.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Total Realisasi</div>
+          <div class="stat-value" id="statTotalRealisasi">Rp0</div>
+          <div class="stat-note">Akumulasi realisasi pencatatan dan eKontrak.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Dobel Realisasi</div>
+          <div class="stat-value" id="statDobelRealisasi">0</div>
+          <div class="stat-note">Paket yang tercatat di Pencatatan dan eKontrak sekaligus.</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Rata-rata Nilai ITKP</div>
+          <div class="stat-value" id="statAvgItkp">0</div>
+          <div class="stat-note">Rata-rata nilai indikator ITKP Non Tender.</div>
+        </div>
+      </section>
+
+      <section class="mini-insights">
+        <div class="insight-card insight-blue">
+          <div class="insight-label">Capai Target Max</div>
+          <div class="insight-value"><span id="maxCount">0</span> OPD</div>
+          <div class="insight-note">OPD yang sudah mencapai nilai ITKP maksimal Non Tender.</div>
+          <button type="button" class="btn btn-mini" id="btnShowMaxList">Lihat OPD</button>
+        </div>
+
+        <div class="insight-card insight-red">
+          <div class="insight-label">Skor ITKP 0</div>
+          <div class="insight-value"><span id="zeroCount">0</span> OPD</div>
+          <div class="insight-note">OPD yang nilai indikator Non Tender-nya masih 0.</div>
+          <button type="button" class="btn btn-mini" id="btnShowZeroList">Lihat OPD</button>
+        </div>
+
+        <div class="insight-card insight-red">
+          <div class="insight-label">Perlu Koreksi</div>
+          <div class="insight-value"><span id="doubleCount">0</span> Paket</div>
+          <div class="insight-note">Paket yang memiliki realisasi Pencatatan dan eKontrak sekaligus.</div>
+          <button type="button" class="btn btn-mini" id="btnShowDoubleList">Lihat Paket</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="section-title">Rekap ITKP Non Tender per OPD</h2>
+            <p class="section-subtitle">Nilai total pagu, total realisasi, prosentase, dan ITKP mengikuti sheet <strong>SCORE_ITKP_NONT</strong>.</p>
+          </div>
+          <div class="pagination-info" id="rekapPaginationInfo">0-0 dari 0 data • Page 1 / 1</div>
+        </div>
+
+        <div class="spacer-14"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:60px;">No</th>
+                <th style="min-width:360px;">Satuan Kerja</th>
+                <th>Total Pagu</th>
+                <th>Total Realisasi</th>
+                <th>Prosentase</th>
+                <th>Nilai ITKP</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="rekapTableBody">
+              <tr>
+                <td colspan="7" class="center-cell">Belum ada data.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="rekapPagination"></div>
+      </section>
+
+      <section class="panel detail-panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="section-title" id="detailTitle">Detail Paket Non Tender</h2>
+            <p class="section-subtitle" id="detailSubtitle">Pilih OPD pada tabel rekap untuk melihat daftar paket.</p>
+          </div>
+
+          <div class="toolbar-inline">
+            <button type="button" class="btn btn-soft" id="btnClearDetail">Tutup Detail</button>
+            <button type="button" class="btn btn-primary" id="btnExportCurrentDetail">Export Detail OPD Ini</button>
+          </div>
+        </div>
+
+        <div class="spacer-14"></div>
+
+        <div class="table-wrap detail-content-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:60px;">No</th>
+                <th>Kode RUP</th>
+                <th style="min-width:280px;">OPD</th>
+                <th style="min-width:300px;">Nama Paket</th>
+                <th>Metode</th>
+                <th>Pagu</th>
+                <th>Realisasi Pencatatan</th>
+                <th>Realisasi eKontrak</th>
+                <th>Total Realisasi</th>
+                <th>Selisih</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="detailTableBody">
+              <tr>
+                <td colspan="11" class="center-cell">Belum ada detail paket untuk ditampilkan.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="detail-footer">
+          <div class="pagination-info" id="detailPaginationInfo">Belum ada data detail.</div>
+          <div class="pagination" id="detailPagination"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="global-loading-overlay" id="globalLoadingOverlay">
+      <div class="global-loading-card">
+        <div class="global-spinner"></div>
+        <div class="global-loading-title">Memuat Monitoring Non Tender</div>
+        <div class="global-loading-text" id="globalLoadingText">Menyiapkan permintaan data...</div>
+      </div>
+    </div>
+
+    <div class="opd-modal" id="opdModal" hidden>
+      <div class="opd-modal-card">
+        <div class="opd-modal-head">
+          <div>
+            <h3 id="modalTitle">Daftar</h3>
+            <p id="modalSubtitle">Daftar data sesuai kategori.</p>
+          </div>
+          <button type="button" class="modal-close" id="btnCloseModal">×</button>
+        </div>
+        <div class="modal-count" id="modalCount">0 Data</div>
+        <div class="modal-list" id="modalList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./itkp-nontender.js"></script>
+</body>
+</html>
