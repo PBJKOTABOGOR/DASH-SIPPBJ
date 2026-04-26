@@ -1,6 +1,6 @@
 const APP_ROUTES = {
   dashboard: {
-    title: 'Dashboard SIPPBJ',
+    title: 'Dashboard TRAXPBJ',
     subtitle: 'Ringkasan informasi utama untuk monitoring dan analisis pengadaan.',
     type: 'internal'
   },
@@ -108,7 +108,6 @@ let activeFlyout = null;
 let activePageKey = '';
 let loadingPageKey = '';
 let scrollAnimationDestroy = null;
-let dashboardPanjiDestroy = null;
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -681,7 +680,7 @@ function renderDashboardSkeleton() {
   contentArea.innerHTML = `
     <section class="hero-card hero-card--dashboard">
       <div class="hero-glow"></div>
-      <div class="hero-kicker">SIPPBJ · Dashboard</div>
+      <div class="hero-kicker">TRAXPBJ · Kota Bogor Procurement Intelligence</div>
       <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
       <p>Menarik data dari FIX ITKP OPD, D_PERENCANAAN, dan D_REALISASI untuk merangkum profil ITKP, perencanaan, realisasi, metode pengadaan, OPD dominan, serta indikator progress pengadaan.</p>
 
@@ -699,7 +698,7 @@ function renderDashboardSkeleton() {
 function renderDashboardError(error) {
   contentArea.innerHTML = `
     <section class="hero-card hero-card--dashboard">
-      <div class="hero-kicker">SIPPBJ · Dashboard</div>
+      <div class="hero-kicker">TRAXPBJ · Dashboard</div>
       <h3>Data dashboard belum bisa dimuat</h3>
       <p>${escapeHtml(error.message || 'Terjadi kendala saat mengambil data.')}</p>
       <div class="hero-actions">
@@ -742,7 +741,6 @@ async function renderDashboard(force = false) {
     const data = await loadDashboardData(force);
     renderDashboardReady(data);
     bindDashboardEvents();
-    initDashboardPanji(data);
   } catch (error) {
     console.error('Dashboard gagal dimuat:', error);
     renderDashboardError(error);
@@ -769,7 +767,7 @@ function renderDashboardReady(data) {
 
       <div class="hero-topline">
         <div>
-          <div class="hero-kicker">SIPPBJ · Dashboard</div>
+          <div class="hero-kicker">TRAXPBJ · Kota Bogor Procurement Intelligence</div>
           <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
           <p>Ringkasan interaktif dari ITKP Kota Bogor, profil perencanaan, realisasi paket, metode pengadaan, dan performa OPD/Sub OPD berdasarkan data Google Sheet yang tersedia.</p>
         </div>
@@ -954,7 +952,7 @@ function renderDashboardReady(data) {
       ${renderQuickCard('🗓️', 'linear-gradient(135deg,#ef8d21,#f8b14c)', 'Simulasi Timeline', 'Simulasikan jadwal pengadaan secara terstruktur.', 'simulasi-timeline')}
     </section>
 
-    <div class="footer-note">© BenRama 2026 SIPPBJ - Dashboard UKPBJ Kota Bogor</div>
+    <div class="footer-note">© BenRama 2026 SIPPBJ - Dashboard TRAXPBJ Kota Bogor</div>
   `;
 }
 
@@ -984,7 +982,6 @@ function bindDashboardEvents() {
         });
         renderDashboardReady(DASHBOARD_STATE.data);
         bindDashboardEvents();
-        initDashboardPanji(DASHBOARD_STATE.data, true);
         initScrollAnimation();
       }
     });
@@ -1000,7 +997,7 @@ function bindDashboardEvents() {
 
 function renderKpiCard(label, value, desc, icon) {
   return `
-    <div class="stat-card stat-card--lux" data-panji-kpi="${escapeHtml(label)}" data-panji-value="${escapeHtml(value)}" data-panji-desc="${escapeHtml(desc)}">
+    <div class="stat-card stat-card--lux">
       <div class="stat-icon">${icon}</div>
       <div class="label">${escapeHtml(label)}</div>
       <div class="value">${escapeHtml(value)}</div>
@@ -1194,639 +1191,8 @@ function closeFlyout() {
   }
 }
 
-
-/* =========================================================
-   PANJI DASHBOARD ASSISTANT
-   Tidak mengubah bentuk dashboard. PANJI hanya di-inject lewat JS,
-   bisa bergerak ke elemen, menjelaskan nilai, tombol, indikator,
-   serta memberi penilaian baik/cukup/butuh perhatian.
-   ========================================================= */
-
-function getPanjiDashboardStatus(value, maxValue = 30) {
-  const score = toNumber(value);
-  const max = toNumber(maxValue) || 30;
-  const percent = max > 0 ? (score / max) * 100 : 0;
-
-  if (score <= 0) {
-    return {
-      label: 'Belum Terdeteksi',
-      tone: 'sad',
-      text: 'Data belum terlihat atau masih nol. Perlu cek sumber data dan pencatatannya.'
-    };
-  }
-
-  if (percent >= 85) {
-    return {
-      label: 'Sangat Baik',
-      tone: 'happy',
-      text: 'Capaian sudah kuat. Tinggal dijaga konsistensi datanya.'
-    };
-  }
-
-  if (percent >= 70) {
-    return {
-      label: 'Baik',
-      tone: 'happy',
-      text: 'Capaian sudah baik, tetapi masih bisa dioptimalkan.'
-    };
-  }
-
-  if (percent >= 50) {
-    return {
-      label: 'Cukup',
-      tone: 'thinking',
-      text: 'Capaian cukup, tetapi perlu penguatan agar tidak tertinggal.'
-    };
-  }
-
-  return {
-    label: 'Butuh Perhatian',
-    tone: 'sad',
-    text: 'Capaian masih rendah dan sebaiknya jadi prioritas pembinaan/perbaikan.'
-  };
-}
-
-function getPanjiIndicatorMeaning(name) {
-  const key = String(name || '').toLowerCase();
-
-  if (key.includes('sirup')) {
-    return 'SiRUP menunjukkan ketertiban perencanaan dan pengumuman RUP: paket, pagu, metode, dan jadwal.';
-  }
-
-  if (key.includes('toko')) {
-    return 'Toko Daring menunjukkan pemanfaatan kanal belanja digital sederhana untuk kebutuhan yang sesuai.';
-  }
-
-  if (key.includes('purchasing')) {
-    return 'e-Purchasing menunjukkan pemanfaatan e-Katalog untuk paket yang barang/jasanya tersedia dan sesuai kebutuhan.';
-  }
-
-  if (key.includes('tender')) {
-    return 'e-Tendering menunjukkan proses tender/seleksi melalui SPSE dan ketertiban data pemilihannya.';
-  }
-
-  if (key.includes('kontrak')) {
-    return 'e-Kontrak menunjukkan apakah hasil pemilihan sudah lanjut menjadi pencatatan kontrak elektronik.';
-  }
-
-  if (key.includes('non')) {
-    return 'Non Tender menunjukkan ketertiban pencatatan paket non tender/non e-Purchasing sampai realisasi.';
-  }
-
-  return 'Indikator ini perlu dibaca dari nilai, sumber data, dan keterkaitannya dengan proses PBJ.';
-}
-
-function buildPanjiDashboardIntro(data) {
-  const profile = data.selectedProfile || data.cityProfile;
-  const status = getPanjiDashboardStatus(profile.score, 30);
-
-  return `Halo, saya PANJI — Pengadaan Jitu.\n\nSaya tidak mengubah bentuk dashboard. Saya hanya hidup di atas dashboard untuk membantu membaca angka, tombol, indikator, dan memberi penilaian.\n\nSaat ini saya membaca ${profile.name}. Skor Pemanfaatan Sistem ITKP-nya ${formatScore(profile.score)} dari 30, kategori ${status.label}. ${status.text}`;
-}
-
-function buildPanjiFullDashboardAnalysis(data) {
-  const profile = data.selectedProfile || data.cityProfile;
-  const status = getPanjiDashboardStatus(profile.score, 30);
-  const dimensions = profile.dimensions || [];
-
-  const indicatorText = dimensions.map((item) => {
-    const itemStatus = getPanjiDashboardStatus(item.value, item.max);
-    return `• ${item.name}: ${formatScore(item.value)} dari ${formatScore(item.max)} — ${itemStatus.label}`;
-  }).join('\n');
-
-  const sorted = [...dimensions].sort((a, b) => {
-    const aPercent = a.max > 0 ? toNumber(a.value) / a.max : 0;
-    const bPercent = b.max > 0 ? toNumber(b.value) / b.max : 0;
-    return aPercent - bPercent;
-  });
-
-  const weakest = sorted[0];
-  const strongest = sorted[sorted.length - 1];
-
-  return `Analisis PANJI untuk ${profile.name}.\n\nTotal ITKP Pemanfaatan Sistem: ${formatScore(profile.score)} dari 30 — ${status.label}.\n\nRincian indikator:\n${indicatorText}\n\nYang paling kuat: ${strongest ? strongest.name : '-'}.\nYang perlu perhatian dulu: ${weakest ? weakest.name : '-'}.\n\nSaran PANJI: fokuskan perbaikan dari indikator terendah. Pastikan RUP/SiRUP tertib, katalog dicek, tender/seleksi tercatat, kontrak elektronik tidak tertinggal, paket non tender dicatat, dan realisasi tidak bolong.`;
-}
-
-function buildPanjiRecommendation(data) {
-  const profile = data.selectedProfile || data.cityProfile;
-  const dimensions = [...(profile.dimensions || [])]
-    .map((item) => ({
-      ...item,
-      percent: item.max > 0 ? (toNumber(item.value) / item.max) * 100 : 0,
-      status: getPanjiDashboardStatus(item.value, item.max)
-    }))
-    .sort((a, b) => a.percent - b.percent)
-    .slice(0, 3);
-
-  const priorityText = dimensions.map((item, index) => {
-    return `${index + 1}. ${item.name} — ${item.status.label}. ${getPanjiIndicatorMeaning(item.name)}`;
-  }).join('\n\n');
-
-  return `Rekomendasi PANJI untuk ${profile.name}.\n\nPrioritas perbaikan:\n${priorityText || '-'}\n\nKesimpulan: jangan cuma mengejar angka. Pastikan alur PBJ tertib dari perencanaan, pemilihan metode, transaksi, kontrak, BAST, sampai realisasi.`;
-}
-
-function buildPanjiKpiExplanation(label, value, desc, data) {
-  const cleanLabel = String(label || '').trim();
-  const profile = data.selectedProfile || data.cityProfile;
-
-  if (/itkp/i.test(cleanLabel)) {
-    const status = getPanjiDashboardStatus(profile.score, 30);
-    return `Ini kartu ${cleanLabel}. Nilainya ${formatScore(profile.score)} dari 30 untuk ${profile.name}. Kategorinya ${status.label}. ${status.text}`;
-  }
-
-  if (/pagu/i.test(cleanLabel)) {
-    return `Ini kartu Pagu Perencanaan. Nilainya ${value}. Artinya dashboard membaca total pagu paket dari data perencanaan untuk scope ${data.scopeName}. Ini dipakai sebagai pembanding terhadap realisasi.`;
-  }
-
-  if (/realisasi/i.test(cleanLabel) && !/paket/i.test(cleanLabel)) {
-    const status = getPanjiDashboardStatus(data.realisasiPersen, 100);
-    return `Ini kartu Realisasi. Nilainya ${value}, atau ${formatPercent(data.realisasiPersen)} dari pagu. Kategorinya ${status.label}. Kalau rendah, cek paket yang belum jalan, belum kontrak, belum BAST, atau belum tercatat.`;
-  }
-
-  if (/paket/i.test(cleanLabel)) {
-    return `Ini kartu Paket Realisasi. Nilainya ${value}. PANJI membaca jumlah paket realisasi, paket selesai, dan paket yang masih proses. Kalau banyak yang belum selesai, cek kontrak, BAST, dan pencatatan realisasi.`;
-  }
-
-  return `Ini kartu ${cleanLabel}. Nilainya ${value}. ${desc || 'PANJI membaca kartu ini sebagai ringkasan dashboard.'}`;
-}
-
-function buildPanjiDimensionExplanationByElement(button, data) {
-  const name = button.querySelector('.dim-name span')?.textContent?.trim() || 'Indikator';
-  const valueText = button.querySelector('.dim-value')?.textContent?.trim() || '';
-  const profile = data.selectedProfile || data.cityProfile;
-  const found = (profile.dimensions || []).find((item) => item.name === name);
-  const status = found ? getPanjiDashboardStatus(found.value, found.max) : { label: 'Perlu dicek', text: '', tone: 'thinking' };
-
-  return `${name} untuk ${profile.name}: ${valueText}. Kategorinya ${status.label}.\n\n${getPanjiIndicatorMeaning(name)}\n\n${status.text}`;
-}
-
-function buildPanjiQuickExplanation(button) {
-  const title = button.querySelector('.quick-title')?.textContent?.trim() || 'Menu';
-  const text = button.querySelector('.quick-text')?.textContent?.trim() || '';
-
-  return `Ini tombol ${title}. ${text}\n\nKalau diklik, dashboard membuka modul detailnya. PANJI bisa bantu user tahu indikator mana yang harus dicek.`;
-}
-
-function injectDashboardPanjiCss() {
-  if (document.getElementById('dashboard-panji-css')) return;
-
-  const style = document.createElement('style');
-  style.id = 'dashboard-panji-css';
-  style.textContent = `
-    .dash-panji{position:fixed;right:var(--dash-panji-right,34px);bottom:var(--dash-panji-bottom,86px);left:auto;top:auto;z-index:999999;display:flex;align-items:flex-end;gap:14px;pointer-events:none;transition:left .45s cubic-bezier(.2,.8,.2,1),top .45s cubic-bezier(.2,.8,.2,1),right .45s cubic-bezier(.2,.8,.2,1),bottom .45s cubic-bezier(.2,.8,.2,1),transform .25s ease;}
-    .dash-panji *{pointer-events:auto;}
-    .dash-panji-bubble{width:370px;min-height:128px;max-height:300px;overflow:auto;padding:16px;border-radius:22px;background:radial-gradient(circle at top left,rgba(59,130,246,.14),transparent 38%),rgba(255,255,255,.97);border:1px solid rgba(219,234,254,.95);box-shadow:0 22px 48px rgba(15,23,42,.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);position:relative;animation:dashPanjiBubbleIdle 3.8s ease-in-out infinite;}
-    .dash-panji-bubble::after{content:"";position:absolute;right:-10px;bottom:34px;width:20px;height:20px;background:rgba(255,255,255,.97);border-right:1px solid rgba(219,234,254,.95);border-bottom:1px solid rgba(219,234,254,.95);transform:rotate(-45deg);}
-    @keyframes dashPanjiBubbleIdle{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
-    .dash-panji.dash-panji-minimized .dash-panji-bubble{opacity:0;visibility:hidden;width:0;min-width:0;min-height:0;max-height:0;padding:0;border:0;overflow:hidden;}
-    .dash-panji-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
-    .dash-panji-name{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;background:linear-gradient(135deg,#123a72,#2563eb);color:#fff;font-size:11px;font-weight:950;letter-spacing:.08em;box-shadow:0 8px 18px rgba(37,99,235,.22);}
-    .dash-panji-emote{width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#eef4fb;font-size:18px;animation:dashPanjiEmote 2s ease-in-out infinite;}
-    @keyframes dashPanjiEmote{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
-    .dash-panji-text{color:#102544;font-size:14px;line-height:1.68;font-weight:750;}
-    .dash-panji-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
-    .dash-panji-actions button{border:none;min-height:34px;padding:0 11px;border-radius:11px;cursor:pointer;font-size:11px;font-weight:900;background:#eef4fb;color:#123a72;border:1px solid #dbeafe;transition:.18s ease;}
-    .dash-panji-actions button:hover{transform:translateY(-1px);background:#dbeafe;}
-    .dash-panji-close{position:absolute;right:-8px;top:-8px;width:28px;height:28px;z-index:5;border:none;border-radius:999px;cursor:pointer;background:#102544;color:#fff;font-size:18px;font-weight:900;box-shadow:0 8px 18px rgba(15,23,42,.22);}
-    .dash-panji-character{width:108px;height:138px;position:relative;border:none;background:transparent;cursor:pointer;padding:0;flex-shrink:0;animation:dashPanjiFloat 2.8s ease-in-out infinite,dashPanjiTilt 4.2s ease-in-out infinite;transform-origin:center bottom;}
-    @keyframes dashPanjiFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-    @keyframes dashPanjiTilt{0%,100%{rotate:0deg;}25%{rotate:-2deg;}75%{rotate:2deg;}}
-    .dash-panji-glow{position:absolute;inset:22px 4px 0;border-radius:999px;background:radial-gradient(circle,rgba(37,99,235,.28),transparent 68%);filter:blur(10px);animation:dashPanjiGlow 2.4s ease-in-out infinite;}
-    @keyframes dashPanjiGlow{0%,100%{opacity:.65;transform:scale(.96);}50%{opacity:1;transform:scale(1.08);}}
-    .dash-panji-head{position:absolute;left:16px;top:8px;width:76px;height:76px;border-radius:28px 28px 25px 25px;background:radial-gradient(circle at 28% 22%,rgba(255,255,255,.95),transparent 18%),linear-gradient(135deg,#f8fbff,#c7ddff);border:2px solid #123a72;box-shadow:0 14px 28px rgba(18,58,114,.20),inset 0 -8px 18px rgba(37,99,235,.10);animation:dashPanjiHead 3.4s ease-in-out infinite;}
-    @keyframes dashPanjiHead{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
-    .dash-panji-hat{position:absolute;left:9px;top:-14px;width:58px;height:26px;border-radius:12px 12px 8px 8px;background:linear-gradient(135deg,#123a72,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:950;letter-spacing:.08em;box-shadow:0 8px 16px rgba(18,58,114,.22);}
-    .dash-panji-eye{position:absolute;top:34px;width:12px;height:16px;border-radius:999px;background:#102544;animation:dashPanjiBlink 4.8s infinite;}
-    .dash-panji-eye-left{left:21px;}.dash-panji-eye-right{right:21px;}
-    @keyframes dashPanjiBlink{0%,91%,100%{transform:scaleY(1);}94%{transform:scaleY(.12);}96%{transform:scaleY(1);}}
-    .dash-panji-mouth{position:absolute;left:31px;bottom:17px;width:16px;height:8px;border-bottom:3px solid #102544;border-radius:0 0 999px 999px;}
-    .dash-panji-body{position:absolute;left:24px;top:84px;width:60px;height:45px;border-radius:21px 21px 17px 17px;background:linear-gradient(135deg,#123a72,#2f9a8f);border:2px solid rgba(255,255,255,.88);box-shadow:0 14px 24px rgba(15,23,42,.18);animation:dashPanjiBreath 2.6s ease-in-out infinite;}
-    @keyframes dashPanjiBreath{0%,100%{transform:scale(1);}50%{transform:scale(1.025);}}
-    .dash-panji-badge{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:999px;background:#fff;color:#123a72;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:950;}
-    .dash-panji-hand{position:absolute;top:94px;width:18px;height:34px;border-radius:999px;background:linear-gradient(135deg,#c7ddff,#f8fbff);border:2px solid #123a72;}
-    .dash-panji-hand-left{left:8px;transform:rotate(24deg);}.dash-panji-hand-right{right:8px;transform-origin:top center;animation:dashPanjiWave 1.8s ease-in-out infinite;}
-    @keyframes dashPanjiWave{0%,100%{transform:rotate(-18deg);}50%{transform:rotate(-46deg);}}
-    .dash-panji-talking .dash-panji-mouth{animation:dashPanjiTalk .22s ease-in-out infinite;}
-    @keyframes dashPanjiTalk{0%,100%{height:5px;width:15px;left:31px;bottom:17px;border-bottom:3px solid currentColor;border-top:none;border-left:none;border-right:none;border-radius:0 0 999px 999px;background:transparent;}50%{height:15px;width:20px;left:28px;bottom:12px;border:3px solid currentColor;border-radius:999px;background:rgba(15,23,42,.08);}}
-    .dash-panji-happy .dash-panji-head{background:radial-gradient(circle at 28% 22%,rgba(255,255,255,.95),transparent 18%),linear-gradient(135deg,#ecfdf5,#bbf7d0);border-color:#16a34a;}
-    .dash-panji-happy .dash-panji-eye{height:8px;top:40px;background:transparent;border-bottom:4px solid #166534;animation:none;}
-    .dash-panji-sad .dash-panji-head{background:radial-gradient(circle at 28% 22%,rgba(255,255,255,.95),transparent 18%),linear-gradient(135deg,#fff1f2,#fecdd3);border-color:#dc2626;}
-    .dash-panji-sad .dash-panji-eye-left::after,.dash-panji-sad .dash-panji-eye-right::after{content:"";position:absolute;left:3px;top:13px;width:6px;height:10px;border-radius:999px;background:linear-gradient(180deg,#93c5fd,#38bdf8);animation:dashPanjiTear 1.1s ease-in-out infinite;}
-    @keyframes dashPanjiTear{0%{opacity:0;transform:translateY(-4px) scale(.7);}25%{opacity:1;}100%{opacity:0;transform:translateY(16px) scale(1);}}
-    .dash-panji-thinking .dash-panji-character::after{content:"?";position:absolute;right:0;top:0;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#fef3c7;color:#92400e;font-weight:950;box-shadow:0 8px 18px rgba(15,23,42,.14);animation:dashPanjiQuestion 1.1s ease-in-out infinite;}
-    @keyframes dashPanjiQuestion{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-7px) scale(1.08);}}
-    .dash-panji-highlight{position:relative;z-index:9999;outline:3px solid rgba(37,99,235,.45);outline-offset:5px;box-shadow:0 0 0 9px rgba(37,99,235,.10),0 18px 42px rgba(37,99,235,.16) !important;}
-    @media(max-width:1400px){.dash-panji-bubble{width:320px;max-height:280px;}.dash-panji-character{width:102px;height:132px;}}
-  `;
-  document.head.appendChild(style);
-}
-
-function ensureDashboardPanjiElement() {
-  injectDashboardPanjiCss();
-
-  let panji = document.getElementById('dashboardPanji');
-  if (!panji) {
-    panji = document.createElement('div');
-    panji.id = 'dashboardPanji';
-    panji.className = 'dash-panji';
-    document.body.appendChild(panji);
-  }
-
-  panji.innerHTML = `
-    <div class="dash-panji-bubble">
-      <button type="button" class="dash-panji-close" id="dashPanjiClose">×</button>
-      <div class="dash-panji-top">
-        <div class="dash-panji-name">PANJI · Pengadaan Jitu</div>
-        <div class="dash-panji-emote" id="dashPanjiEmote">🤖</div>
-      </div>
-      <div class="dash-panji-text" id="dashPanjiText"></div>
-      <div class="dash-panji-actions">
-        <button type="button" id="dashPanjiExplain">Jelaskan Dashboard</button>
-        <button type="button" id="dashPanjiTour">Panduan Elemen</button>
-        <button type="button" id="dashPanjiAdvice">Rekomendasi</button>
-        <button type="button" id="dashPanjiMini">Minimize</button>
-      </div>
-    </div>
-
-    <button type="button" class="dash-panji-character" id="dashPanjiCharacter" title="PANJI Pengadaan Jitu">
-      <div class="dash-panji-glow"></div>
-      <div class="dash-panji-head">
-        <div class="dash-panji-hat">PBJ</div>
-        <div class="dash-panji-eye dash-panji-eye-left"></div>
-        <div class="dash-panji-eye dash-panji-eye-right"></div>
-        <div class="dash-panji-mouth"></div>
-      </div>
-      <div class="dash-panji-body"><div class="dash-panji-badge">PJ</div></div>
-      <div class="dash-panji-hand dash-panji-hand-left"></div>
-      <div class="dash-panji-hand dash-panji-hand-right"></div>
-    </button>
-  `;
-
-  return panji;
-}
-
-function clearDashboardPanjiHighlight() {
-  document.querySelectorAll('.dash-panji-highlight').forEach((item) => {
-    item.classList.remove('dash-panji-highlight');
-  });
-}
-
-function moveDashboardPanjiHome() {
-  const panji = document.getElementById('dashboardPanji');
-  if (!panji) return;
-
-  panji.style.left = 'auto';
-  panji.style.top = 'auto';
-  panji.style.right = 'var(--dash-panji-right, 34px)';
-  panji.style.bottom = 'var(--dash-panji-bottom, 86px)';
-}
-
-function moveDashboardPanjiToElement(target) {
-  const panji = document.getElementById('dashboardPanji');
-
-  if (!panji || !target || !target.getBoundingClientRect) {
-    moveDashboardPanjiHome();
-    return;
-  }
-
-  clearDashboardPanjiHighlight();
-  target.classList.add('dash-panji-highlight');
-
-  const rect = target.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const assistantWidth = Math.min(530, vw - 40);
-  const assistantHeight = 235;
-  const gap = 18;
-
-  let left = rect.left > vw / 2
-    ? rect.left - assistantWidth - gap
-    : rect.right + gap;
-
-  if (left < 18) left = 18;
-  if (left + assistantWidth > vw - 18) left = vw - assistantWidth - 18;
-
-  let top = rect.top + (rect.height / 2) - (assistantHeight / 2);
-
-  if (top < 18) top = 18;
-  if (top + assistantHeight > vh - 18) top = vh - assistantHeight - 18;
-
-  panji.style.left = `${Math.round(left)}px`;
-  panji.style.top = `${Math.round(top)}px`;
-  panji.style.right = 'auto';
-  panji.style.bottom = 'auto';
-}
-
-function dashboardPanjiSpeak(message, mood = 'talking', target = null) {
-  const panji = document.getElementById('dashboardPanji');
-  const textEl = document.getElementById('dashPanjiText');
-  const emote = document.getElementById('dashPanjiEmote');
-
-  if (!panji || !textEl) return;
-
-  panji.classList.remove('dash-panji-minimized', 'dash-panji-happy', 'dash-panji-sad', 'dash-panji-thinking', 'dash-panji-talking');
-  panji.classList.add('dash-panji-talking');
-
-  if (mood === 'happy') {
-    panji.classList.add('dash-panji-happy');
-    if (emote) emote.textContent = '😄';
-  } else if (mood === 'sad') {
-    panji.classList.add('dash-panji-sad');
-    if (emote) emote.textContent = '😢';
-  } else if (mood === 'thinking') {
-    panji.classList.add('dash-panji-thinking');
-    if (emote) emote.textContent = '🤔';
-  } else if (emote) {
-    emote.textContent = '🤖';
-  }
-
-  textEl.innerHTML = escapeHtml(message).replace(/\n/g, '<br>');
-
-  if (target) {
-    moveDashboardPanjiToElement(target);
-  }
-
-  clearTimeout(panji._talkTimer);
-  panji._talkTimer = setTimeout(() => {
-    panji.classList.remove('dash-panji-talking');
-  }, Math.min(9000, Math.max(2400, String(message).length * 32)));
-}
-
-function startDashboardPanjiTour(data) {
-  const steps = [
-    {
-      selector: '.hero-card--dashboard',
-      message: 'Ini area pembuka dashboard. Di sini user tahu dashboard sedang membaca profil PBJ Kota Bogor, update data, dan tombol cepat untuk masuk ke modul.',
-      mood: 'talking'
-    },
-    {
-      selector: '.dashboard-kpi-grid .stat-card--lux:nth-child(1)',
-      message: 'Ini kartu Skor ITKP. PANJI menilai kualitas pemanfaatan sistem dari total 30 poin. Semakin tinggi, semakin baik pemanfaatan SiRUP, katalog, tender, kontrak, dan pencatatan non tender.',
-      mood: 'thinking'
-    },
-    {
-      selector: '.procurement-map-card',
-      message: 'Ini radar Pemanfaatan Sistem ITKP. Pilih satuan kerja di dropdown, lalu PANJI akan baca nilai per indikator dan menentukan mana yang baik, cukup, atau butuh perhatian.',
-      mood: 'talking'
-    },
-    {
-      selector: '.dimensions--clickable',
-      message: 'Ini daftar indikator: SiRUP, Toko Daring, e-Purchasing, e-Tendering, e-Kontrak, dan Non Tender. Arahkan mouse ke tiap indikator, PANJI akan jelaskan arti nilainya.',
-      mood: 'happy'
-    },
-    {
-      selector: '.money-progress',
-      message: 'Ini progress pagu dibanding realisasi. Kalau realisasi masih rendah, perlu cek paket yang belum jalan, belum kontrak, belum BAST, atau belum tercatat realisasinya.',
-      mood: 'thinking'
-    },
-    {
-      selector: '.quick-grid',
-      message: 'Ini tombol akses cepat. PANJI bisa jelaskan fungsi setiap tombol, lalu user bisa klik untuk masuk ke modul detail.',
-      mood: 'happy'
-    }
-  ];
-
-  let index = 0;
-
-  const runStep = () => {
-    const step = steps[index];
-    const target = document.querySelector(step.selector);
-
-    if (target) {
-      dashboardPanjiSpeak(step.message, step.mood, target);
-    }
-
-    index += 1;
-
-    const panji = document.getElementById('dashboardPanji');
-    if (!panji) return;
-
-    if (index < steps.length) {
-      clearTimeout(panji._tourTimer);
-      panji._tourTimer = setTimeout(runStep, 4200);
-    } else {
-      clearTimeout(panji._tourTimer);
-      panji._tourTimer = setTimeout(() => {
-        clearDashboardPanjiHighlight();
-        moveDashboardPanjiHome();
-        dashboardPanjiSpeak('Selesai. Sekarang arahkan mouse ke kartu, indikator, atau tombol mana pun. PANJI akan jelaskan fungsi dan nilainya tanpa mengubah bentuk dashboard.', 'happy');
-      }, 4200);
-    }
-  };
-
-  runStep();
-}
-
-function initDashboardPanji(data, fromSelection = false) {
-  if (!data || activePageKey !== 'dashboard') return;
-
-  if (typeof dashboardPanjiDestroy === 'function') {
-    dashboardPanjiDestroy();
-    dashboardPanjiDestroy = null;
-  }
-
-  const panji = ensureDashboardPanjiElement();
-
-  const closeBtn = document.getElementById('dashPanjiClose');
-  const miniBtn = document.getElementById('dashPanjiMini');
-  const characterBtn = document.getElementById('dashPanjiCharacter');
-  const explainBtn = document.getElementById('dashPanjiExplain');
-  const tourBtn = document.getElementById('dashPanjiTour');
-  const adviceBtn = document.getElementById('dashPanjiAdvice');
-
-  const minimize = () => {
-    panji.classList.add('dash-panji-minimized');
-    clearDashboardPanjiHighlight();
-    moveDashboardPanjiHome();
-  };
-
-  const show = () => {
-    panji.classList.remove('dash-panji-minimized');
-  };
-
-  if (closeBtn) closeBtn.addEventListener('click', minimize);
-  if (miniBtn) miniBtn.addEventListener('click', minimize);
-
-  if (characterBtn) {
-    characterBtn.addEventListener('click', () => {
-      show();
-      clearDashboardPanjiHighlight();
-      moveDashboardPanjiHome();
-      dashboardPanjiSpeak(buildPanjiDashboardIntro(data), 'talking');
-    });
-  }
-
-  if (explainBtn) {
-    explainBtn.addEventListener('click', () => {
-      show();
-      clearDashboardPanjiHighlight();
-      moveDashboardPanjiHome();
-      dashboardPanjiSpeak(
-        buildPanjiFullDashboardAnalysis(data),
-        getPanjiDashboardStatus((data.selectedProfile || data.cityProfile).score, 30).tone
-      );
-    });
-  }
-
-  if (tourBtn) {
-    tourBtn.addEventListener('click', () => {
-      show();
-      startDashboardPanjiTour(data);
-    });
-  }
-
-  if (adviceBtn) {
-    adviceBtn.addEventListener('click', () => {
-      show();
-      clearDashboardPanjiHighlight();
-      moveDashboardPanjiHome();
-      dashboardPanjiSpeak(buildPanjiRecommendation(data), 'thinking');
-    });
-  }
-
-  const cleanups = [];
-
-  const bindHover = (el, handler) => {
-    let timer = null;
-    const enter = () => {
-      clearTimeout(timer);
-      timer = setTimeout(handler, 280);
-    };
-    const leave = () => {
-      clearTimeout(timer);
-    };
-
-    el.addEventListener('mouseenter', enter);
-    el.addEventListener('mouseleave', leave);
-    el.addEventListener('focus', enter);
-
-    return () => {
-      el.removeEventListener('mouseenter', enter);
-      el.removeEventListener('mouseleave', leave);
-      el.removeEventListener('focus', enter);
-    };
-  };
-
-  contentArea.querySelectorAll('.stat-card--lux').forEach((card) => {
-    cleanups.push(bindHover(card, () => {
-      const label = card.dataset.panjiKpi || card.querySelector('.label')?.textContent || 'Kartu Dashboard';
-      const value = card.dataset.panjiValue || card.querySelector('.value')?.textContent || '';
-      const desc = card.dataset.panjiDesc || card.querySelector('.desc')?.textContent || '';
-      dashboardPanjiSpeak(buildPanjiKpiExplanation(label, value, desc, data), 'thinking', card);
-    }));
-  });
-
-  contentArea.querySelectorAll('.dim-row--button').forEach((button) => {
-    cleanups.push(bindHover(button, () => {
-      const message = buildPanjiDimensionExplanationByElement(button, data);
-      const name = button.querySelector('.dim-name span')?.textContent || '';
-      const profile = data.selectedProfile || data.cityProfile;
-      const item = (profile.dimensions || []).find((dim) => dim.name === name);
-      const mood = item ? getPanjiDashboardStatus(item.value, item.max).tone : 'thinking';
-      dashboardPanjiSpeak(message, mood, button);
-    }));
-  });
-
-  contentArea.querySelectorAll('.quick-card').forEach((button) => {
-    cleanups.push(bindHover(button, () => {
-      dashboardPanjiSpeak(buildPanjiQuickExplanation(button), 'happy', button);
-    }));
-  });
-
-  const scoreRing = contentArea.querySelector('.score-ring');
-  if (scoreRing) {
-    cleanups.push(bindHover(scoreRing, () => {
-      const profile = data.selectedProfile || data.cityProfile;
-      const status = getPanjiDashboardStatus(profile.score, 30);
-      dashboardPanjiSpeak(
-        `Lingkaran ini menunjukkan skor ITKP ${profile.name}: ${formatScore(profile.score)} dari 30. Kategorinya ${status.label}. ${status.text}`,
-        status.tone,
-        scoreRing
-      );
-    }));
-  }
-
-  const moneyProgress = contentArea.querySelector('.money-progress');
-  if (moneyProgress) {
-    cleanups.push(bindHover(moneyProgress, () => {
-      const status = getPanjiDashboardStatus(data.realisasiPersen, 100);
-      dashboardPanjiSpeak(
-        `Panel ini membandingkan pagu dengan realisasi untuk ${data.scopeName}. Persentasenya ${formatPercent(data.realisasiPersen)}, kategori ${status.label}. Kalau rendah, cek paket yang belum kontrak, belum BAST, atau belum tercatat realisasinya.`,
-        status.tone,
-        moneyProgress
-      );
-    }));
-  }
-
-  contentArea.querySelectorAll('.rank-table').forEach((table, index) => {
-    cleanups.push(bindHover(table, () => {
-      const message = index === 0
-        ? 'Ini ranking nilai ITKP tertinggi. OPD/Sub OPD di sini bisa jadi contoh praktik baik pemanfaatan sistem.'
-        : 'Ini ranking nilai ITKP terendah. Bagian ini bukan untuk menyalahkan, tapi menentukan prioritas pembinaan dan perbaikan data.';
-      dashboardPanjiSpeak(message, index === 0 ? 'happy' : 'thinking', table);
-    }));
-  });
-
-  const updatePanjiBottom = () => {
-    const footer = document.querySelector('.footer-note');
-    const baseBottom = 86;
-    const maxBottom = 260;
-    let nextBottom = baseBottom;
-
-    if (footer) {
-      const rect = footer.getBoundingClientRect();
-      const panjiRect = panji.getBoundingClientRect();
-      const normalTop = window.innerHeight - baseBottom - panjiRect.height;
-      const overlap = rect.bottom - normalTop;
-
-      if (rect.top < window.innerHeight && overlap > 0) {
-        nextBottom = Math.min(maxBottom, baseBottom + overlap + 20);
-      }
-    }
-
-    panji.style.setProperty('--dash-panji-bottom', `${Math.round(nextBottom)}px`);
-  };
-
-  window.addEventListener('scroll', updatePanjiBottom, { passive: true });
-  window.addEventListener('resize', updatePanjiBottom);
-  updatePanjiBottom();
-
-  const firstMessage = fromSelection
-    ? buildPanjiFullDashboardAnalysis(data)
-    : buildPanjiDashboardIntro(data);
-  const firstMood = getPanjiDashboardStatus((data.selectedProfile || data.cityProfile).score, 30).tone;
-
-  clearDashboardPanjiHighlight();
-  moveDashboardPanjiHome();
-  dashboardPanjiSpeak(firstMessage, fromSelection ? firstMood : 'talking');
-
-  dashboardPanjiDestroy = () => {
-    clearTimeout(panji._talkTimer);
-    clearTimeout(panji._tourTimer);
-    cleanups.forEach((fn) => {
-      try {
-        fn();
-      } catch (error) {
-        console.error(error);
-      }
-    });
-    window.removeEventListener('scroll', updatePanjiBottom);
-    window.removeEventListener('resize', updatePanjiBottom);
-    clearDashboardPanjiHighlight();
-    if (panji && panji.parentNode) {
-      panji.remove();
-    }
-  };
-}
-
-function destroyDashboardPanji() {
-  if (typeof dashboardPanjiDestroy === 'function') {
-    dashboardPanjiDestroy();
-    dashboardPanjiDestroy = null;
-  }
-}
-
 function cleanupDynamicModule() {
   closeFlyout();
-  destroyDashboardPanji();
 
   if (typeof scrollAnimationDestroy === 'function') {
     scrollAnimationDestroy();
