@@ -41,26 +41,26 @@ const APP_ROUTES = {
     js: 'modules/monitoring/itkp-ekontrak/itkp-ekontrak.js'
   },
 
-'monitoring-nontender': {
-  title: 'Non eTendering/Non ePurchasing',
-  subtitle: 'Monitoring realisasi paket Non Tender dan capaian ITKP perangkat daerah.',
-  type: 'module',
-  html: 'modules/monitoring/itkp-nontender/itkp-nontender.html',
-  css: 'modules/monitoring/itkp-nontender/itkp-nontender.css',
-  js: 'modules/monitoring/itkp-nontender/itkp-nontender.js'
-},
+  'monitoring-nontender': {
+    title: 'Non eTendering/Non ePurchasing',
+    subtitle: 'Monitoring realisasi paket Non Tender dan capaian ITKP perangkat daerah.',
+    type: 'module',
+    html: 'modules/monitoring/itkp-nontender/itkp-nontender.html',
+    css: 'modules/monitoring/itkp-nontender/itkp-nontender.css',
+    js: 'modules/monitoring/itkp-nontender/itkp-nontender.js'
+  },
 
-'rapor-pbj': {
-  title: 'Rapor PBJ',
-  subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
-  type: 'module',
-  html: 'modules/rapor-pbj/rapor-pbj.html',
-  css: 'modules/rapor-pbj/rapor-pbj.css',
-  js: 'modules/rapor-pbj/rapor-pbj.js',
-  externalScripts: [
-    'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
-  ]
-},
+  'rapor-pbj': {
+    title: 'Rapor PBJ',
+    subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
+    type: 'module',
+    html: 'modules/rapor-pbj/rapor-pbj.html',
+    css: 'modules/rapor-pbj/rapor-pbj.css',
+    js: 'modules/rapor-pbj/rapor-pbj.js',
+    externalScripts: [
+      'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
+    ]
+  },
 
   'monitoring-perencanaan': {
     title: 'Monitoring Realisasi',
@@ -1133,21 +1133,65 @@ function renderQuickCard(icon, bg, title, text, route) {
 }
 
 function renderIframePage(page) {
+  const lowerUrl = String(page.url || '').toLowerCase();
+  const isSimNontender = lowerUrl.includes('simppk');
+
   contentArea.innerHTML = `
-    <section class="embed-card">
+    <section class="embed-card ${isSimNontender ? 'embed-card--simppk' : ''}">
       <h3>${escapeHtml(page.title)}</h3>
       <div class="page-note">Halaman dimuat dari project/modul yang sudah ada.</div>
 
-      <div class="embed-frame-wrap">
+      <div class="embed-frame-wrap ${isSimNontender ? 'embed-frame-wrap--simppk' : ''}">
         <iframe
-          class="embed-frame"
+          id="${isSimNontender ? 'simppkFrame' : ''}"
+          class="embed-frame ${isSimNontender ? 'embed-frame--simppk' : ''}"
           src="${page.url}"
           loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade">
+          referrerpolicy="no-referrer-when-downgrade"
+          scrolling="${isSimNontender ? 'no' : 'yes'}">
         </iframe>
       </div>
     </section>
   `;
+
+  if (isSimNontender) {
+    const iframe = document.getElementById('simppkFrame');
+
+    const resizeIframe = () => {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+        if (!doc) {
+          return;
+        }
+
+        const body = doc.body;
+        const html = doc.documentElement;
+
+        const height = Math.max(
+          body ? body.scrollHeight : 0,
+          body ? body.offsetHeight : 0,
+          html ? html.clientHeight : 0,
+          html ? html.scrollHeight : 0,
+          html ? html.offsetHeight : 0,
+          820
+        );
+
+        iframe.style.height = `${height + 40}px`;
+      } catch (error) {
+        iframe.style.height = 'calc(100vh - 170px)';
+        iframe.setAttribute('scrolling', 'yes');
+      }
+    };
+
+    iframe.addEventListener('load', () => {
+      resizeIframe();
+
+      setTimeout(resizeIframe, 300);
+      setTimeout(resizeIframe, 1000);
+      setTimeout(resizeIframe, 2000);
+    });
+  }
 }
 
 function renderPlaceholderPage(pageKey, page) {
