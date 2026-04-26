@@ -2033,7 +2033,7 @@ textarea{
 
 /* =========================================================
    IFRAME FIX - SIMULASI PENCATATAN NON TENDER / SIMPPK
-   Supaya halaman iframe bisa terlihat sampai bawah
+   Auto height supaya bawahnya tidak kosong
    ========================================================= */
 
 .embed-card--simppk{
@@ -2047,10 +2047,10 @@ textarea{
 
 .embed-frame-wrap--simppk{
   width:100%;
-  height:calc(100vh - 150px);
-  min-height:820px;
+  height:auto;
+  min-height:0;
   max-height:none;
-  overflow:auto;
+  overflow:visible;
   border-radius:22px;
   border:1px solid #dbe5f0;
   background:#fff;
@@ -2058,11 +2058,12 @@ textarea{
 
 .embed-frame--simppk{
   width:100%;
-  height:100%;
-  min-height:2200px;
+  height:820px;
+  min-height:820px;
   border:none;
   display:block;
   background:#fff;
+  overflow:hidden;
 }
 
 /* Mobile */
@@ -2072,12 +2073,11 @@ textarea{
   }
 
   .embed-frame-wrap--simppk{
-    height:calc(100vh - 120px);
-    min-height:760px;
     border-radius:18px;
   }
 
   .embed-frame--simppk{
-    min-height:2200px;
+    min-height:760px;
+    height:760px;
   }
 }
