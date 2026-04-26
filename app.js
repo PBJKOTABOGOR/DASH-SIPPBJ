@@ -1139,7 +1139,7 @@ function renderIframePage(page) {
   contentArea.innerHTML = `
     <section class="embed-card ${isSimNontender ? 'embed-card--simppk' : ''}">
       <h3>${escapeHtml(page.title)}</h3>
-      <div class="page-note">Halaman dimuat dari project/modul yang sudah ada.</div>
+      <div class="page-note">Simulasi Pencatatan Non Tender.</div>
 
       <div class="embed-frame-wrap ${isSimNontender ? 'embed-frame-wrap--simppk' : ''}">
         <iframe
