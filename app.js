@@ -50,12 +50,17 @@ const APP_ROUTES = {
   js: 'modules/monitoring/itkp-nontender/itkp-nontender.js'
 },
 
-  'rapor-pbj': {
-    title: 'Rapor PBJ',
-    subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
-    type: 'iframe',
-    url: 'https://pbjkotabogor.github.io/raporpbj/'
-  },
+'rapor-pbj': {
+  title: 'Rapor PBJ',
+  subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
+  type: 'module',
+  html: 'modules/rapor-pbj/rapor-pbj.html',
+  css: 'modules/rapor-pbj/rapor-pbj.css',
+  js: 'modules/rapor-pbj/rapor-pbj.js',
+  externalScripts: [
+    'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
+  ]
+},
 
   'monitoring-perencanaan': {
     title: 'Monitoring Realisasi',
