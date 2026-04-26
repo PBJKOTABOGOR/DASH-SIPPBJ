@@ -688,7 +688,7 @@ function renderDashboardSkeleton() {
   contentArea.innerHTML = `
     <section class="hero-card hero-card--dashboard">
       <div class="hero-glow"></div>
-      <div class="hero-kicker">SIPPBJ · Kota Bogor Procurement Dashboard</div>
+      <div class="hero-kicker">UKPBJ · Kota Bogor</div>
       <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
       <p>Menarik data dari FIX ITKP OPD, D_PERENCANAAN, dan D_REALISASI untuk merangkum profil ITKP, perencanaan, realisasi, metode pengadaan, OPD dominan, serta indikator progress pengadaan.</p>
 
