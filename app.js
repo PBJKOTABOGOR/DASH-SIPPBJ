@@ -41,11 +41,14 @@ const APP_ROUTES = {
     js: 'modules/monitoring/itkp-ekontrak/itkp-ekontrak.js'
   },
 
-  'monitoring-nontender': {
-    title: 'Monitoring Non Tender',
-    subtitle: 'Halaman ini disiapkan untuk monitoring Non eTendering/Non ePurchasing.',
-    type: 'placeholder'
-  },
+'monitoring-nontender': {
+  title: 'Non eTendering/Non ePurchasing',
+  subtitle: 'Monitoring realisasi paket Non Tender dan capaian ITKP perangkat daerah.',
+  type: 'module',
+  html: 'modules/monitoring/itkp-nontender/itkp-nontender.html',
+  css: 'modules/monitoring/itkp-nontender/itkp-nontender.css',
+  js: 'modules/monitoring/itkp-nontender/itkp-nontender.js'
+},
 
   'rapor-pbj': {
     title: 'Rapor PBJ',
