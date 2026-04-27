@@ -1,4 +1,6 @@
 (function () {
+  'use strict';
+
   const NONTENDER_SHEET_CONFIG = {
     spreadsheetId: '1ToEDE9uugH2x44iOJCiTRtHH6BkcFZj4iAwYyI-rC5I',
     rawSheetName: 'M_Pencatatan',
@@ -6,7 +8,7 @@
   };
 
   const NONTENDER_MIN_LOADING_MS = 700;
-  const NONTENDER_PAGE_SIZE = 50;
+  const NONTENDER_PAGE_SIZE = 20;
   const NONTENDER_DETAIL_PAGE_SIZE = 10;
   const NONTENDER_MAX_ITKP = 5;
 
@@ -117,11 +119,12 @@
     });
 
     on(EL.btnResetFilter, 'click', () => {
-      EL.filterOpd.value = '';
-      EL.filterMetode.value = '';
-      EL.filterStatus.value = '';
-      EL.filterItkp.value = '';
-      EL.searchKeyword.value = '';
+      if (EL.filterOpd) EL.filterOpd.value = '';
+      if (EL.filterMetode) EL.filterMetode.value = '';
+      if (EL.filterStatus) EL.filterStatus.value = '';
+      if (EL.filterItkp) EL.filterItkp.value = '';
+      if (EL.searchKeyword) EL.searchKeyword.value = '';
+
       state.selectedOpd = '';
       state.rekapPage = 1;
       state.detailPage = 1;
@@ -129,14 +132,25 @@
     });
 
     on(EL.btnRefresh, 'click', () => initMonitoring(true));
-    on(EL.btnExportDetail, 'click', () => exportRows(getFilteredRawRows(), 'detail-nontender-semua-filter.csv'));
-    on(EL.btnExportCurrentDetail, 'click', () => exportRows(state.selectedDetailRows, `detail-nontender-${slugify(state.selectedOpd || 'semua-opd')}.csv`));
+
+    on(EL.btnExportDetail, 'click', () => {
+      exportRows(getFilteredRawRows(), 'detail-nontender-semua-filter.xlsx');
+    });
+
+    on(EL.btnExportCurrentDetail, 'click', () => {
+      exportRows(
+        state.selectedDetailRows,
+        `detail-nontender-${slugify(state.selectedOpd || 'semua-opd')}.xlsx`
+      );
+    });
 
     on(EL.btnClearDetail, 'click', () => {
       state.selectedOpd = '';
       state.selectedDetailRows = getFilteredRawRows();
       state.detailPage = 1;
+
       if (EL.filterOpd) EL.filterOpd.value = '';
+
       applyFilters();
     });
 
@@ -194,7 +208,15 @@
 
     return () => {
       state.destroyed = true;
-      listeners.forEach(off => off());
+
+      listeners.forEach(off => {
+        try {
+          off();
+        } catch (err) {
+          console.warn('Gagal melepas listener Non Tender:', err);
+        }
+      });
+
       closeModal();
       clearLoading();
     };
@@ -259,11 +281,11 @@
     }
 
     function applyFilters() {
-      const opdValue = normalizeText(EL.filterOpd.value || '');
-      const metodeValue = normalizeText(EL.filterMetode.value || '');
-      const statusValue = EL.filterStatus.value || '';
-      const itkpValue = EL.filterItkp.value || '';
-      const keyword = normalizeText(EL.searchKeyword.value || '');
+      const opdValue = normalizeText(EL.filterOpd?.value || '');
+      const metodeValue = normalizeText(EL.filterMetode?.value || '');
+      const statusValue = EL.filterStatus?.value || '';
+      const itkpValue = EL.filterItkp?.value || '';
+      const keyword = normalizeText(EL.searchKeyword?.value || '');
 
       state.filteredRekap = state.scoreRows.filter(row => {
         const rowOpd = normalizeText(row.satuan_kerja);
@@ -471,10 +493,10 @@
     }
 
     function getFilteredRawRows() {
-      const opdValue = normalizeText(EL.filterOpd.value || '');
-      const metodeValue = normalizeText(EL.filterMetode.value || '');
-      const statusValue = EL.filterStatus.value || '';
-      const keyword = normalizeText(EL.searchKeyword.value || '');
+      const opdValue = normalizeText(EL.filterOpd?.value || '');
+      const metodeValue = normalizeText(EL.filterMetode?.value || '');
+      const statusValue = EL.filterStatus?.value || '';
+      const keyword = normalizeText(EL.searchKeyword?.value || '');
 
       return state.rawRows.filter(row => {
         const rowOpd = normalizeText(row.satuan_kerja);
@@ -564,12 +586,24 @@
   }
 
   async function fetchCsv(url) {
-    const response = await fetch(url, { method: 'GET', cache: 'no-store' });
-    if (!response.ok) throw new Error(`HTTP ${response.status} saat mengambil ${url}`);
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} saat mengambil ${url}`);
+    }
 
     const text = await response.text();
-    if (!text || !text.trim()) throw new Error(`CSV kosong dari ${url}`);
-    if (/<!doctype html>|<html/i.test(text)) throw new Error(`Response bukan CSV. Kemungkinan sheet masih belum public: ${url}`);
+
+    if (!text || !text.trim()) {
+      throw new Error(`CSV kosong dari ${url}`);
+    }
+
+    if (/<!doctype html>|<html/i.test(text)) {
+      throw new Error(`Response bukan CSV. Kemungkinan sheet masih belum public: ${url}`);
+    }
 
     return text;
   }
@@ -647,7 +681,9 @@
 
   function pick(row, keys) {
     for (const key of keys) {
-      if (row[key] != null && String(row[key]).trim() !== '') return String(row[key]).trim();
+      if (row[key] != null && String(row[key]).trim() !== '') {
+        return String(row[key]).trim();
+      }
     }
 
     return '';
@@ -813,28 +849,51 @@
       return;
     }
 
-    const headers = Object.keys(rows[0]);
-    const csv = [headers.join(',')]
-      .concat(rows.map(row => headers.map(key => csvEscape(row[key])).join(',')))
-      .join('\n');
+    if (!window.XLSX) {
+      alert('Library XLSX belum dimuat. Pastikan xlsx.full.min.js sudah ditambahkan di index.html sebelum app.js.');
+      return;
+    }
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const safeFilename = String(filename || 'export-data.xlsx')
+      .replace(/\.csv$/i, '.xlsx')
+      .replace(/\.xls$/i, '.xlsx');
 
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    const cleanRows = rows.map(row => {
+      const obj = {};
 
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+      Object.keys(row || {}).forEach(key => {
+        obj[key] = row[key] == null ? '' : row[key];
+      });
 
-  function csvEscape(value) {
-    const str = String(value == null ? '' : value);
-    if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
-    return str;
+      return obj;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(cleanRows);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+    const colWidths = [];
+
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      let maxLength = 10;
+
+      for (let row = range.s.r; row <= range.e.r; row++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        const cell = worksheet[cellAddress];
+
+        if (cell && cell.v != null) {
+          maxLength = Math.max(maxLength, String(cell.v).length);
+        }
+      }
+
+      colWidths.push({ wch: Math.min(maxLength + 2, 45) });
+    }
+
+    worksheet['!cols'] = colWidths;
+
+    XLSX.writeFile(workbook, safeFilename);
   }
 
   function toNumber(value) {
@@ -858,10 +917,12 @@
       }
     } else if (hasComma) {
       const parts = clean.split(',');
+
       if (parts.length > 2) {
         clean = parts.join('');
       } else {
         const tail = parts[1] || '';
+
         if (tail.length === 3) {
           clean = parts.join('');
         } else {
@@ -870,10 +931,12 @@
       }
     } else if (hasDot) {
       const parts = clean.split('.');
+
       if (parts.length > 2) {
         clean = parts.join('');
       } else {
         const tail = parts[1] || '';
+
         if (tail.length === 3) {
           clean = parts.join('');
         }
