@@ -1,4 +1,6 @@
 (function () {
+  'use strict';
+
   const CONFIG = {
     SHEET_ID: '1ccDgtXNATxSYMZuDgd3polvRiTFNiFnjIGMP7b9qmrU',
     SHEETS: {
@@ -59,6 +61,30 @@
         };
 
         script.onerror = () => reject(new Error('Gagal memuat PapaParse.'));
+        document.body.appendChild(script);
+      });
+    }
+
+    function ensureXlsxLoaded() {
+      return new Promise((resolve, reject) => {
+        if (window.XLSX) {
+          resolve();
+          return;
+        }
+
+        const existing = document.querySelector('script[data-xlsx-lib="true"]');
+        if (existing) {
+          existing.addEventListener('load', () => resolve(), { once: true });
+          existing.addEventListener('error', () => reject(new Error('Gagal memuat library XLSX.')), { once: true });
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+        script.setAttribute('data-xlsx-lib', 'true');
+
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Gagal memuat library XLSX.'));
         document.body.appendChild(script);
       });
     }
@@ -145,23 +171,25 @@
         }
       } else if (hasComma) {
         const parts = str.split(',');
+
         if (parts.length > 2) {
           str = parts.join('');
         } else {
-          const decimals = parts[1] || '';
-          if (decimals.length === 3) {
+          const tail = parts[1] || '';
+          if (tail.length === 3) {
             str = parts.join('');
           } else {
-            str = parts[0] + '.' + decimals;
+            str = parts[0] + '.' + tail;
           }
         }
       } else if (hasDot) {
         const parts = str.split('.');
+
         if (parts.length > 2) {
           str = parts.join('');
         } else {
-          const decimals = parts[1] || '';
-          if (decimals.length === 3) {
+          const tail = parts[1] || '';
+          if (tail.length === 3) {
             str = parts.join('');
           }
         }
@@ -391,6 +419,7 @@
       const realRows = normalizeRows(realisasiRows);
 
       groupedRealByKode = groupRealisasi(realRows);
+
       const currentOrder = getCurrentMonthOrder();
 
       return planRows
@@ -570,7 +599,11 @@
       rows.forEach(row => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="bold"><a class="rup-link" href="javascript:void(0)" onclick="openDetailModal('${escapeHtml(row.kode_rup)}')">${escapeHtml(row.kode_rup)}</a></td>
+          <td class="bold">
+            <a class="rup-link" href="javascript:void(0)" onclick="openDetailModal('${escapeHtml(row.kode_rup)}')">
+              ${escapeHtml(row.kode_rup)}
+            </a>
+          </td>
           <td>${escapeHtml(row.nama_paket)}</td>
           <td>${escapeHtml(row.satuan_kerja)}</td>
           <td>${escapeHtml(row.pengadaan)}</td>
@@ -583,7 +616,9 @@
           <td>${buildProgresBadge(row.progres)}</td>
           <td>${buildJadwalBadge(row.posisi_jadwal)}</td>
           <td>${warningCell(row.warning)}</td>
-          <td><button class="detail-btn" onclick="openDetailModal('${escapeHtml(row.kode_rup)}')">Detail</button></td>
+          <td>
+            <button class="detail-btn" onclick="openDetailModal('${escapeHtml(row.kode_rup)}')">Detail</button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
@@ -596,6 +631,7 @@
         } else {
           if (a.waktu_pemilihan_order !== b.waktu_pemilihan_order) return b.waktu_pemilihan_order - a.waktu_pemilihan_order;
         }
+
         return String(a.satuan_kerja || '').localeCompare(String(b.satuan_kerja || ''), 'id');
       });
     }
@@ -816,6 +852,85 @@
       }
     }
 
+    function buildExportRows() {
+      const sourceRows = filteredRows && filteredRows.length ? filteredRows : allRows;
+
+      return sourceRows.map((row, index) => ({
+        No: index + 1,
+        'Kode RUP': row.kode_rup,
+        'Nama Paket': row.nama_paket,
+        'Satuan Kerja': row.satuan_kerja,
+        'Pengadaan': row.pengadaan,
+        'Jenis Pengadaan': row.jenis,
+        'Metode': row.metode,
+        'Waktu Pemilihan': row.waktu_pemilihan_label,
+        'Pagu RUP': Number(row.pagu || 0),
+        'Total Realisasi': Number(row.total_realisasi || 0),
+        'Persentase Realisasi': Number(row.persentase || 0),
+        'Recall Paket': Number(row.recall_paket || 0),
+        'Sisa Pagu': Number(row.sisa_pagu || 0),
+        'Status': row.status,
+        'Progres': row.progres,
+        'Posisi Jadwal': row.posisi_jadwal,
+        'Warning': row.warning,
+        'Keterangan Jadwal': row.ket_jadwal,
+        'Tindak Lanjut': row.tindak_lanjut
+      }));
+    }
+
+    async function exportMonitoringExcel() {
+      try {
+        const rows = buildExportRows();
+
+        if (!rows.length) {
+          alert('Tidak ada data untuk diexport.');
+          return;
+        }
+
+        setText('monitoringStatus', 'Menyiapkan file Excel...');
+        await ensureXlsxLoaded();
+
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Monitoring');
+
+        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+        const colWidths = [];
+
+        for (let col = range.s.c; col <= range.e.c; col++) {
+          let maxLength = 10;
+
+          for (let row = range.s.r; row <= range.e.r; row++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+            const cell = worksheet[cellAddress];
+
+            if (cell && cell.v != null) {
+              maxLength = Math.max(maxLength, String(cell.v).length);
+            }
+          }
+
+          colWidths.push({ wch: Math.min(maxLength + 2, 45) });
+        }
+
+        worksheet['!cols'] = colWidths;
+
+        const now = new Date();
+        const stamp = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, '0'),
+          String(now.getDate()).padStart(2, '0')
+        ].join('');
+
+        XLSX.writeFile(workbook, `monitoring-perencanaan-${stamp}.xlsx`);
+        setText('monitoringStatus', `${rows.length} data berhasil diexport ke Excel.`);
+      } catch (err) {
+        console.error(err);
+        alert('Gagal export Excel: ' + (err.message || String(err)));
+        setText('monitoringStatus', 'Gagal export Excel.');
+      }
+    }
+
     async function loadMonitoringData() {
       try {
         setText('monitoringStatus', 'Memuat data dari Google Sheet...');
@@ -844,6 +959,7 @@
       on(qs('btnSortWaktu'), 'click', toggleSortWaktu);
       on(qs('btnRunMonitoring'), 'click', runMonitoring);
       on(qs('btnResetMonitoring'), 'click', resetMonitoring);
+      on(qs('btnExportMonitoring'), 'click', exportMonitoringExcel);
       on(qs('detailModal'), 'click', handleModalBackdrop);
     }
 
@@ -853,6 +969,7 @@
     window.openDetailModal = openDetailModal;
     window.closeDetailModal = closeDetailModal;
     window.handleModalBackdrop = handleModalBackdrop;
+    window.exportMonitoringExcel = exportMonitoringExcel;
 
     bindMonitoringEvents();
 
@@ -886,6 +1003,7 @@
       if (window.openDetailModal === openDetailModal) window.openDetailModal = undefined;
       if (window.closeDetailModal === closeDetailModal) window.closeDetailModal = undefined;
       if (window.handleModalBackdrop === handleModalBackdrop) window.handleModalBackdrop = undefined;
+      if (window.exportMonitoringExcel === exportMonitoringExcel) window.exportMonitoringExcel = undefined;
     };
   };
 })();
