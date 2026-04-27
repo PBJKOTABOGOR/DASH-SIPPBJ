@@ -61,7 +61,8 @@ textarea{
   flex-shrink:0;
   position:sticky;
   top:10px;
-  height:calc(100vh - 20px);
+  height:auto;
+  min-height:calc(100vh - 20px);
   padding:10px;
   background:rgba(255,255,255,.82);
   border:1px solid rgba(255,255,255,.65);
@@ -74,7 +75,7 @@ textarea{
     padding .25s ease,
     background .25s ease,
     box-shadow .25s ease;
-  overflow:hidden;
+  overflow:visible;
   z-index:100;
   display:flex;
   flex-direction:column;
@@ -102,8 +103,8 @@ textarea{
 }
 
 .brand-logo{
-  width:32px;
-  height:32px;
+  width:42px;
+  height:42px;
   flex-shrink:0;
   border-radius:0;
   display:flex;
@@ -157,24 +158,18 @@ textarea{
   display:flex;
   flex-direction:column;
   gap:8px;
-  flex:1;
+  flex:0 0 auto;
   min-height:0;
-  overflow-y:auto;
-  overflow-x:hidden;
-  padding-right:4px;
+  overflow:visible;
+  padding-right:0;
 }
 
 .sidebar-nav::-webkit-scrollbar{
-  width:6px;
+  display:none;
 }
 
-.sidebar-nav::-webkit-scrollbar-track{
-  background:transparent;
-}
-
-.sidebar-nav::-webkit-scrollbar-thumb{
-  background:rgba(18,58,114,.18);
-  border-radius:999px;
+.sidebar-nav{
+  scrollbar-width:none;
 }
 
 .nav-section-label{
@@ -319,7 +314,7 @@ textarea{
 }
 
 .sidebar-help{
-  margin-top:auto;
+  margin-top:22px;
   flex-shrink:0;
   padding:16px;
   border-radius:20px;
@@ -841,6 +836,8 @@ textarea{
     left:10px;
     top:10px;
     height:calc(100vh - 20px);
+    min-height:0;
+    overflow-y:auto;
     transform:translateX(-120%);
     transition:transform .25s ease;
   }
