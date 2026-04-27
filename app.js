@@ -552,12 +552,12 @@ function buildItkpProfile(row, fallbackName = 'PEMERINTAH KOTA BOGOR') {
         hint: 'Klik untuk buka Monitoring eKontrak'
       },
       {
-        name: 'Non Tender',
+        name: 'Non eTendering / Non ePurchasing',
         value: toNumber(getField(row || {}, ['Nilai ITKP - skor maksimal 5 (point) (Non etendering & Non ePurchasing)', 'Non etendering', 'Non ePurchasing', 'Non Tender'])),
         max: 5,
         accent: 'red',
         route: 'monitoring-nontender',
-        hint: 'Klik untuk buka Monitoring Non Tender'
+        hint: 'Klik untuk buka Monitoring Non eTendering / Non ePurchasing'
       }
     ]
   };
