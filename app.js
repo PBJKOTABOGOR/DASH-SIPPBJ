@@ -557,7 +557,7 @@ function buildItkpProfile(row, fallbackName = 'PEMERINTAH KOTA BOGOR') {
         max: 5,
         accent: 'red',
         route: 'monitoring-nontender',
-        hint: 'Klik untuk buka Monitoring Non eTendering...'
+        hint: 'Klik untuk buka Monitoring Non eTendering'
       }
     ]
   };
