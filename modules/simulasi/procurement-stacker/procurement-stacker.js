@@ -35,6 +35,11 @@
   let tenderRushNextTimer = null;
   let tenderRushKeyHandler = null;
 
+  let psAudioCtx = null;
+  let psMusicTimer = null;
+  let psMusicOn = false;
+
+
   let bonusSnakeTimer = null;
   let bonusSnakeKeyHandler = null;
 
@@ -1902,6 +1907,7 @@
     GAME_STATE.levelTimeLimit = limit;
     GAME_STATE.levelTimeLeft = limit;
     levelTimerStartedAt = Date.now();
+    GAME_STATE.countdownWarned = {};
 
     if (!limit || GAME_STATE.stage === 'ready' || GAME_STATE.stage === 'result') {
       updateLevelTimerUi();
@@ -1918,6 +1924,12 @@
 
       GAME_STATE.levelTimeLeft = Math.max(0, Number(GAME_STATE.levelTimeLeft || 0) - 1);
       updateLevelTimerUi();
+
+      if ((GAME_STATE.levelTimeLeft === 10 || GAME_STATE.levelTimeLeft === 5) && !GAME_STATE.countdownWarned[GAME_STATE.levelTimeLeft]) {
+        GAME_STATE.countdownWarned[GAME_STATE.levelTimeLeft] = true;
+        showPanji('Waktu tinggal ' + GAME_STATE.levelTimeLeft + ' detik. Jangan panik, baca soal yang dekat dengan jawaban, lalu pilih yang paling aman.', 'alert');
+        showToast('Waktu tinggal ' + GAME_STATE.levelTimeLeft + ' detik!', 'bad');
+      }
 
       if (GAME_STATE.levelTimeLeft <= 0) {
         stopGameEarly('time');
@@ -2101,8 +2113,80 @@
     GAME_STATE.logs = GAME_STATE.logs.slice(0, 8);
   }
 
+  function ensureGameAudio() {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      if (!psAudioCtx) psAudioCtx = new AudioContextClass();
+      if (psAudioCtx.state === 'suspended') psAudioCtx.resume();
+      return psAudioCtx;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function playTone(freq, duration, type = 'sine', gainValue = 0.035) {
+    const ctx = ensureGameAudio();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(gainValue, ctx.currentTime + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration + 0.02);
+  }
+
+  function playSfx(type = 'info') {
+    if (type === 'ok' || type === 'success') {
+      playTone(660, 0.09, 'triangle', 0.04);
+      setTimeout(() => playTone(880, 0.12, 'triangle', 0.035), 70);
+      return;
+    }
+    if (type === 'bad' || type === 'wrong') {
+      playTone(190, 0.13, 'sawtooth', 0.035);
+      setTimeout(() => playTone(130, 0.16, 'sawtooth', 0.025), 80);
+      return;
+    }
+    playTone(420, 0.08, 'sine', 0.025);
+  }
+
+  function startGameMusic() {
+    if (psMusicOn) return;
+    psMusicOn = true;
+
+    // Musik retro happy ringan, dibuat dari WebAudio supaya tidak perlu file mp3.
+    // Browser baru akan mengizinkan suara setelah user klik/tekan tombol.
+    const melody = [523, 659, 784, 659, 698, 880, 784, 659, 587, 698, 784, 988, 880, 784, 659, 523];
+    const bass = [131, 131, 196, 196, 147, 147, 196, 196];
+    let beat = 0;
+
+    const playBeat = () => {
+      if (destroyed || !psMusicOn) return;
+      if (document.hidden) return;
+
+      const m = melody[beat % melody.length];
+      const b = bass[Math.floor(beat / 2) % bass.length];
+
+      playTone(m, 0.10, beat % 4 === 0 ? 'square' : 'triangle', 0.018);
+      if (beat % 2 === 0) playTone(b, 0.14, 'sine', 0.010);
+      if (beat % 8 === 6) setTimeout(() => playTone(m * 1.25, 0.07, 'triangle', 0.010), 95);
+
+      beat += 1;
+    };
+
+    playBeat();
+    psMusicTimer = setInterval(playBeat, 360);
+  }
+
   function showToast(message, type = 'info') {
     if (!message) return;
+    startGameMusic();
+    playSfx(type);
 
     if (!toastEl) {
       toastEl = document.createElement('div');
@@ -2817,12 +2901,6 @@
 
     root.innerHTML = `
       <section class="ps-card ps-ready-card">
-        <div class="ps-result-hero">
-          <h2>🎮 Procurement Stacker</h2>
-          <p>
-            Sebelum mulai, PANJI akan kenalan dulu dan minta data pemain. Isi nama serta instansi/OPD agar skor akhir bisa masuk leaderboard.
-          </p>
-        </div>
 
         <div class="ps-result-note">
           <strong>Alur game:</strong><br>
@@ -2878,32 +2956,8 @@
             <div class="ps-pill ${challenge.type === 'pipeline' ? 'green' : challenge.type === 'tenderRush' ? 'rush' : ''}">
               ${getChallengeTypeLabel(challenge.type)}
             </div>
-            <div class="ps-pill">Soal ${GAME_STATE.index + 1} / ${GAME_STATE.order.length}</div>
             ${GAME_STATE.selectedCardId ? '<div class="ps-pill warn">Kartu dipilih</div>' : ''}
             ${GAME_STATE.hintUsed ? '<div class="ps-pill warn">Hint PANJI dipakai</div>' : ''}
-          </div>
-        </div>
-
-        <div class="ps-case-panel">
-          <div class="ps-case-box">
-            <label>Kasus / Topik</label>
-            <strong>${escapeHtml(challenge.caseTitle)}</strong>
-            <span>${escapeHtml(challenge.desc)}</span>
-          </div>
-
-          <div class="ps-case-box">
-            <label>Jenis Soal</label>
-            <strong>${getChallengeTypeName(challenge.type)}</strong>
-          </div>
-
-          <div class="ps-case-box">
-            <label>Skor</label>
-            <strong>${GAME_STATE.score}</strong>
-          </div>
-
-          <div class="ps-case-box">
-            <label>Risiko</label>
-            <strong>${GAME_STATE.risk}</strong>
           </div>
         </div>
 
@@ -2924,24 +2978,27 @@
             <label>Salah</label>
             <strong>${GAME_STATE.wrong}</strong>
           </div>
-          <div class="ps-score-card ps-level-time-card">
-            <label>Waktu Level</label>
-            <strong id="psLevelTimeText">${(challenge.type === 'tenderRush' || challenge.type === 'bonusOpenWorld' || challenge.type === 'bonusSnake') ? '-' : `${GAME_STATE.levelTimeLeft || getDefaultLevelTime(challenge)}s`}</strong>
-            <div class="ps-mini-time-track"><div class="ps-mini-time-bar" id="psLevelTimeBar" style="width:100%"></div></div>
-          </div>
         </div>
 
         <div class="ps-progress-track">
           <div class="ps-progress-bar" style="width:${GAME_STATE.progress}%"></div>
         </div>
 
-        <div class="ps-helper-row">
+        <div class="ps-helper-row ps-helper-row-compact">
           <div class="ps-helper-note">
-            <b>PANJI siap bantu.</b> Kalau klik <b>Tanya PANJI</b>, kamu dapat hint tetapi skor berkurang <b>${HINT_PENALTY}</b>.
+            <b>PANJI siap bantu.</b> Kalau bingung, tanya PANJI. Hint mengurangi skor <b>${HINT_PENALTY}</b> poin.
           </div>
-          <button type="button" class="ps-btn ps-btn-soft" id="btnPanjiHint">
-            Tanya PANJI (-${HINT_PENALTY})
-          </button>
+          <div class="ps-helper-actions">
+            <div class="ps-pill ps-current-soal-pill">Soal ${GAME_STATE.index + 1} / ${GAME_STATE.order.length}</div>
+            <div class="ps-level-time-card ps-level-time-compact">
+              <label>Waktu</label>
+              <strong id="psLevelTimeText">${(challenge.type === 'tenderRush' || challenge.type === 'bonusOpenWorld' || challenge.type === 'bonusSnake') ? '-' : `${GAME_STATE.levelTimeLeft || getDefaultLevelTime(challenge)}s`}</strong>
+              <div class="ps-mini-time-track"><div class="ps-mini-time-bar" id="psLevelTimeBar" style="width:100%"></div></div>
+            </div>
+            <button type="button" class="ps-btn ps-btn-soft" id="btnPanjiHint">
+              Tanya PANJI (-${HINT_PENALTY})
+            </button>
+          </div>
         </div>
 
         ${renderChallengeBody(challenge)}
@@ -2966,6 +3023,34 @@
     requestAnimationFrame(updatePanjiAutoBottom);
   }
 
+
+  function renderQuestionPanel(challenge, mainQuestion = '') {
+    const typeName = getChallengeTypeName(challenge.type);
+    const title = challenge.type === 'bonusOpenWorld'
+      ? 'SOAL BONUS 4 / MISI 3D'
+      : challenge.type === 'bonusSnake'
+        ? 'SOAL BONUS 8 / SNAKE'
+        : 'SOAL / PERTANYAAN';
+    const detail = mainQuestion || challenge.question || challenge.desc || '';
+    const meta = [];
+    if (challenge.budget) meta.push('Pagu/Nilai: ' + challenge.budget);
+    if (challenge.difficulty) meta.push(challenge.difficulty);
+    meta.push(typeName);
+
+    return `
+      <div class="ps-question-panel">
+        <div class="ps-question-label">${title}</div>
+        <div class="ps-question-main">
+          <h2>${escapeHtml(challenge.caseTitle || getDisplayChallengeTitle(challenge))}</h2>
+          <p>${escapeHtml(detail)}</p>
+        </div>
+        <div class="ps-question-meta">
+          ${meta.map(item => `<span>${escapeHtml(item)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   function renderPipelineChallenge(challenge) {
     const placedIds = new Set(GAME_STATE.placed.filter(Boolean).map(item => item.id));
     const showPipelineTutorial = !GAME_STATE.pipelineTutorialSeen && getCurrentLevelNumber() === 1;
@@ -2977,7 +3062,7 @@
           <div>
             <h4>Pelan-pelan dulu, ini cara main pipeline.</h4>
             <ol>
-              <li><b>Baca kasusnya di panel atas</b>: lihat nama paket, nilai/pagu, dan tingkat kesulitan.</li>
+              <li><b>Baca panel SOAL / PERTANYAAN</b>: posisinya tepat di atas slot, jadi kamu tidak perlu bolak-balik lihat jauh ke atas.</li>
               <li><b>Baca tujuan pipeline</b>: susun kartu proses dari kiri ke kanan.</li>
               <li><b>Cara meletakkan kartu</b>: drag kartu ke slot, atau klik kartu lalu klik slot biru.</li>
               <li><b>Jangan asal taruh</b>: slot harus diisi urut dari kiri. Kartu jebakan bikin risiko naik.</li>
@@ -2987,14 +3072,15 @@
           </div>
         </div>
       ` : ''}
+      ${renderQuestionPanel(challenge)}
       <div class="ps-pipeline">
         ${challenge.idealIds.map((_, index) => renderSlot(index)).join('')}
       </div>
 
       <div class="ps-card-head">
         <div>
-          <h3>Kartu Pipeline Acak</h3>
-          <p>Drag kartu ke slot, atau klik kartu lalu klik slot biru. Urutan harus dari kiri ke kanan.</p>
+          <h3>Atur Urutan Kartu dari Tahapan yang Benar</h3>
+          <p>Baca soal di atas, lalu susun kartu proses dari kiri ke kanan. Drag kartu ke slot, atau klik kartu lalu klik slot biru.</p>
         </div>
         <button type="button" class="ps-btn ps-btn-soft" id="btnShuffleCards">
           Acak Kartu
@@ -3081,6 +3167,7 @@
 
     if (!rush.started) {
       return `
+        ${renderQuestionPanel(challenge)}
         <div class="ps-rush-tutorial">
           <div class="ps-rush-tutorial-main">
             <div class="ps-rush-kicker">Tutorial PANJI dulu</div>
@@ -3110,6 +3197,7 @@
 
     if (!currentPackage && GAME_STATE.progress === 100) {
       return `
+        ${renderQuestionPanel(challenge)}
         <div class="ps-rush-finished">
           <h3>🏁 Tender Rush selesai</h3>
           <p>${escapeHtml(challenge.explanation)}</p>
@@ -3123,6 +3211,7 @@
     }
 
     return `
+      ${renderQuestionPanel(challenge)}
       <div class="ps-rush-arena">
         <div class="ps-rush-hud">
           <div><label>Paket</label><strong>${Math.min(rush.currentIndex + 1, total)} / ${total}</strong></div>
@@ -3243,12 +3332,12 @@
     const activeIndex = order.indexOf(active.id);
     const shuffledChoices = shuffleArray(active.choices || []);
     const storyLine = active.id === 'team'
-      ? 'PPK baru sadar dia terjebak di Dunia Konsolidasi 3D. PANJI bilang, portal pulang akan kebuka kalau timnya tepat.'
+      ? 'PPK dan PANJI terjebak di Dunia Konsolidasi 3D. Di depan mereka ada portal pulang, tapi portal itu terkunci. Kuncinya bukan adu cepat, melainkan menyelesaikan proses konsolidasi dengan benar. Tahap pertama: pilih tim yang bisa bantu analisa data OPD, kondisi pasar, katalog, dan evaluasi penyedia.'
       : active.id === 'nama'
-        ? 'Setelah tim terbentuk, data OPD mulai muncul acak-acakan. PPK harus membaca mana item yang benar-benar satu keluarga.'
+        ? 'Tim sudah terbentuk. Sekarang data kebutuhan OPD datang dengan nama barang yang beda-beda. Ada yang tulis HVS A4, kertas A4 70 gram, bolpoin gel, pulpen gel, dan item lain yang kelihatannya mirip. Masalahnya: kalau barang beda jenis dipaksa gabung, konsolidasi jadi kacau.'
         : active.id === 'pasar'
-          ? 'Gerbang pasar terbuka. PPK dan PANJI masuk ke toko-toko buat market sounding, bukan buat langsung milih pemenang.'
-          : 'Semua keputusan awal diuji di arena evaluasi. Kalau sejak awal asal pilih, jebakannya makin terasa.';
+          ? 'Setelah data mulai rapi, PPK dan PANJI masuk ke Pasar Penyedia. Di sini tugasnya bukan langsung milih pemenang. Tugasnya cari info pasar: harga, stok, akun Katalog V6, distribusi ke OPD, dan kesiapan penyedia.'
+          : 'Semua keputusan awal masuk arena evaluasi. Di sini kelihatan apakah pilihan tim, data, dan pasar tadi sehat atau malah jebakan. Portal pulang baru terbuka kalau analisanya masuk akal dan bisa dijelaskan.';
 
     return `
       <div class="ps-bonus3d-fullscreen">
@@ -3281,7 +3370,11 @@
         <div class="ps-bonus3d-panel ps-bonus3d-story-panel">
           <div class="ps-bonus3d-kicker">Bonus Level 4 • Full Screen 3D Quest</div>
           <h3>${escapeHtml(active.title)}</h3>
-          <p>${escapeHtml(storyLine)}</p>
+          <div class="ps-bonus3d-soal">
+            <b>SOAL QUEST:</b> ${escapeHtml(active.title)}<br>
+            <span><b>Cerita dan masalahnya:</b> ${escapeHtml(storyLine)}</span><br>
+            <span><b>Tugas kamu:</b> ${escapeHtml(active.desc)} Pilih jawaban yang paling aman. Pilihanmu menentukan poin bonus dan jalan keluar dari dunia 3D.</span>
+          </div>
           <div class="ps-bonus3d-panji">
             <b>PANJI:</b> ${escapeHtml(active.desc)} Pilihan di bawah ini diacak. Ada yang aman, ada yang jebakan. Jangan asal klik, karena pilihanmu masuk analisa akhir.
           </div>
@@ -3403,7 +3496,7 @@
       briefed: false,
       score: 0,
       target: 12,
-      hearts: 5,
+      hearts: 1,
       grid: 18,
       snake: [{x:8,y:9},{x:7,y:9},{x:6,y:9}],
       dir: {x:1,y:0},
@@ -3434,7 +3527,7 @@
             <div><label>Bonus</label><b>${Math.min(120, snake.score * 10)}</b></div>
           </div>
           <div class="ps-bonus3d-panji">
-            <b>PANJI:</b> Ini level santai. Fokus ambil ⭐ Bintang Semangat, jangan rakus, dan hindari 🧾 Revisi. Kamu punya 5 hati. Kalau hati habis, level selesai dan langsung bisa lanjut.
+            <b>PANJI:</b> Ini level santai. Fokus ambil ⭐ Bintang Semangat, jangan rakus, dan hindari 🧾 Revisi. Kamu cuma punya 1 hati. Sekali nabrak, bonus selesai dan langsung lanjut ke level berikutnya.
           </div>
           <div class="ps-snake-pbj-pop">
             <b>Popup kisi-kisi PBJ:</b> ${escapeHtml(snake.activeTip || 'Jangan asal ambil keputusan. Cek data, harga, katalog, dan bukti proses.')}
@@ -3472,9 +3565,7 @@
     const correctRuntimeIndex = Number.isInteger(challenge.runtimeAnswer) ? challenge.runtimeAnswer : Number(challenge.answer || 0);
 
     return `
-      <div class="ps-quiz-question">
-        ${escapeHtml(challenge.question)}
-      </div>
+      ${renderQuestionPanel(challenge, challenge.question)}
 
       <div class="ps-quiz-options">
         ${options.map((option, index) => {
@@ -3795,6 +3886,7 @@
     }
     clearBonusSnakeTimers();
     snake.running = true;
+    playSfx('ok');
     showPanji('Gas! Tap atau klik area game buat belokin ular. Ambil bintang, jangan tabrak revisi. Tembok bisa ditembus. Skor bonus tetap dihitung.', 'happy');
 
     bonusSnakeKeyHandler = event => {
@@ -3871,6 +3963,7 @@
       snake.hearts = Math.max(0, Number(snake.hearts || 0) - 1);
       addLog('bad', 'Snake kena jebakan', 'PANJI nabrak revisi. Hati tersisa ' + snake.hearts + '.');
       showToast('Aduh nabrak! Hati -1', 'bad');
+      playSfx('bad');
       showPanji(snake.hearts > 0 ? 'Aduh, kena revisi. Masih ada hati. Kita lanjut pelan-pelan ya.' : 'Hati habis. Tidak apa-apa, level bonus selesai dan kita lanjut.', snake.hearts > 0 ? 'thinking' : 'sad');
       if (snake.hearts <= 0) {
         finishBonusSnake('Hati PANJI habis karena terlalu sering nabrak revisi.', true);
@@ -3889,6 +3982,7 @@
       snake.star = randomSnakeCell(snake);
       snake.activeTip = getSnakePbjTip(snake.score);
       showToast('Bintang semangat +1', 'ok');
+      playSfx('ok');
       showPanji(snake.activeTip.replace('Kisi-kisi:', 'Kisi-kisi PBJ:'), 'talking');
       if (snake.score >= snake.target) {
         finishBonusSnake('Mantap! Semua bintang semangat terkumpul. Mood naik, lanjut analisa PBJ.', false);
@@ -4278,7 +4372,7 @@
         GAME_STATE.pipelineTutorialSeen = true;
         startLevelTimer(getCurrentChallenge());
         renderGame();
-        showPanji('Oke, baru sekarang waktunya jalan. Baca kasus di panel atas, pilih kartu, lalu taruh dari slot kiri ke kanan.', 'happy');
+        showPanji('Oke, baru sekarang waktunya jalan. Baca panel SOAL di atas slot, pilih kartu, lalu taruh dari slot kiri ke kanan.', 'happy');
       });
     }
 
@@ -4813,6 +4907,12 @@
         leaderboardModalEl = null;
       }
 
+      if (psMusicTimer) {
+        clearInterval(psMusicTimer);
+        psMusicTimer = null;
+        psMusicOn = false;
+      }
+
       if (toastEl) {
         toastEl.remove();
         toastEl = null;
@@ -4849,4 +4949,8 @@
       root = null;
     };
   };
+
+  document.addEventListener('click', () => startGameMusic(), { once: true });
+  document.addEventListener('keydown', () => startGameMusic(), { once: true });
+
 })();
