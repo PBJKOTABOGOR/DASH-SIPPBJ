@@ -27,6 +27,7 @@
   let leaderboardRefreshTimer = null;
   let reviewBubbleEl = null;
   let reviewBubbleTimer = null;
+  let reviewBubbleLastShownAt = 0;
 
   let levelTimer = null;
   let levelTimerStartedAt = 0;
@@ -1151,19 +1152,28 @@
     }
   }
 
-  async function showReviewBubbleOnMenuOpen() {
-    if (destroyed || sessionStorage.getItem('procstack_review_bubble_seen_v11') === '1') return;
+  async function showReviewBubbleOnMenuOpen(options = {}) {
+    if (destroyed) return;
+
+    const now = Date.now();
+    if (!options.force && now - reviewBubbleLastShownAt < 3500) return;
+    reviewBubbleLastShownAt = now;
+
+    document.querySelectorAll('.ps-review-bubble-pop').forEach(el => el.remove());
+    if (reviewBubbleTimer) {
+      clearTimeout(reviewBubbleTimer);
+      reviewBubbleTimer = null;
+    }
+
     const rows = await fetchReviewRowsForBubble();
     if (destroyed || !rows.length) return;
-
-    sessionStorage.setItem('procstack_review_bubble_seen_v11', '1');
     const emojis = ['😄','🔥','⭐','💬','🚀','🧠','🎮','🙌','😂','✨'];
-    const pickedRows = rows.slice(0, Math.min(5, rows.length));
+    const pickedRows = rows.slice(0, Math.min(8, rows.length));
     const created = [];
 
     pickedRows.forEach((row, index) => {
       const bubble = document.createElement('div');
-      bubble.className = `ps-review-bubble-pop ps-review-bubble-float review-pos-${index % 6}`;
+      bubble.className = `ps-review-bubble-pop ps-review-bubble-float review-pos-${index % 8}`;
       bubble.style.setProperty('--review-i', String(index));
       bubble.style.setProperty('--review-delay', `${index * 0.18}s`);
       bubble.style.setProperty('--review-rand', String((index * 37) % 19));
@@ -1357,6 +1367,10 @@
         setTimeout(attachPanjiToLeaderboardModal, 600);
       }
     }, 120);
+
+    setTimeout(() => {
+      if (!destroyed) showReviewBubbleOnMenuOpen({ force: true });
+    }, 520);
 
     if (tab === 'leaderboard' || !PLAYER_STATE.leaderboard.length) {
       fetchLeaderboard();
@@ -4857,7 +4871,7 @@
     ensureLeaderboardModal();
     fetchLeaderboard();
     initPanji(container);
-    setTimeout(() => showReviewBubbleOnMenuOpen(), 1200);
+    setTimeout(() => showReviewBubbleOnMenuOpen({ force: true }), 1200);
 
     GAME_STATE.stage = 'ready';
     GAME_STATE.current = null;
