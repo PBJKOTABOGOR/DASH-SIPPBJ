@@ -5041,3 +5041,39 @@
   .ps-current-soal-pill{min-height:40px !important;font-size:12px !important}
   .ps-bonus3d-soal,.ps-bonus3d-soal span{font-size:15px !important}
 }
+
+
+/* =========================================================
+   FIX V15 - review bubble selalu muncul saat menu mini game dibuka
+   ========================================================= */
+.ps-review-bubble-pop,
+.ps-review-bubble-pop.ps-review-bubble-float{
+  z-index:2147483647 !important;
+  width:min(300px, calc(100vw - 32px)) !important;
+  pointer-events:auto !important;
+}
+.ps-review-bubble-pop.review-pos-0{left:18px !important;top:72px !important;right:auto !important;bottom:auto !important;transform:none !important;}
+.ps-review-bubble-pop.review-pos-1{right:18px !important;top:72px !important;left:auto !important;bottom:auto !important;transform:none !important;}
+.ps-review-bubble-pop.review-pos-2{left:22px !important;top:255px !important;right:auto !important;bottom:auto !important;transform:none !important;}
+.ps-review-bubble-pop.review-pos-3{right:22px !important;top:255px !important;left:auto !important;bottom:auto !important;transform:none !important;}
+.ps-review-bubble-pop.review-pos-4{left:24px !important;bottom:72px !important;right:auto !important;top:auto !important;transform:none !important;}
+.ps-review-bubble-pop.review-pos-5{right:24px !important;bottom:72px !important;left:auto !important;top:auto !important;transform:none !important;}
+.ps-review-bubble-pop.review-pos-6{left:50% !important;top:30px !important;right:auto !important;bottom:auto !important;transform:translateX(-50%) !important;}
+.ps-review-bubble-pop.review-pos-7{left:50% !important;bottom:30px !important;right:auto !important;top:auto !important;transform:translateX(-50%) !important;}
+@media(max-width:1100px){
+  .ps-review-bubble-pop.review-pos-0,
+  .ps-review-bubble-pop.review-pos-1,
+  .ps-review-bubble-pop.review-pos-2,
+  .ps-review-bubble-pop.review-pos-3,
+  .ps-review-bubble-pop.review-pos-4,
+  .ps-review-bubble-pop.review-pos-5,
+  .ps-review-bubble-pop.review-pos-6,
+  .ps-review-bubble-pop.review-pos-7{
+    left:12px !important;
+    right:12px !important;
+    top:auto !important;
+    bottom:calc(30px + (var(--review-i,0) * 86px)) !important;
+    width:auto !important;
+    transform:none !important;
+  }
+}
