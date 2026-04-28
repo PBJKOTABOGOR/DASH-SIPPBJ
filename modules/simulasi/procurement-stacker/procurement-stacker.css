@@ -1878,3 +1878,2931 @@
     width:286px !important;
   }
 }
+
+/* =========================================================
+   LEADERBOARD MINI GAME - POPUP 2 TAB
+   ========================================================= */
+
+.ps-leaderboard-modal{
+  position:fixed;
+  inset:0;
+  z-index:2147483646;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+
+.ps-leaderboard-modal.ps-hidden{
+  display:none;
+}
+
+.ps-leaderboard-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(15,23,42,.46);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+
+.ps-leaderboard-panel{
+  position:relative;
+  width:min(760px, 100%);
+  max-height:min(86vh, 780px);
+  overflow:hidden;
+  border-radius:28px;
+  background:rgba(255,255,255,.96);
+  border:1px solid rgba(255,255,255,.86);
+  box-shadow:0 28px 90px rgba(15,23,42,.28);
+}
+
+.ps-leaderboard-content{
+  max-height:min(86vh, 780px);
+  overflow-y:auto;
+  padding:18px;
+}
+
+.ps-leaderboard-close{
+  position:absolute;
+  right:14px;
+  top:14px;
+  z-index:3;
+  width:34px;
+  height:34px;
+  border:none;
+  border-radius:999px;
+  background:#102544;
+  color:#fff;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+  box-shadow:0 10px 20px rgba(15,23,42,.22);
+}
+
+.ps-lb-hero{
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  padding:24px;
+  border-radius:24px;
+  color:#fff;
+  background:
+    radial-gradient(circle at top right, rgba(34,211,238,.28), transparent 32%),
+    linear-gradient(135deg,#102544,#123a72 58%,#0f766e);
+  box-shadow:0 20px 45px rgba(18,58,114,.20);
+}
+
+.ps-lb-kicker{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:0 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.20);
+  color:#dbeafe;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.ps-lb-hero h3{
+  margin:12px 0 8px;
+  font-size:34px;
+  line-height:1.06;
+  letter-spacing:-.04em;
+  font-weight:950;
+}
+
+.ps-lb-hero p{
+  margin:0;
+  max-width:560px;
+  color:rgba(255,255,255,.88);
+  line-height:1.65;
+  font-weight:700;
+}
+
+.ps-lb-score{
+  min-width:132px;
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  border-radius:20px;
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.20);
+}
+
+.ps-lb-score span{
+  color:rgba(255,255,255,.72);
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.ps-lb-score b{
+  margin-top:6px;
+  font-size:38px;
+  line-height:1;
+  font-weight:950;
+}
+
+.ps-lb-tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:14px 0;
+}
+
+.ps-lb-tabs button{
+  min-height:42px;
+  border:none;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:950;
+  color:#123a72;
+  background:#eef4fb;
+  border:1px solid #dbeafe;
+}
+
+.ps-lb-tabs button.active{
+  color:#fff;
+  background:linear-gradient(135deg,#123a72,#2563eb);
+  box-shadow:0 12px 24px rgba(37,99,235,.16);
+}
+
+.ps-lb-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.ps-lb-summary div{
+  padding:12px;
+  border-radius:16px;
+  background:#f8fbff;
+  border:1px solid #dbeafe;
+}
+
+.ps-lb-summary span{
+  display:block;
+  color:#64748b;
+  font-size:11px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+
+.ps-lb-summary b{
+  display:block;
+  margin-top:6px;
+  color:#102544;
+  font-size:16px;
+  line-height:1.25;
+  font-weight:950;
+  word-break:break-word;
+}
+
+.ps-lb-message{
+  padding:12px 14px;
+  border-radius:16px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#123a72;
+  font-weight:850;
+  line-height:1.5;
+  margin-bottom:14px;
+}
+
+.ps-lb-message.empty{
+  color:#64748b;
+  background:#f8fbff;
+}
+
+.ps-player-form{
+  display:grid;
+  gap:12px;
+}
+
+.ps-player-form label{
+  display:grid;
+  gap:7px;
+  color:#102544;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+.ps-player-form input{
+  width:100%;
+  min-height:48px;
+  border-radius:15px;
+  border:1px solid #cfe0f3;
+  background:#fff;
+  color:#102544;
+  padding:0 14px;
+  font-size:14px;
+  font-weight:800;
+  outline:none;
+}
+
+.ps-player-form input:focus{
+  border-color:#2563eb;
+  box-shadow:0 0 0 4px rgba(37,99,235,.12);
+}
+
+.ps-lb-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.ps-lb-toolbar strong{
+  color:#102544;
+  font-size:18px;
+  font-weight:950;
+}
+
+.ps-lb-list{
+  display:grid;
+  gap:9px;
+}
+
+.ps-lb-row{
+  display:grid;
+  grid-template-columns:42px 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:11px;
+  border-radius:17px;
+  background:#f8fbff;
+  border:1px solid #dbeafe;
+}
+
+.ps-lb-row.mine{
+  background:#ecfdf5;
+  border-color:#86efac;
+  box-shadow:0 0 0 3px rgba(22,163,74,.10);
+}
+
+.ps-lb-rank{
+  width:36px;
+  height:36px;
+  border-radius:13px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  background:#123a72;
+  font-weight:950;
+}
+
+.ps-lb-row:nth-child(1) .ps-lb-rank{
+  background:linear-gradient(135deg,#f59e0b,#fbbf24);
+}
+
+.ps-lb-row:nth-child(2) .ps-lb-rank{
+  background:linear-gradient(135deg,#64748b,#94a3b8);
+}
+
+.ps-lb-row:nth-child(3) .ps-lb-rank{
+  background:linear-gradient(135deg,#b45309,#f97316);
+}
+
+.ps-lb-main{
+  min-width:0;
+}
+
+.ps-lb-main b{
+  display:block;
+  color:#102544;
+  font-size:14px;
+  font-weight:950;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.ps-lb-main span{
+  display:block;
+  margin-top:3px;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.ps-lb-meta{
+  text-align:right;
+}
+
+.ps-lb-meta b{
+  display:block;
+  color:#0f766e;
+  font-size:18px;
+  font-weight:950;
+}
+
+.ps-lb-meta span{
+  display:block;
+  margin-top:3px;
+  color:#64748b;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.ps-lb-empty{
+  padding:18px;
+  border-radius:16px;
+  background:#f8fbff;
+  border:1px dashed #bcd2ea;
+  color:#64748b;
+  font-weight:850;
+  text-align:center;
+}
+
+@media (max-width:900px){
+  .ps-leaderboard-modal{
+    align-items:flex-start;
+    padding:10px;
+    padding-top:34px;
+  }
+
+  .ps-leaderboard-content{
+    padding:12px;
+  }
+
+  .ps-lb-hero{
+    flex-direction:column;
+    padding:18px;
+  }
+
+  .ps-lb-hero h3{
+    font-size:28px;
+  }
+
+  .ps-lb-score{
+    min-width:0;
+    min-height:90px;
+  }
+
+  .ps-lb-summary{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .ps-lb-row{
+    grid-template-columns:38px 1fr;
+  }
+
+  .ps-lb-meta{
+    grid-column:2;
+    text-align:left;
+  }
+
+  .ps-lb-meta span{
+    white-space:normal;
+  }
+}
+
+/* =========================================================
+   PANJI NEMPEL KE POPUP LEADERBOARD
+   ========================================================= */
+
+.panji-assistant.panji-leaderboard-mode{
+  right:var(--panji-lb-right, 24px) !important;
+  bottom:var(--panji-lb-bottom, 24px) !important;
+  z-index:2147483646 !important;
+  transform:scale(.86) !important;
+  transform-origin:right bottom !important;
+}
+
+.panji-assistant.panji-leaderboard-mode .panji-bubble{
+  width:320px !important;
+}
+
+.ps-leaderboard-close{
+  z-index:2147483647 !important;
+  pointer-events:auto !important;
+}
+
+.ps-leaderboard-panel,
+.ps-leaderboard-content,
+.ps-leaderboard-content *{
+  pointer-events:auto !important;
+}
+
+@media (max-width:900px){
+  .panji-assistant.panji-leaderboard-mode{
+    right:var(--panji-lb-right, 12px) !important;
+    bottom:var(--panji-lb-bottom, 12px) !important;
+    transform:scale(.72) !important;
+  }
+
+  .panji-assistant.panji-leaderboard-mode .panji-bubble{
+    width:270px !important;
+  }
+}
+
+/* =========================================================
+   TENDER RUSH — SOAL ARCADE DI DALAM PROCUREMENT STACKER
+   ========================================================= */
+
+.ps-pill.rush{
+  background:#fef3c7;
+  color:#92400e;
+  border-color:#fde68a;
+}
+
+.ps-rush-tutorial,
+.ps-rush-arena,
+.ps-rush-finished{
+  position:relative;
+  overflow:hidden;
+  border-radius:26px;
+  padding:18px;
+  background:
+    radial-gradient(circle at top right, rgba(245,158,11,.16), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(37,99,235,.13), transparent 30%),
+    linear-gradient(180deg,#f8fbff 0%,#ffffff 100%);
+  border:1px solid #dbeafe;
+  box-shadow:0 16px 34px rgba(15,23,42,.07);
+  margin-bottom:16px;
+}
+
+.ps-rush-tutorial-main{
+  padding:6px 2px 16px;
+}
+
+.ps-rush-kicker{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:0 11px;
+  border-radius:999px;
+  background:#fff7ed;
+  color:#9a3412;
+  border:1px solid #fed7aa;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.ps-rush-tutorial h3,
+.ps-rush-finished h3{
+  margin:0 0 8px;
+  font-size:30px;
+  line-height:1.15;
+  color:#102544;
+  font-weight:950;
+  letter-spacing:-.03em;
+}
+
+.ps-rush-tutorial p,
+.ps-rush-finished p{
+  margin:0;
+  color:#475569;
+  font-size:15px;
+  line-height:1.72;
+}
+
+.ps-rush-method-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:16px;
+}
+
+.ps-rush-method-card{
+  position:relative;
+  min-height:156px;
+  padding:14px 12px;
+  border-radius:20px;
+  background:#fff;
+  border:1px solid #dbeafe;
+  box-shadow:0 10px 24px rgba(15,23,42,.055);
+  overflow:hidden;
+}
+
+.ps-rush-method-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg, rgba(37,99,235,.08), transparent 48%);
+  pointer-events:none;
+}
+
+.ps-rush-method-key,
+.ps-rush-key{
+  width:34px;
+  height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  background:linear-gradient(135deg,#123a72,#2563eb);
+  color:#fff;
+  font-size:15px;
+  font-weight:950;
+  box-shadow:0 10px 20px rgba(37,99,235,.18);
+}
+
+.ps-rush-method-icon{
+  margin-top:12px;
+  width:44px;
+  height:44px;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#eff6ff;
+  font-size:24px;
+}
+
+.ps-rush-method-card strong{
+  display:block;
+  margin-top:10px;
+  color:#102544;
+  font-size:14px;
+  line-height:1.22;
+  font-weight:950;
+}
+
+.ps-rush-method-card span{
+  display:block;
+  margin-top:7px;
+  color:#64748b;
+  font-size:11px;
+  line-height:1.45;
+  font-weight:750;
+}
+
+.ps-rush-hud{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.ps-rush-hud > div,
+.ps-rush-summary > div{
+  border-radius:18px;
+  padding:12px;
+  background:rgba(255,255,255,.9);
+  border:1px solid #dbeafe;
+}
+
+.ps-rush-hud label,
+.ps-rush-summary label{
+  display:block;
+  font-size:11px;
+  color:#64748b;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-weight:950;
+  margin-bottom:6px;
+}
+
+.ps-rush-hud strong,
+.ps-rush-summary strong{
+  display:block;
+  color:#102544;
+  font-size:24px;
+  line-height:1;
+  font-weight:950;
+}
+
+.ps-rush-time-track{
+  height:12px;
+  border-radius:999px;
+  background:#e5edf5;
+  overflow:hidden;
+  margin-bottom:14px;
+}
+
+.ps-rush-time-bar{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,#16a34a,#f59e0b,#dc2626);
+  box-shadow:0 0 20px rgba(245,158,11,.35);
+  transition:width .22s linear;
+}
+
+.ps-rush-fall-lane{
+  position:relative;
+  min-height:260px;
+  border-radius:24px;
+  background:
+    linear-gradient(90deg, rgba(18,58,114,.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(18,58,114,.05) 1px, transparent 1px),
+    linear-gradient(180deg,#eff6ff 0%,#f8fbff 100%);
+  background-size:42px 42px;
+  border:1px solid #bfdbfe;
+  overflow:hidden;
+  margin-bottom:14px;
+}
+
+.ps-rush-fall-lane::after{
+  content:"Pilih jalur metode sebelum waktu habis";
+  position:absolute;
+  left:50%;
+  bottom:12px;
+  transform:translateX(-50%);
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(255,255,255,.85);
+  border:1px solid #dbeafe;
+  color:#64748b;
+  font-size:12px;
+  font-weight:900;
+}
+
+.ps-rush-package{
+  position:absolute;
+  left:50%;
+  top:18px;
+  width:min(520px, calc(100% - 28px));
+  transform:translateX(-50%);
+  border-radius:24px;
+  padding:18px;
+  background:#fff;
+  border:1px solid #bfdbfe;
+  box-shadow:0 22px 48px rgba(15,23,42,.16);
+  animation:psRushDrop 8s linear forwards;
+}
+
+.ps-rush-package.correct{
+  animation:none;
+  border-color:#86efac;
+  background:#f0fdf4;
+  box-shadow:0 0 0 7px rgba(22,163,74,.12), 0 22px 48px rgba(15,23,42,.14);
+}
+
+.ps-rush-package.wrong{
+  animation:none;
+  border-color:#fecaca;
+  background:#fff1f2;
+  box-shadow:0 0 0 7px rgba(220,38,38,.11), 0 22px 48px rgba(15,23,42,.14);
+}
+
+@keyframes psRushDrop{
+  from{
+    top:12px;
+  }
+
+  to{
+    top:150px;
+  }
+}
+
+.ps-rush-package-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.ps-rush-package-top span{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:0 10px;
+  border-radius:999px;
+  background:#eff6ff;
+  color:#123a72;
+  border:1px solid #bfdbfe;
+  font-size:12px;
+  font-weight:950;
+}
+
+.ps-rush-package-top b{
+  color:#0f766e;
+  font-size:14px;
+  font-weight:950;
+}
+
+.ps-rush-package h3{
+  margin:0;
+  color:#102544;
+  font-size:24px;
+  line-height:1.2;
+  font-weight:950;
+}
+
+.ps-rush-package p{
+  margin:10px 0 0;
+  color:#475569;
+  font-size:14px;
+  line-height:1.62;
+  font-weight:750;
+}
+
+.ps-rush-drop-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+}
+
+.ps-rush-drop{
+  min-height:86px;
+  border:none;
+  cursor:pointer;
+  border-radius:20px;
+  padding:12px;
+  background:#fff;
+  border:1px solid #dbeafe;
+  box-shadow:0 10px 22px rgba(15,23,42,.06);
+  display:grid;
+  grid-template-columns:34px 1fr;
+  grid-template-rows:auto auto;
+  gap:7px 10px;
+  align-items:center;
+  text-align:left;
+  transition:.18s ease;
+}
+
+.ps-rush-drop:hover:not(:disabled){
+  transform:translateY(-3px);
+  box-shadow:0 16px 28px rgba(37,99,235,.13);
+  border-color:#93c5fd;
+}
+
+.ps-rush-drop:disabled{
+  opacity:.62;
+  cursor:not-allowed;
+}
+
+.ps-rush-icon{
+  grid-row:2;
+  grid-column:1;
+  font-size:22px;
+}
+
+.ps-rush-drop strong{
+  grid-column:2;
+  grid-row:1 / span 2;
+  color:#102544;
+  font-size:13px;
+  line-height:1.22;
+  font-weight:950;
+}
+
+.ps-rush-result{
+  padding:13px 14px;
+  border-radius:18px;
+  font-size:13px;
+  line-height:1.62;
+  margin-bottom:14px;
+  border:1px solid transparent;
+  animation:psRushResultIn .24s ease;
+}
+
+@keyframes psRushResultIn{
+  from{
+    opacity:0;
+    transform:translateY(8px);
+  }
+
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+.ps-rush-result.ok{
+  background:#ecfdf5;
+  border-color:#86efac;
+  color:#166534;
+}
+
+.ps-rush-result.bad{
+  background:#fff1f2;
+  border-color:#fecaca;
+  color:#991b1b;
+}
+
+.ps-rush-result strong{
+  display:block;
+  margin-bottom:3px;
+  font-weight:950;
+}
+
+.ps-rush-summary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+
+@media (max-width:1280px){
+  .ps-rush-method-grid,
+  .ps-rush-drop-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+
+@media (max-width:900px){
+  .ps-rush-method-grid,
+  .ps-rush-drop-grid,
+  .ps-rush-hud,
+  .ps-rush-summary{
+    grid-template-columns:1fr;
+  }
+
+  .ps-rush-fall-lane{
+    min-height:300px;
+  }
+
+  .ps-rush-package h3{
+    font-size:20px;
+  }
+}
+
+/* =========================================================
+   REVISI TENDER RUSH + PANJI KECIL
+   - ruang jatuh paket diperpanjang
+   - tombol metode dibuat lebih ringkas
+   - bubble PANJI diperkecil agar tidak nutup game
+   ========================================================= */
+
+.ps-ready-card{
+  min-height:360px;
+}
+
+.panji-assistant{
+  right:14px !important;
+  bottom:var(--panji-bottom, 18px) !important;
+  gap:8px !important;
+}
+
+.panji-bubble{
+  width:250px !important;
+  min-height:0 !important;
+  max-height:178px !important;
+  padding:11px 12px !important;
+  border-radius:18px !important;
+}
+
+.panji-bubble::after{
+  right:-7px !important;
+  bottom:26px !important;
+  width:14px !important;
+  height:14px !important;
+}
+
+.panji-name{
+  min-height:22px !important;
+  padding:0 8px !important;
+  font-size:9px !important;
+  letter-spacing:.08em !important;
+}
+
+.panji-emote{
+  width:26px !important;
+  height:26px !important;
+  font-size:14px !important;
+}
+
+.panji-text{
+  font-size:12px !important;
+  line-height:1.5 !important;
+  font-weight:750 !important;
+}
+
+.panji-actions{
+  margin-top:8px !important;
+  gap:6px !important;
+}
+
+.panji-actions button{
+  min-height:28px !important;
+  padding:0 8px !important;
+  border-radius:9px !important;
+  font-size:10px !important;
+}
+
+.panji-character{
+  transform:scale(.78) !important;
+  transform-origin:right bottom !important;
+}
+
+.panji-assistant.panji-minimized .panji-character{
+  transform:scale(.82) !important;
+}
+
+.ps-rush-arena{
+  padding:14px !important;
+}
+
+.ps-rush-hud{
+  gap:8px !important;
+  margin-bottom:8px !important;
+}
+
+.ps-rush-hud > div{
+  padding:9px 11px !important;
+  border-radius:15px !important;
+}
+
+.ps-rush-hud label{
+  font-size:10px !important;
+  margin-bottom:5px !important;
+}
+
+.ps-rush-hud strong{
+  font-size:22px !important;
+}
+
+.ps-rush-time-track{
+  height:10px !important;
+  margin-bottom:10px !important;
+}
+
+.ps-rush-fall-lane{
+  min-height:430px !important;
+  margin-bottom:10px !important;
+}
+
+.ps-rush-fall-lane::after{
+  bottom:16px !important;
+  font-size:11px !important;
+  padding:7px 11px !important;
+}
+
+.ps-rush-package{
+  width:min(460px, calc(100% - 30px)) !important;
+  padding:16px !important;
+  animation-duration:var(--rush-duration, 10s) !important;
+}
+
+@keyframes psRushDrop{
+  from{
+    top:14px;
+  }
+
+  to{
+    top:285px;
+  }
+}
+
+.ps-rush-package h3{
+  font-size:21px !important;
+}
+
+.ps-rush-package p{
+  font-size:13px !important;
+  line-height:1.5 !important;
+}
+
+.ps-rush-drop-grid{
+  gap:8px !important;
+}
+
+.ps-rush-drop{
+  min-height:68px !important;
+  padding:9px 10px !important;
+  border-radius:16px !important;
+  grid-template-columns:30px 1fr !important;
+  gap:5px 8px !important;
+}
+
+.ps-rush-key{
+  width:30px !important;
+  height:30px !important;
+  border-radius:10px !important;
+  font-size:13px !important;
+}
+
+.ps-rush-icon{
+  font-size:18px !important;
+}
+
+.ps-rush-drop strong{
+  font-size:12px !important;
+}
+
+.ps-rush-result{
+  margin-bottom:10px !important;
+  padding:10px 12px !important;
+  font-size:12px !important;
+  line-height:1.5 !important;
+}
+
+@media (max-width:900px){
+  .panji-bubble{
+    width:220px !important;
+    max-height:150px !important;
+  }
+
+  .ps-rush-fall-lane{
+    min-height:360px !important;
+  }
+
+  @keyframes psRushDrop{
+    from{ top:12px; }
+    to{ top:230px; }
+  }
+}
+
+
+/* =========================================================
+   REVISI UX/UI TENDER RUSH + PANJI COMPACT
+   ========================================================= */
+
+.ps-score-grid{ grid-template-columns:repeat(5,minmax(0,1fr)); }
+.ps-level-time-card{ background:linear-gradient(180deg,#eff6ff 0%,#ffffff 100%); }
+.ps-level-time-card.warning{ background:#fffbeb; border-color:#fde68a; }
+.ps-level-time-card.danger{ background:#fff1f2; border-color:#fecaca; animation:psTimerPulse .72s ease-in-out infinite; }
+.ps-mini-time-track{ height:6px; margin-top:10px; border-radius:999px; overflow:hidden; background:#e5edf5; }
+.ps-mini-time-bar{ height:100%; width:100%; border-radius:999px; background:linear-gradient(90deg,#16a34a,#f59e0b,#dc2626); transition:width .25s linear; }
+@keyframes psTimerPulse{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-2px); box-shadow:0 0 0 5px rgba(220,38,38,.08); } }
+.ps-result-stop-note{ border-color:#fed7aa !important; background:linear-gradient(135deg,#fff7ed,#ffffff) !important; }
+.panji-bubble{ width:250px !important; min-height:92px !important; max-height:185px !important; padding:12px !important; border-radius:18px !important; }
+.panji-text{ font-size:12px !important; line-height:1.5 !important; font-weight:760 !important; }
+.panji-name{ min-height:22px !important; padding:0 8px !important; font-size:9px !important; }
+.panji-emote{ width:26px !important; height:26px !important; font-size:14px !important; }
+.panji-actions{ margin-top:8px !important; }
+.panji-actions button{ min-height:28px !important; padding:0 8px !important; font-size:10px !important; border-radius:9px !important; }
+.panji-close{ width:24px !important; height:24px !important; font-size:15px !important; }
+.panji-character{ width:78px !important; height:104px !important; }
+.panji-assistant{ right:18px !important; gap:9px !important; }
+.panji-assistant.panji-minimized .panji-character{ filter:drop-shadow(0 12px 18px rgba(37,99,235,.24)); }
+.ps-rush-arena{ padding:20px !important; background:radial-gradient(circle at 16% 10%, rgba(34,211,238,.20), transparent 24%), radial-gradient(circle at 90% 30%, rgba(245,158,11,.14), transparent 28%), linear-gradient(180deg,#f8fbff 0%,#ffffff 100%) !important; }
+.ps-rush-arena::before{ content:""; position:absolute; inset:-2px; pointer-events:none; background:linear-gradient(120deg, transparent 0%, rgba(37,99,235,.10) 45%, rgba(34,211,238,.15) 50%, transparent 58%); animation:psRushShine 3.4s ease-in-out infinite; }
+@keyframes psRushShine{ 0%,100%{ transform:translateX(-45%); opacity:.45; } 50%{ transform:translateX(45%); opacity:.9; } }
+.ps-rush-hud,.ps-rush-time-track,.ps-rush-fall-lane,.ps-rush-result,.ps-rush-drop-grid{ position:relative; z-index:2; }
+.ps-rush-hud{ grid-template-columns:repeat(4,minmax(0,1fr)); }
+.ps-rush-fall-lane{ min-height:390px !important; margin-bottom:20px !important; border:1px solid #93c5fd !important; box-shadow:inset 0 0 0 1px rgba(255,255,255,.75), 0 14px 30px rgba(37,99,235,.08); }
+.ps-rush-fall-lane::after{ bottom:18px !important; font-size:11px !important; }
+.ps-rush-package{ width:min(500px, calc(100% - 42px)) !important; padding:20px !important; animation:psRushDrop var(--rush-duration, 10s) linear forwards !important; }
+.ps-rush-package.correct,.ps-rush-package.wrong{ animation:none !important; }
+@keyframes psRushDrop{ from{ top:18px; transform:translateX(-50%) scale(.98); } 40%{ transform:translateX(-50%) scale(1); } to{ top:252px; transform:translateX(-50%) scale(1); } }
+.ps-rush-package h3{ font-size:26px !important; }
+.ps-rush-drop{ min-height:96px !important; border-width:1px !important; }
+.ps-rush-drop:hover:not(:disabled){ transform:translateY(-5px) scale(1.015) !important; }
+.ps-rush-drop:active:not(:disabled){ transform:translateY(-1px) scale(.98) !important; }
+@media (max-width:1280px){ .ps-score-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); } .ps-rush-fall-lane{ min-height:350px !important; } }
+@media (max-width:900px){ .ps-score-grid{ grid-template-columns:1fr 1fr; } .panji-bubble{ width:220px !important; } .panji-character{ width:66px !important; height:90px !important; } .ps-rush-fall-lane{ min-height:310px !important; } }
+
+/* =========================================================
+   REVISI 3 — TENDER RUSH LEBIH PANJANG + LEADERBOARD PANJI
+   ========================================================= */
+
+.ps-result-grid{
+  grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+}
+
+.ps-lb-panji-note{
+  display:grid;
+  grid-template-columns:46px 1fr;
+  gap:12px;
+  align-items:start;
+  margin:12px 0 12px;
+  padding:13px 14px;
+  border-radius:18px;
+  border:1px solid #dbeafe;
+  background:linear-gradient(135deg,#eff6ff,#ffffff);
+  color:#334155;
+  font-size:13px;
+  line-height:1.6;
+  box-shadow:0 10px 22px rgba(15,23,42,.055);
+}
+
+.ps-lb-panji-note.happy{
+  border-color:#86efac;
+  background:linear-gradient(135deg,#ecfdf5,#ffffff);
+}
+
+.ps-lb-panji-note.sad{
+  border-color:#fecaca;
+  background:linear-gradient(135deg,#fff1f2,#ffffff);
+}
+
+.ps-lb-panji-face{
+  width:46px;
+  height:46px;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff;
+  font-size:25px;
+  box-shadow:0 10px 20px rgba(15,23,42,.08);
+  animation:psPanjiFacePop 1.6s ease-in-out infinite;
+}
+
+@keyframes psPanjiFacePop{
+  0%,100%{ transform:translateY(0) scale(1); }
+  50%{ transform:translateY(-3px) scale(1.05); }
+}
+
+.ps-rush-arena{
+  padding:22px !important;
+  border-radius:28px !important;
+  background:
+    radial-gradient(circle at 16% 10%, rgba(34,211,238,.22), transparent 24%),
+    radial-gradient(circle at 86% 24%, rgba(245,158,11,.16), transparent 28%),
+    linear-gradient(180deg,#f8fbff 0%,#ffffff 100%) !important;
+  box-shadow:inset 0 0 0 1px rgba(147,197,253,.65), 0 16px 34px rgba(37,99,235,.08) !important;
+}
+
+.ps-rush-fall-lane{
+  min-height:560px !important;
+  margin-bottom:24px !important;
+  border-radius:26px !important;
+  overflow:hidden !important;
+  background:
+    linear-gradient(90deg, rgba(37,99,235,.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(37,99,235,.055) 1px, transparent 1px),
+    radial-gradient(circle at top, rgba(34,211,238,.12), transparent 36%),
+    linear-gradient(180deg,#f8fbff,#edf6ff) !important;
+  background-size:42px 42px,42px 42px,100% 100%,100% 100% !important;
+}
+
+.ps-rush-fall-lane::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:0;
+  bottom:0;
+  width:2px;
+  transform:translateX(-50%);
+  background:linear-gradient(180deg, transparent, rgba(37,99,235,.28), transparent);
+  opacity:.7;
+}
+
+.ps-rush-fall-lane::after{
+  bottom:28px !important;
+  padding:7px 14px !important;
+  border-radius:999px !important;
+  background:#ffffff !important;
+  box-shadow:0 10px 24px rgba(15,23,42,.08) !important;
+}
+
+.ps-rush-package{
+  width:min(560px, calc(100% - 52px)) !important;
+  padding:22px !important;
+  border-radius:24px !important;
+  animation:psRushDropLong var(--rush-duration, 10s) linear forwards !important;
+  box-shadow:0 24px 45px rgba(15,23,42,.16), 0 0 0 6px rgba(37,99,235,.06) !important;
+}
+
+.ps-rush-package.correct,
+.ps-rush-package.wrong{
+  animation:none !important;
+}
+
+@keyframes psRushDropLong{
+  0%{
+    top:20px;
+    transform:translateX(-50%) scale(.96) rotate(-.6deg);
+  }
+  18%{
+    transform:translateX(-50%) scale(1) rotate(.4deg);
+  }
+  70%{
+    transform:translateX(-50%) scale(1) rotate(0deg);
+  }
+  100%{
+    top:405px;
+    transform:translateX(-50%) scale(1) rotate(.4deg);
+  }
+}
+
+.ps-rush-package h3{
+  font-size:28px !important;
+  letter-spacing:-.035em !important;
+}
+
+.ps-rush-package p{
+  font-size:15px !important;
+}
+
+.ps-rush-drop-grid{
+  gap:12px !important;
+}
+
+.ps-rush-drop{
+  min-height:108px !important;
+  border-radius:22px !important;
+  background:linear-gradient(180deg,#ffffff,#f8fbff) !important;
+  box-shadow:0 12px 24px rgba(15,23,42,.06) !important;
+}
+
+.ps-rush-drop:hover:not(:disabled){
+  transform:translateY(-6px) scale(1.018) !important;
+  border-color:#2563eb !important;
+  box-shadow:0 18px 36px rgba(37,99,235,.16) !important;
+}
+
+.ps-rush-key{
+  box-shadow:0 8px 16px rgba(37,99,235,.20) !important;
+}
+
+.ps-rush-time-bar{
+  background:linear-gradient(90deg,#16a34a 0%,#22c55e 38%,#f59e0b 70%,#dc2626 100%) !important;
+  box-shadow:0 0 18px rgba(245,158,11,.25) !important;
+}
+
+.ps-rush-hud > div{
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+
+.ps-rush-hud > div:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 24px rgba(15,23,42,.07);
+}
+
+@media (max-width:1280px){
+  .ps-result-grid{ grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+  .ps-rush-fall-lane{ min-height:500px !important; }
+  @keyframes psRushDropLong{
+    0%{ top:18px; transform:translateX(-50%) scale(.96); }
+    100%{ top:355px; transform:translateX(-50%) scale(1); }
+  }
+}
+
+@media (max-width:900px){
+  .ps-result-grid{ grid-template-columns:1fr 1fr !important; }
+  .ps-lb-panji-note{ grid-template-columns:38px 1fr; font-size:12px; }
+  .ps-lb-panji-face{ width:38px; height:38px; font-size:21px; }
+  .ps-rush-fall-lane{ min-height:430px !important; }
+  .ps-rush-package h3{ font-size:20px !important; }
+  @keyframes psRushDropLong{
+    0%{ top:14px; transform:translateX(-50%) scale(.96); }
+    100%{ top:285px; transform:translateX(-50%) scale(1); }
+  }
+}
+
+
+/* =========================================================
+   REVISI 4 — Tender Rush random UX, PANJI final reaction,
+   smaller package card, animated pipeline cards
+   ========================================================= */
+
+.ps-rush-package{
+  width:min(430px, calc(100% - 80px)) !important;
+  min-height:104px !important;
+  padding:15px 17px !important;
+  border-radius:18px !important;
+  animation:psRushDrop var(--rush-duration, 10s) linear forwards, psRushCardPulse 1.8s ease-in-out infinite !important;
+}
+
+.ps-rush-package.correct,
+.ps-rush-package.wrong{
+  animation:none !important;
+}
+
+.ps-rush-package h3{
+  font-size:21px !important;
+  line-height:1.18 !important;
+  margin:7px 0 6px !important;
+}
+
+.ps-rush-package p{
+  font-size:12.5px !important;
+  line-height:1.45 !important;
+}
+
+.ps-rush-package-top span{
+  font-size:10px !important;
+  padding:5px 9px !important;
+}
+
+.ps-rush-package-top b{
+  font-size:12px !important;
+}
+
+@keyframes psRushCardPulse{
+  0%,100%{ box-shadow:0 20px 46px rgba(15,23,42,.12), 0 0 0 rgba(37,99,235,0); }
+  50%{ box-shadow:0 26px 56px rgba(15,23,42,.16), 0 0 22px rgba(37,99,235,.16); }
+}
+
+.ps-bank .ps-action-card{
+  animation:psPipelineCardIdle 3.2s ease-in-out infinite;
+  animation-delay:calc((var(--ps-card-i, 0)) * .08s);
+}
+
+.ps-bank .ps-action-card:nth-child(2n){ animation-delay:.18s; }
+.ps-bank .ps-action-card:nth-child(3n){ animation-delay:.32s; }
+.ps-bank .ps-action-card:nth-child(4n){ animation-delay:.46s; }
+
+.ps-action-card::after{
+  content:"";
+  position:absolute;
+  inset:-40% auto auto -70%;
+  width:60%;
+  height:180%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.62), transparent);
+  transform:rotate(22deg);
+  opacity:0;
+  pointer-events:none;
+}
+
+.ps-bank .ps-action-card:hover::after,
+.ps-bank .ps-action-card.selected::after{
+  animation:psCardShine .72s ease;
+}
+
+@keyframes psPipelineCardIdle{
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(-3px); }
+}
+
+@keyframes psCardShine{
+  0%{ left:-70%; opacity:0; }
+  20%{ opacity:1; }
+  100%{ left:130%; opacity:0; }
+}
+
+.ps-slot .ps-action-card{
+  animation:none !important;
+}
+
+/* card PANJI bilang di leaderboard disembunyikan total; PANJI berbicara lewat bubble sendiri */
+.ps-lb-panji-note{
+  display:none !important;
+}
+
+.panji-assistant.panji-celebrate .panji-character{
+  animation:panjiCelebrateFlip 1.05s ease-in-out 0s 3;
+}
+
+.panji-assistant.panji-celebrate .panji-hand-left{
+  animation:panjiHappyWaveLeft .45s ease-in-out 0s 6;
+}
+
+.panji-assistant.panji-celebrate .panji-hand-right{
+  animation:panjiHappyWaveRight .45s ease-in-out 0s 6;
+}
+
+@keyframes panjiCelebrateFlip{
+  0%{ transform:translateY(0) rotate(0deg) scale(1); }
+  22%{ transform:translateY(-24px) rotate(-8deg) scale(1.04); }
+  48%{ transform:translateY(-5px) rotate(8deg) scale(.98); }
+  72%{ transform:translateY(-18px) rotate(360deg) scale(1.04); }
+  100%{ transform:translateY(0) rotate(360deg) scale(1); }
+}
+
+@keyframes panjiHappyWaveLeft{
+  0%,100%{ transform:rotate(24deg); }
+  50%{ transform:rotate(62deg); }
+}
+
+@keyframes panjiHappyWaveRight{
+  0%,100%{ transform:rotate(-24deg); }
+  50%{ transform:rotate(-62deg); }
+}
+
+.panji-assistant.panji-cry .panji-character{
+  animation:panjiCryShake .32s ease-in-out 0s 14;
+}
+
+.panji-assistant.panji-cry .panji-head::after{
+  content:"";
+  position:absolute;
+  left:17px;
+  top:37px;
+  width:6px;
+  height:19px;
+  border-radius:999px;
+  background:#38bdf8;
+  box-shadow:28px 0 0 #38bdf8;
+  animation:panjiTears .55s linear 0s infinite;
+}
+
+@keyframes panjiCryShake{
+  0%,100%{ transform:translateX(-50%) translateY(0); }
+  25%{ transform:translateX(calc(-50% - 3px)) translateY(1px); }
+  75%{ transform:translateX(calc(-50% + 3px)) translateY(-1px); }
+}
+
+@keyframes panjiTears{
+  from{ opacity:1; transform:translateY(0); }
+  to{ opacity:.15; transform:translateY(13px); }
+}
+
+@media (max-width:900px){
+  .ps-rush-package{
+    width:min(340px, calc(100% - 38px)) !important;
+    min-height:96px !important;
+    padding:13px 14px !important;
+  }
+
+  .ps-rush-package h3{ font-size:18px !important; }
+}
+
+
+/* =========================================================
+   REVISI 5 — PANJI PROPORSI, EKSPRESI MINIMIZE, TENDER RUSH COMPACT
+   ========================================================= */
+
+/* Saat hasil akhir, tombol Tanya PANJI tidak perlu tampil di bubble. */
+.panji-assistant.panji-result-mode #panjiHintBtn{
+  display:none !important;
+}
+
+/* Normalisasi ukuran PANJI agar badan/tangan tidak gepeng walau ada override lama. */
+.panji-character{
+  width:88px !important;
+  height:118px !important;
+  min-width:88px !important;
+  min-height:118px !important;
+  max-width:88px !important;
+  max-height:118px !important;
+  padding:0 !important;
+  display:block !important;
+  overflow:visible !important;
+  flex:0 0 88px !important;
+  transform-origin:center bottom !important;
+}
+
+.panji-head{
+  left:50% !important;
+  top:8px !important;
+  width:62px !important;
+  height:62px !important;
+  transform:translateX(-50%) !important;
+  border-radius:22px 22px 20px 20px !important;
+}
+
+.panji-hat{
+  left:50% !important;
+  top:-12px !important;
+  width:50px !important;
+  height:23px !important;
+  transform:translateX(-50%) !important;
+  font-size:9px !important;
+}
+
+.panji-eye{
+  top:27px !important;
+  width:9px !important;
+  height:13px !important;
+}
+
+.panji-eye-left{ left:17px !important; }
+.panji-eye-right{ right:17px !important; }
+
+.panji-mouth{
+  left:50% !important;
+  bottom:13px !important;
+  width:16px !important;
+  height:8px !important;
+  transform:translateX(-50%) !important;
+}
+
+.panji-body{
+  left:50% !important;
+  top:71px !important;
+  width:52px !important;
+  height:40px !important;
+  transform:translateX(-50%) !important;
+  border-radius:18px 18px 15px 15px !important;
+}
+
+.panji-badge{
+  width:26px !important;
+  height:26px !important;
+  font-size:9px !important;
+}
+
+.panji-hand{
+  top:78px !important;
+  width:13px !important;
+  height:30px !important;
+  border-radius:999px !important;
+  transform-origin:top center !important;
+}
+
+.panji-hand-left{
+  left:8px !important;
+  right:auto !important;
+  transform:rotate(22deg) !important;
+}
+
+.panji-hand-right{
+  right:8px !important;
+  left:auto !important;
+  transform:rotate(-22deg) !important;
+}
+
+/* Ekspresi tetap tampak saat minimize: bubble diam, karakter tetap berubah mood. */
+.panji-assistant.panji-minimized .panji-character{
+  opacity:1 !important;
+  filter:drop-shadow(0 14px 20px rgba(37,99,235,.28)) !important;
+}
+
+.panji-assistant.panji-happy.panji-minimized .panji-head{
+  box-shadow:0 0 0 6px rgba(22,163,74,.13), 0 14px 28px rgba(18,58,114,.20) !important;
+}
+
+.panji-assistant.panji-sad.panji-minimized .panji-head{
+  box-shadow:0 0 0 6px rgba(220,38,38,.13), 0 14px 28px rgba(18,58,114,.20) !important;
+}
+
+/* Tender Rush card turun dibuat lebih kecil lagi supaya arena terasa lega. */
+.ps-rush-package{
+  width:min(360px, calc(100% - 72px)) !important;
+  min-height:82px !important;
+  padding:12px 14px !important;
+  border-radius:17px !important;
+}
+
+.ps-rush-package h3{
+  font-size:18px !important;
+  line-height:1.18 !important;
+  margin:6px 0 6px !important;
+}
+
+.ps-rush-package p{
+  font-size:12px !important;
+  line-height:1.42 !important;
+}
+
+.ps-rush-package-top{
+  gap:8px !important;
+  margin-bottom:6px !important;
+}
+
+.ps-rush-package-top span{
+  font-size:9px !important;
+  padding:4px 8px !important;
+}
+
+.ps-rush-package-top b{
+  font-size:11px !important;
+}
+
+@keyframes psRushDrop{
+  from{
+    top:16px;
+    transform:translateX(-50%) scale(.96);
+  }
+  40%{
+    transform:translateX(-50%) scale(.99);
+  }
+  to{
+    top:300px;
+    transform:translateX(-50%) scale(.99);
+  }
+}
+
+/* Animasi final PANJI dibuat stabil, tidak menarik posisi badan/tangan. */
+.panji-assistant.panji-celebrate .panji-character{
+  animation:panjiCelebrateFlipV5 1.05s ease-in-out 0s 3 !important;
+}
+
+.panji-assistant.panji-cry .panji-character{
+  animation:panjiCryShakeV5 .32s ease-in-out 0s 14 !important;
+}
+
+.panji-assistant.panji-celebrate .panji-hand-left{
+  animation:panjiHappyWaveLeftV5 .45s ease-in-out 0s 6 !important;
+}
+
+.panji-assistant.panji-celebrate .panji-hand-right{
+  animation:panjiHappyWaveRightV5 .45s ease-in-out 0s 6 !important;
+}
+
+@keyframes panjiCelebrateFlipV5{
+  0%{ transform:translateY(0) rotate(0deg) scale(1); }
+  22%{ transform:translateY(-22px) rotate(-8deg) scale(1.04); }
+  48%{ transform:translateY(-4px) rotate(8deg) scale(.98); }
+  72%{ transform:translateY(-16px) rotate(360deg) scale(1.04); }
+  100%{ transform:translateY(0) rotate(360deg) scale(1); }
+}
+
+@keyframes panjiCryShakeV5{
+  0%,100%{ transform:translateX(0) rotate(0deg); }
+  25%{ transform:translateX(-3px) rotate(-1deg); }
+  75%{ transform:translateX(3px) rotate(1deg); }
+}
+
+@keyframes panjiHappyWaveLeftV5{
+  0%,100%{ transform:rotate(22deg); }
+  50%{ transform:rotate(58deg); }
+}
+
+@keyframes panjiHappyWaveRightV5{
+  0%,100%{ transform:rotate(-22deg); }
+  50%{ transform:rotate(-58deg); }
+}
+
+@media (max-width:900px){
+  .panji-character{
+    width:74px !important;
+    height:100px !important;
+    min-width:74px !important;
+    min-height:100px !important;
+    max-width:74px !important;
+    max-height:100px !important;
+    flex-basis:74px !important;
+  }
+
+  .panji-head{ width:54px !important; height:54px !important; }
+  .panji-body{ top:62px !important; width:46px !important; height:35px !important; }
+  .panji-hand{ top:68px !important; width:11px !important; height:26px !important; }
+
+  .ps-rush-package{
+    width:min(300px, calc(100% - 52px)) !important;
+    min-height:76px !important;
+    padding:10px 12px !important;
+  }
+}
+
+/* =========================================================
+   BONUS LEVEL 4 — PANJI KONSOLIDASI QUEST 3D
+   ========================================================= */
+.ps-bonus3d-wrap{
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:16px;
+  margin-bottom:16px;
+}
+
+.ps-bonus3d-stage{
+  min-height:430px;
+  border-radius:28px;
+  overflow:hidden;
+  position:relative;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(34,211,238,.25), transparent 28%),
+    linear-gradient(180deg,#0b1730 0%,#102544 46%,#0f3f3a 100%);
+  border:1px solid rgba(191,219,254,.5);
+  box-shadow:0 22px 56px rgba(15,23,42,.16) inset, 0 16px 32px rgba(15,23,42,.08);
+  perspective:900px;
+}
+
+.ps-bonus3d-stage::before{
+  content:"";
+  position:absolute;
+  inset:auto -12% -44% -12%;
+  height:70%;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,255,255,.08) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(34,197,94,.35), rgba(14,165,233,.20));
+  background-size:58px 58px;
+  transform:rotateX(62deg) rotateZ(-2deg);
+  transform-origin:top center;
+  border-radius:40px;
+  box-shadow:0 -18px 44px rgba(0,0,0,.18);
+}
+
+.ps-bonus3d-sky{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 15% 22%, rgba(255,255,255,.42) 0 2px, transparent 3px),
+    radial-gradient(circle at 72% 18%, rgba(255,255,255,.35) 0 2px, transparent 3px),
+    radial-gradient(circle at 45% 9%, rgba(255,255,255,.25) 0 1px, transparent 3px);
+  animation:psBonusSky 6s linear infinite;
+}
+
+@keyframes psBonusSky{
+  from{transform:translateX(0)}
+  to{transform:translateX(-20px)}
+}
+
+.ps-bonus3d-map{
+  position:absolute;
+  left:50%;
+  top:54%;
+  width:72%;
+  height:72%;
+  transform:translate(-50%,-50%) rotateX(56deg) rotateZ(-6deg);
+  transform-style:preserve-3d;
+}
+
+.ps-bonus3d-node{
+  position:absolute;
+  width:158px;
+  min-height:112px;
+  border:0;
+  border-radius:22px;
+  padding:14px 12px;
+  color:#fff;
+  background:linear-gradient(135deg,#1d4ed8,#0f766e);
+  box-shadow:0 18px 0 #082f49, 0 26px 40px rgba(0,0,0,.32);
+  transform:translateZ(42px);
+  transition:.2s ease;
+  text-align:center;
+}
+
+.ps-bonus3d-node:nth-child(1){left:0;top:20px}
+.ps-bonus3d-node:nth-child(2){left:38%;top:0}
+.ps-bonus3d-node:nth-child(3){right:0;top:84px}
+.ps-bonus3d-node:nth-child(4){left:28%;bottom:6px}
+
+.ps-bonus3d-node:hover,
+.ps-bonus3d-node.active{
+  transform:translateZ(70px) translateY(-8px);
+  filter:brightness(1.08);
+}
+
+.ps-bonus3d-node.done{
+  background:linear-gradient(135deg,#16a34a,#22c55e);
+  box-shadow:0 18px 0 #14532d, 0 26px 40px rgba(0,0,0,.32);
+}
+
+.ps-bonus3d-orb{
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  margin:0 auto 8px;
+  border-radius:16px;
+  background:rgba(255,255,255,.18);
+  font-size:24px;
+  animation:psBonusOrb 2.2s ease-in-out infinite;
+}
+
+@keyframes psBonusOrb{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-5px)}
+}
+
+.ps-bonus3d-node b,
+.ps-bonus3d-node small{
+  display:block;
+}
+
+.ps-bonus3d-node b{
+  font-size:14px;
+  line-height:1.25;
+}
+
+.ps-bonus3d-node small{
+  margin-top:5px;
+  opacity:.84;
+  font-weight:850;
+}
+
+.ps-bonus3d-panel{
+  min-height:430px;
+  border-radius:28px;
+  padding:20px;
+  background:
+    radial-gradient(circle at top right, rgba(37,99,235,.10), transparent 30%),
+    #f8fbff;
+  border:1px solid #dbeafe;
+  box-shadow:0 14px 32px rgba(15,23,42,.07);
+}
+
+.ps-bonus3d-kicker{
+  display:inline-flex;
+  min-height:28px;
+  align-items:center;
+  padding:0 10px;
+  border-radius:999px;
+  background:#dbeafe;
+  color:#1d4ed8;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.ps-bonus3d-panel h3{
+  margin:0;
+  color:#102544;
+  font-size:28px;
+  line-height:1.1;
+  font-weight:950;
+}
+
+.ps-bonus3d-panel p{
+  margin:10px 0 0;
+  color:#475569;
+  line-height:1.6;
+}
+
+.ps-bonus3d-panji{
+  margin:14px 0;
+  border-radius:18px;
+  padding:12px 14px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  font-size:13px;
+  line-height:1.55;
+  font-weight:800;
+}
+
+.ps-bonus3d-choices{
+  display:grid;
+  gap:10px;
+}
+
+.ps-bonus3d-choice{
+  border:1px solid #dbeafe;
+  background:#fff;
+  border-radius:16px;
+  padding:13px 14px;
+  color:#123a72;
+  text-align:left;
+  font-weight:900;
+  line-height:1.4;
+  box-shadow:0 8px 18px rgba(15,23,42,.045);
+  transition:.18s ease;
+}
+
+.ps-bonus3d-choice:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 24px rgba(37,99,235,.12);
+  background:#eff6ff;
+}
+
+.ps-bonus3d-status{
+  margin-top:14px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.ps-bonus3d-status span{
+  display:inline-flex;
+  min-height:30px;
+  align-items:center;
+  border-radius:999px;
+  padding:0 10px;
+  background:#eef4fb;
+  border:1px solid #dbe5f0;
+  color:#334155;
+  font-size:12px;
+  font-weight:900;
+}
+
+/* =========================================================
+   BONUS LEVEL 8 — SNAKE BINTANG
+   ========================================================= */
+.ps-snake-wrap{
+  display:grid;
+  grid-template-columns:.9fr 1.1fr;
+  gap:16px;
+  align-items:stretch;
+  margin-bottom:16px;
+}
+
+.ps-snake-info,
+.ps-snake-stage{
+  border-radius:28px;
+  padding:20px;
+  background:#f8fbff;
+  border:1px solid #dbeafe;
+  box-shadow:0 14px 32px rgba(15,23,42,.07);
+}
+
+.ps-snake-info h3{
+  margin:0;
+  font-size:30px;
+  color:#102544;
+  font-weight:950;
+}
+
+.ps-snake-info p{
+  color:#475569;
+  line-height:1.65;
+}
+
+.ps-snake-score-row{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin:14px 0;
+}
+
+.ps-snake-score-row div{
+  border-radius:18px;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  padding:12px;
+}
+
+.ps-snake-score-row label{
+  display:block;
+  color:#64748b;
+  font-size:11px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+
+.ps-snake-score-row b{
+  display:block;
+  color:#102544;
+  font-size:23px;
+  margin-top:4px;
+}
+
+.ps-snake-stage{
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(circle at top left, rgba(34,211,238,.14), transparent 30%),
+    linear-gradient(180deg,#0b1730,#102544);
+}
+
+#psSnakeCanvas{
+  width:min(480px,100%);
+  max-width:100%;
+  aspect-ratio:1/1;
+  border-radius:24px;
+  border:3px solid rgba(255,255,255,.20);
+  box-shadow:0 18px 42px rgba(0,0,0,.28);
+  background:#0f172a;
+}
+
+.ps-snake-caption{
+  color:#dbeafe;
+  font-size:12px;
+  font-weight:900;
+  margin-top:10px;
+  text-align:center;
+}
+
+.ps-feedback-box textarea,
+.ps-player-form textarea{
+  width:100%;
+  margin:10px 0 12px;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid #dbe5f0;
+  background:#fff;
+  color:#102544;
+  font:inherit;
+  resize:vertical;
+  min-height:90px;
+}
+
+.ps-pill.rush{
+  background:#fef3c7;
+  color:#92400e;
+  border-color:#fde68a;
+}
+
+@media(max-width:900px){
+  .ps-bonus3d-wrap,
+  .ps-snake-wrap{
+    grid-template-columns:1fr;
+  }
+  .ps-bonus3d-stage{min-height:360px}
+  .ps-bonus3d-node{width:132px;min-height:100px}
+  .ps-snake-score-row{grid-template-columns:1fr}
+}
+
+/* =========================================================
+   PATCH V5 — Tutorial Pipeline Pertama
+   ========================================================= */
+.ps-pipeline-tutorial{
+  display:grid;
+  grid-template-columns:86px 1fr;
+  gap:14px;
+  align-items:start;
+  margin:0 0 16px;
+  padding:16px;
+  border-radius:22px;
+  background:
+    radial-gradient(circle at top left, rgba(245,158,11,.18), transparent 34%),
+    linear-gradient(180deg,#fff7ed,#ffffff);
+  border:1px solid #fed7aa;
+  box-shadow:0 12px 26px rgba(245,158,11,.12);
+}
+
+.ps-tutorial-panji{
+  width:78px;
+  height:78px;
+  border-radius:28px;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(145deg,#f59e0b,#2563eb);
+  color:#fff;
+  font-weight:950;
+  font-size:12px;
+  letter-spacing:.08em;
+  box-shadow:0 14px 24px rgba(15,23,42,.18);
+  animation:psPanjiTutorialFloat 2.6s ease-in-out infinite;
+}
+
+@keyframes psPanjiTutorialFloat{
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-8px) rotate(2deg)}
+}
+
+.ps-pipeline-tutorial h4{
+  margin:0 0 8px;
+  color:#102544;
+  font-size:20px;
+  font-weight:950;
+}
+
+.ps-pipeline-tutorial ol{
+  margin:0 0 12px 20px;
+  padding:0;
+  color:#475569;
+  line-height:1.65;
+  font-size:14px;
+}
+
+.ps-pipeline-tutorial li{margin:3px 0}
+
+/* =========================================================
+   PATCH V5 — Bonus Level 4 lebih kerasa open-world 3D
+   ========================================================= */
+.ps-bonus3d-stage{
+  min-height:520px !important;
+  background:
+    radial-gradient(circle at 22% 16%, rgba(255,255,255,.25), transparent 8%),
+    radial-gradient(circle at 78% 22%, rgba(34,211,238,.20), transparent 18%),
+    linear-gradient(180deg,#6bb7ff 0%, #9bd8ff 24%, #0f766e 25%, #14532d 100%) !important;
+}
+
+.ps-bonus3d-stage::before{
+  inset:auto -20% -36% -20% !important;
+  height:74% !important;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,255,255,.16) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(34,197,94,.75), rgba(14,165,233,.28)) !important;
+  background-size:64px 64px !important;
+  transform:rotateX(61deg) rotateZ(-4deg) !important;
+}
+
+.ps-bonus3d-cloud{
+  position:absolute;
+  width:118px;
+  height:38px;
+  border-radius:999px;
+  background:rgba(255,255,255,.72);
+  filter:blur(.2px);
+  box-shadow:42px 8px 0 rgba(255,255,255,.55), 76px -2px 0 rgba(255,255,255,.42);
+  animation:psCloudMove 8s ease-in-out infinite;
+}
+.ps-bonus3d-cloud.c1{left:8%;top:10%}
+.ps-bonus3d-cloud.c2{right:18%;top:17%;transform:scale(.8);animation-duration:10s}
+@keyframes psCloudMove{0%,100%{translate:0 0}50%{translate:22px -4px}}
+
+.ps-bonus3d-road{
+  position:absolute;
+  left:16%;
+  right:16%;
+  bottom:112px;
+  height:82px;
+  border-radius:999px;
+  background:linear-gradient(90deg,#d6a85e,#f5d38a,#d6a85e);
+  box-shadow:0 18px 36px rgba(0,0,0,.16);
+  transform:perspective(700px) rotateX(56deg) rotateZ(-3deg);
+}
+
+.ps-bonus3d-player,
+.ps-bonus3d-companion{
+  position:absolute;
+  z-index:4;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  font-weight:950;
+  font-size:11px;
+  text-shadow:0 2px 8px rgba(0,0,0,.35);
+  filter:drop-shadow(0 16px 20px rgba(0,0,0,.30));
+  animation:psWorldBob 2.1s ease-in-out infinite;
+}
+
+.ps-bonus3d-player{
+  left:20%;
+  bottom:132px;
+  width:78px;
+  height:108px;
+  border-radius:38px 38px 18px 18px;
+  background:linear-gradient(180deg,#facc15 0 35%, #2563eb 36% 100%);
+}
+
+.ps-bonus3d-player::before{
+  content:"";
+  position:absolute;
+  top:-28px;
+  width:58px;
+  height:58px;
+  border-radius:50%;
+  background:#fde68a;
+  border:3px solid #1e3a8a;
+}
+
+.ps-bonus3d-player span{position:relative;top:20px}
+
+.ps-bonus3d-companion{
+  left:31%;
+  bottom:122px;
+  width:66px;
+  height:88px;
+  border-radius:30px 30px 18px 18px;
+  background:linear-gradient(180deg,#f59e0b 0 42%, #0ea5e9 43% 100%);
+  animation-delay:.4s;
+}
+
+.ps-bonus3d-companion::before{
+  content:"";
+  position:absolute;
+  top:-24px;
+  width:50px;
+  height:50px;
+  border-radius:50%;
+  background:#fbbf24;
+  border:3px solid #fff;
+}
+
+.ps-bonus3d-companion span{position:relative;top:20px;font-size:9px}
+
+@keyframes psWorldBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.ps-bonus3d-node{
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,.25), transparent 38%),
+    linear-gradient(135deg,#1d4ed8,#0f766e) !important;
+}
+
+.ps-bonus3d-node.done::after{
+  content:"✓";
+  position:absolute;
+  right:-8px;
+  top:-8px;
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:#22c55e;
+  color:#fff;
+  border:3px solid #fff;
+  box-shadow:0 10px 18px rgba(0,0,0,.18);
+}
+
+.ps-bonus3d-wrap{grid-template-columns:1.18fr .82fr !important}
+
+/* =========================================================
+   PATCH V5 — Snake level 8 lebih besar + ulang/lewati
+   ========================================================= */
+.ps-snake-wrap-big{
+  grid-template-columns:.72fr 1.28fr !important;
+  gap:18px !important;
+}
+
+.ps-snake-stage-big{
+  min-height:680px !important;
+}
+
+.ps-snake-stage-big #psSnakeCanvas{
+  width:min(620px,100%) !important;
+  max-width:620px !important;
+  border-radius:30px !important;
+  border-width:4px !important;
+  box-shadow:0 26px 70px rgba(0,0,0,.36), 0 0 0 10px rgba(255,255,255,.08) !important;
+}
+
+.ps-snake-stage-big .ps-snake-caption{
+  font-size:14px !important;
+  margin-top:14px !important;
+}
+
+@media(max-width:1100px){
+  .ps-bonus3d-wrap,.ps-snake-wrap-big{grid-template-columns:1fr !important}
+  .ps-snake-stage-big{min-height:auto !important}
+}
+
+/* =========================================================
+   FIX V6 - tutorial, bonus open world, snake tap, feedback
+   ========================================================= */
+.ps-pipeline-tutorial{
+  position:relative;
+  overflow:hidden;
+  border:2px solid #bfdbfe;
+  background:
+    radial-gradient(circle at top left, rgba(37,99,235,.18), transparent 28%),
+    linear-gradient(180deg,#ffffff 0%,#eff6ff 100%);
+  box-shadow:0 18px 38px rgba(37,99,235,.16);
+  animation:psTutorialPop .32s ease;
+}
+.ps-pipeline-tutorial::after{
+  content:"⬇ taruh kartu ke slot kiri → kanan";
+  position:absolute;
+  right:18px;
+  bottom:16px;
+  padding:9px 12px;
+  border-radius:999px;
+  background:#123a72;
+  color:#fff;
+  font-size:12px;
+  font-weight:950;
+  box-shadow:0 12px 26px rgba(18,58,114,.18);
+}
+.ps-tutorial-panji{
+  animation:panjiTutorBounce 1.2s ease-in-out infinite;
+}
+@keyframes psTutorialPop{
+  from{opacity:0;transform:translateY(12px) scale(.98)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes panjiTutorBounce{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-7px)}
+}
+
+.ps-bonus3d-fullscreen{
+  display:grid;
+  grid-template-columns:minmax(560px,1.3fr) minmax(360px,.7fr);
+  gap:18px;
+  min-height:680px;
+}
+.ps-bonus3d-scene{
+  position:relative;
+  min-height:680px;
+  border-radius:34px;
+  overflow:hidden;
+  background:
+    linear-gradient(180deg,#8bd3ff 0%,#c7f1ff 35%,#7dd46f 36%,#24864d 100%);
+  box-shadow:inset 0 -28px 80px rgba(8,47,73,.25),0 24px 50px rgba(15,23,42,.14);
+  perspective:900px;
+  transform-style:preserve-3d;
+}
+.ps-bonus3d-scene::before{
+  content:"";
+  position:absolute;
+  inset:42% -10% -15%;
+  background:
+    radial-gradient(ellipse at center, rgba(255,255,255,.34), transparent 55%),
+    linear-gradient(90deg, rgba(255,255,255,.22), transparent, rgba(255,255,255,.20));
+  transform:rotateX(62deg);
+  border-radius:50%;
+}
+.ps-bonus3d-mountain{
+  position:absolute;
+  width:260px;
+  height:260px;
+  background:linear-gradient(135deg,#1d4ed8,#0f766e);
+  transform:rotate(45deg);
+  border-radius:28px;
+  opacity:.62;
+  top:145px;
+}
+.ps-bonus3d-mountain.m1{left:5%}
+.ps-bonus3d-mountain.m2{right:8%;top:170px;transform:rotate(45deg) scale(.72)}
+.ps-bonus3d-portal{
+  position:absolute;
+  right:40px;
+  top:70px;
+  width:126px;
+  height:126px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  font-size:12px;
+  font-weight:950;
+  color:#fff;
+  background:radial-gradient(circle,#a78bfa,#4c1d95 62%,#1e1b4b 100%);
+  box-shadow:0 0 28px rgba(124,58,237,.7), inset 0 0 30px rgba(255,255,255,.18);
+  animation:portalPulse 2.2s ease-in-out infinite;
+}
+.ps-bonus3d-portal.open{
+  background:radial-gradient(circle,#fde68a,#22c55e 58%,#0f766e 100%);
+  box-shadow:0 0 38px rgba(34,197,94,.8), inset 0 0 30px rgba(255,255,255,.25);
+}
+@keyframes portalPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.ps-bonus3d-fullscreen .ps-bonus3d-map{
+  position:absolute;
+  left:8%;
+  right:8%;
+  top:230px;
+  bottom:70px;
+  transform:rotateX(56deg) rotateZ(-2deg);
+  transform-style:preserve-3d;
+}
+.ps-bonus3d-fullscreen .ps-bonus3d-node{
+  transform:translateZ(36px) rotateX(-56deg);
+  box-shadow:0 18px 32px rgba(15,23,42,.20);
+}
+.ps-bonus3d-node.locked{
+  opacity:.55;
+  filter:grayscale(.45);
+  cursor:not-allowed;
+}
+.ps-bonus3d-story-panel{
+  max-height:680px;
+  overflow:auto;
+}
+.ps-bonus3d-choice{
+  text-align:left;
+}
+.ps-bonus3d-choice::before{
+  content:"🎲";
+  margin-right:6px;
+}
+.ps-bonus3d-player,.ps-bonus3d-companion{
+  z-index:4;
+}
+
+#psSnakeCanvas{
+  touch-action:none;
+  cursor:pointer;
+}
+.ps-snake-stage-big #psSnakeCanvas{
+  width:min(74vh,720px) !important;
+  height:min(74vh,720px) !important;
+  max-width:100%;
+  border-radius:28px;
+  box-shadow:0 22px 52px rgba(15,23,42,.25);
+}
+.ps-snake-wrap-big{
+  grid-template-columns:.72fr 1.28fr !important;
+  align-items:stretch;
+}
+.ps-snake-caption::after{
+  content:"  • di HP cukup tap arah yang mau dituju";
+  font-weight:900;
+  color:#123a72;
+}
+
+.ps-final-feedback-box{
+  margin:14px 0;
+  padding:16px;
+  border-radius:22px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  display:grid;
+  gap:10px;
+}
+.ps-final-feedback-box strong{
+  color:#9a3412;
+  font-size:17px;
+}
+.ps-final-feedback-box p{
+  margin:4px 0 0;
+  color:#9a3412;
+  line-height:1.55;
+  font-size:13px;
+}
+.ps-final-feedback-box textarea{
+  width:100%;
+  resize:vertical;
+  border:1px solid #fdba74;
+  border-radius:16px;
+  padding:12px 14px;
+  font:inherit;
+  color:#102544;
+  background:#fff;
+}
+.ps-lb-feedback{
+  display:block;
+  margin-top:6px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:#eef4fb;
+  color:#334155;
+  font-style:normal;
+  line-height:1.45;
+  font-size:12px;
+}
+@media(max-width:1100px){
+  .ps-bonus3d-fullscreen,.ps-snake-wrap-big{grid-template-columns:1fr !important}
+  .ps-bonus3d-scene{min-height:520px}
+  .ps-bonus3d-story-panel{max-height:none}
+}
+
+
+/* PATCH V7 - requested revisions */
+.ps-bonus3d-player{
+  left:calc(13% + (var(--player-step,0) * 17%)) !important;
+  bottom:calc(132px + (var(--player-step,0) % 2) * 26px) !important;
+  transition:left .55s ease,bottom .55s ease,transform .35s ease !important;
+}
+.ps-bonus3d-companion{
+  left:calc(22% + (var(--player-step,0) * 17%)) !important;
+  bottom:calc(118px + (var(--player-step,0) % 2) * 26px) !important;
+  transition:left .55s ease,bottom .55s ease,transform .35s ease !important;
+}
+.ps-bonus3d-player::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:-18px;
+  width:74px;
+  height:20px;
+  transform:translateX(-50%);
+  border-radius:999px;
+  background:rgba(15,23,42,.22);
+  filter:blur(1px);
+}
+.ps-snake-brief-modal{
+  margin-top:12px;
+  padding:14px;
+  border-radius:18px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#123a72;
+  line-height:1.55;
+  font-weight:800;
+}
+.ps-snake-brief-modal .ps-btn{margin-top:10px}
+.ps-snake-pbj-pop{
+  margin-top:12px;
+  padding:12px 14px;
+  border-radius:18px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  line-height:1.55;
+  font-size:13px;
+  font-weight:800;
+  animation:psTipPop 1.2s ease-in-out infinite alternate;
+}
+@keyframes psTipPop{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+.ps-snake-stage-big #psSnakeCanvas{
+  width:min(82vh,860px) !important;
+  height:min(82vh,860px) !important;
+}
+.ps-snake-wrap-big{
+  grid-template-columns:.62fr 1.38fr !important;
+}
+.ps-lb-tabs button[data-lb-tab="player"]:only-child{display:none}
+
+/* =========================================================
+   FIX V8 - user revisions 28/04
+   ========================================================= */
+.ps-bonus3d-player{
+  bottom:calc(72px + (var(--player-step,0) % 2) * 16px) !important;
+  left:calc(11% + (var(--player-step,0) * 17%)) !important;
+}
+.ps-bonus3d-companion{
+  bottom:calc(64px + (var(--player-step,0) % 2) * 16px) !important;
+  left:calc(20% + (var(--player-step,0) * 17%)) !important;
+}
+.ps-bonus3d-road{
+  bottom:58px !important;
+}
+.ps-bonus3d-fullscreen .ps-bonus3d-map{
+  top:250px !important;
+  bottom:118px !important;
+}
+.ps-bonus4-finish-popup{
+  position:fixed;
+  inset:0;
+  z-index:2147483646;
+  display:grid;
+  place-items:center;
+  background:rgba(2,6,23,.58);
+  backdrop-filter:blur(10px);
+  animation:psBonusFadeIn .22s ease;
+}
+.ps-bonus4-finish-card{
+  width:min(620px,92vw);
+  padding:28px;
+  border-radius:30px;
+  background:
+    radial-gradient(circle at top right, rgba(34,197,94,.18), transparent 28%),
+    linear-gradient(180deg,#ffffff 0%,#eff6ff 100%);
+  border:1px solid rgba(255,255,255,.88);
+  box-shadow:0 28px 80px rgba(15,23,42,.32);
+  color:#102544;
+  text-align:center;
+  animation:psBonusCardPop .28s ease;
+}
+.ps-bonus4-finish-orb{
+  width:74px;
+  height:74px;
+  margin:0 auto 12px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  font-size:38px;
+  background:radial-gradient(circle,#bbf7d0,#22c55e);
+  box-shadow:0 0 34px rgba(34,197,94,.55);
+}
+.ps-bonus4-finish-card h2{margin:0 0 8px;font-size:32px;font-weight:950;color:#0f172a}
+.ps-bonus4-finish-card p{margin:0 0 12px;color:#334155;line-height:1.6}
+.ps-bonus4-panji-note{margin:14px 0;padding:14px;border-radius:18px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;line-height:1.65;text-align:left;font-weight:750}
+.ps-bonus4-finish-card small{display:block;margin:10px 0 14px;color:#64748b;font-weight:800}
+@keyframes psBonusFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes psBonusCardPop{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.ps-snake-stage-big{
+  min-height:820px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+}
+.ps-snake-stage-big #psSnakeCanvas{
+  width:min(88vh,940px) !important;
+  height:min(88vh,940px) !important;
+  max-width:100% !important;
+}
+.ps-snake-wrap-big{
+  grid-template-columns:.56fr 1.44fr !important;
+}
+.ps-snake-caption::before{
+  content:"Tembok tembus: kanan muncul kiri, bawah muncul atas. ";
+  font-weight:950;
+  color:#22d3ee;
+}
+.ps-review-bubble-pop{
+  position:fixed;
+  right:148px;
+  bottom:36px;
+  z-index:2147483646;
+  width:min(410px,calc(100vw - 28px));
+  padding:16px;
+  border-radius:24px 24px 6px 24px;
+  background:
+    radial-gradient(circle at top left, rgba(34,211,238,.18), transparent 30%),
+    rgba(255,255,255,.97);
+  border:1px solid #dbeafe;
+  box-shadow:0 26px 70px rgba(15,23,42,.24);
+  color:#102544;
+  animation:psReviewBubbleIn .32s ease;
+}
+.ps-review-bubble-pop::after{
+  content:"";
+  position:absolute;
+  right:-10px;
+  bottom:34px;
+  width:20px;
+  height:20px;
+  background:rgba(255,255,255,.97);
+  border-right:1px solid #dbeafe;
+  border-bottom:1px solid #dbeafe;
+  transform:rotate(-45deg);
+}
+.ps-review-bubble-pop.closing{opacity:0;transform:translateY(12px) scale(.96);transition:.22s ease}
+.ps-review-bubble-close{
+  position:absolute;
+  right:-8px;
+  top:-8px;
+  width:30px;
+  height:30px;
+  border-radius:999px;
+  background:#102544;
+  color:#fff;
+  font-weight:950;
+  box-shadow:0 10px 20px rgba(15,23,42,.22);
+}
+.ps-review-bubble-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ps-review-bubble-head span{display:inline-flex;border-radius:999px;background:#dbeafe;color:#1d4ed8;padding:7px 10px;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.ps-review-bubble-head b{font-size:12px;color:#92400e}
+.ps-review-main{padding:12px;border-radius:18px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;line-height:1.55;font-weight:800}
+.ps-review-main small{display:block;margin-top:8px;color:#64748b;font-weight:850}
+.ps-review-mini-list{display:grid;gap:6px;margin-top:10px;max-height:120px;overflow:auto}
+.ps-review-mini-list div{padding:9px 10px;border-radius:14px;background:#f8fbff;border:1px solid #e2e8f0;color:#334155;font-size:12px;line-height:1.45}
+@keyframes psReviewBubbleIn{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:1100px){
+  .ps-snake-wrap-big{grid-template-columns:1fr !important}
+  .ps-snake-stage-big{min-height:700px !important}
+  .ps-review-bubble-pop{right:18px;bottom:150px}
+}
+
+/* =========================================================
+   FIX V9 - final user revisions
+   ========================================================= */
+.ps-rush-drop strong,
+.ps-rush-method-card strong{
+  font-size:18px !important;
+  line-height:1.18 !important;
+  letter-spacing:-.01em !important;
+}
+.ps-rush-drop{
+  min-height:108px !important;
+  grid-template-columns:42px 1fr !important;
+  padding:16px !important;
+}
+.ps-rush-icon{font-size:28px !important}
+.ps-rush-key{width:38px !important;height:38px !important;font-size:18px !important}
+.ps-rush-method-card{min-height:174px !important}
+.ps-rush-method-card span{font-size:12px !important}
+
+/* Bonus level 4: PPK dan PANJI turun ke tanah, bukan melayang di langit */
+.ps-bonus3d-player{
+  bottom:calc(30px + (var(--player-step,0) % 2) * 8px) !important;
+  transform:translateY(0) scale(.92) !important;
+}
+.ps-bonus3d-companion{
+  bottom:calc(24px + (var(--player-step,0) % 2) * 8px) !important;
+  transform:translateY(0) scale(.92) !important;
+}
+.ps-bonus3d-player::after{bottom:-12px !important}
+.ps-bonus3d-road{bottom:24px !important;height:70px !important}
+.ps-bonus3d-fullscreen .ps-bonus3d-map{
+  top:270px !important;
+  bottom:80px !important;
+}
+.ps-bonus3d-scene{
+  overflow:hidden !important;
+}
+
+/* Snake: arena dimaksimalkan, frame canvas dihilangkan */
+.ps-snake-wrap-big{
+  grid-template-columns:.46fr 1.54fr !important;
+  gap:18px !important;
+}
+.ps-snake-stage-big{
+  min-height:calc(100vh - 180px) !important;
+  padding:10px !important;
+  align-content:stretch !important;
+  justify-content:center !important;
+}
+.ps-snake-stage-big #psSnakeCanvas{
+  width:min(100%, calc(100vh - 220px)) !important;
+  height:min(100%, calc(100vh - 220px)) !important;
+  max-width:none !important;
+  border:0 !important;
+  border-radius:18px !important;
+  box-shadow:0 18px 54px rgba(0,0,0,.34) !important;
+}
+.ps-snake-caption{
+  margin-top:8px !important;
+}
+.ps-snake-info{padding:18px !important}
+.ps-snake-info h3{font-size:34px !important}
+
+/* Review bubble dibuat banyak, lucu, melayang */
+.ps-review-bubble-pop.ps-review-bubble-float{
+  right:calc(118px + (var(--review-i,0) * 72px)) !important;
+  bottom:calc(34px + (var(--review-i,0) * 58px)) !important;
+  width:min(350px,calc(100vw - 28px)) !important;
+  animation:psReviewFly 4s ease-in-out infinite var(--review-delay,0s), psReviewBubbleIn .32s ease !important;
+}
+.ps-review-bubble-pop.ps-review-bubble-float:nth-of-type(even){
+  border-radius:24px 24px 24px 6px !important;
+}
+.ps-review-bubble-pop.ps-review-bubble-float .ps-review-main{
+  font-size:13px !important;
+}
+.ps-review-bubble-head span{
+  background:linear-gradient(135deg,#dbeafe,#dcfce7) !important;
+}
+@keyframes psReviewFly{
+  0%,100%{transform:translate(0,0) rotate(-.8deg)}
+  33%{transform:translate(-8px,-10px) rotate(.8deg)}
+  66%{transform:translate(8px,-4px) rotate(-.3deg)}
+}
+@media(max-width:1100px){
+  .ps-snake-wrap-big{grid-template-columns:1fr !important}
+  .ps-snake-stage-big{min-height:760px !important}
+  .ps-snake-stage-big #psSnakeCanvas{width:min(92vw,760px) !important;height:min(92vw,760px) !important}
+  .ps-review-bubble-pop.ps-review-bubble-float{right:18px !important;bottom:calc(150px + (var(--review-i,0) * 62px)) !important}
+}
+
+/* =========================================================
+   FIX V10 - bubble review pisah, karakter bonus turun, snake full arena
+   ========================================================= */
+/* Review bubble: jangan numpuk. Disebar ke kiri/kanan/atas dengan animasi melayang. */
+.ps-review-bubble-pop.ps-review-bubble-float{
+  width:min(330px, calc(100vw - 32px)) !important;
+  bottom:auto !important;
+  right:auto !important;
+  left:auto !important;
+  top:auto !important;
+  z-index:2147483646 !important;
+  animation:psReviewFloatSeparate 4.6s ease-in-out infinite var(--review-delay,0s), psReviewBubbleIn .32s ease !important;
+}
+.ps-review-bubble-pop.review-pos-0{left:24px !important;top:84px !important}
+.ps-review-bubble-pop.review-pos-1{right:28px !important;top:96px !important}
+.ps-review-bubble-pop.review-pos-2{left:42px !important;bottom:92px !important}
+.ps-review-bubble-pop.review-pos-3{right:44px !important;bottom:96px !important}
+.ps-review-bubble-pop.review-pos-4{left:50% !important;top:64px !important;transform:translateX(-50%) !important}
+.ps-review-bubble-pop.review-pos-5{left:50% !important;bottom:86px !important;transform:translateX(-50%) !important}
+.ps-review-bubble-pop.review-pos-0::after,
+.ps-review-bubble-pop.review-pos-2::after{right:auto !important;left:26px !important;transform:rotate(45deg) !important}
+.ps-review-bubble-pop.review-pos-1::after,
+.ps-review-bubble-pop.review-pos-3::after{right:26px !important}
+.ps-review-bubble-pop.review-pos-4::after,
+.ps-review-bubble-pop.review-pos-5::after{left:50% !important;right:auto !important;transform:translateX(-50%) rotate(45deg) !important}
+@keyframes psReviewFloatSeparate{
+  0%,100%{translate:0 0;rotate:-.5deg}
+  35%{translate:10px -12px;rotate:.8deg}
+  70%{translate:-8px -5px;rotate:-.2deg}
+}
+@media(max-width:900px){
+  .ps-review-bubble-pop.review-pos-0,
+  .ps-review-bubble-pop.review-pos-1,
+  .ps-review-bubble-pop.review-pos-2,
+  .ps-review-bubble-pop.review-pos-3,
+  .ps-review-bubble-pop.review-pos-4,
+  .ps-review-bubble-pop.review-pos-5{
+    left:14px !important;
+    right:14px !important;
+    top:auto !important;
+    bottom:calc(88px + (var(--review-i,0) * 118px)) !important;
+    width:auto !important;
+    transform:none !important;
+  }
+}
+
+/* Bonus level 4: PPK & PANJI benar-benar turun ke ground, bukan di awan */
+.ps-bonus3d-scene > .ps-bonus3d-player{
+  top:auto !important;
+  bottom:4px !important;
+  left:calc(10% + (var(--player-step,0) * 18%)) !important;
+  transform:translateY(0) scale(.78) !important;
+  animation:psWorldBobLow 2.1s ease-in-out infinite !important;
+  z-index:8 !important;
+}
+.ps-bonus3d-scene > .ps-bonus3d-companion{
+  top:auto !important;
+  bottom:0 !important;
+  left:calc(18% + (var(--player-step,0) * 18%)) !important;
+  transform:translateY(0) scale(.76) !important;
+  animation:psWorldBobLow 2.1s ease-in-out infinite .3s !important;
+  z-index:9 !important;
+}
+.ps-bonus3d-scene > .ps-bonus3d-player::after,
+.ps-bonus3d-scene > .ps-bonus3d-companion::after{
+  bottom:-10px !important;
+}
+.ps-bonus3d-road{
+  bottom:0 !important;
+  height:60px !important;
+  opacity:.95 !important;
+}
+.ps-bonus3d-fullscreen .ps-bonus3d-map{
+  top:245px !important;
+  bottom:145px !important;
+}
+@keyframes psWorldBobLow{0%,100%{translate:0 0}50%{translate:0 -4px}}
+
+/* Snake: jangan kecil di tengah. Canvas dipaksa memenuhi area stage. */
+.ps-snake-wrap-big{
+  grid-template-columns:360px minmax(760px,1fr) !important;
+  align-items:stretch !important;
+  gap:16px !important;
+}
+.ps-snake-stage-big{
+  min-height:760px !important;
+  height:calc(100vh - 160px) !important;
+  padding:0 !important;
+  border-radius:30px !important;
+  overflow:hidden !important;
+  display:grid !important;
+  grid-template-rows:1fr auto !important;
+  align-items:stretch !important;
+  justify-items:stretch !important;
+}
+.ps-snake-stage-big #psSnakeCanvas{
+  width:100% !important;
+  height:100% !important;
+  min-height:0 !important;
+  max-width:none !important;
+  max-height:none !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  display:block !important;
+  background:#071a2e !important;
+}
+.ps-snake-stage-big .ps-snake-caption{
+  margin:0 !important;
+  padding:12px 14px !important;
+  background:rgba(6,17,31,.88) !important;
+  color:#fff !important;
+  text-align:center !important;
+}
+@media(max-width:1200px){
+  .ps-snake-wrap-big{grid-template-columns:1fr !important}
+  .ps-snake-stage-big{height:72vh !important;min-height:620px !important}
+}
+
+/* =========================================================
+   FIX V11 - review bubble endpoint OK, snake tip ganggu arena, PPK/PANJI grounded
+   ========================================================= */
+/* Bubble review sengaja disebar, bukan ditumpuk di kanan bawah */
+.ps-review-bubble-pop.ps-review-bubble-float{
+  width:min(310px, calc(100vw - 34px)) !important;
+  max-width:310px !important;
+  z-index:2147483646 !important;
+  animation:psReviewFloatV11 5.2s ease-in-out infinite var(--review-delay,0s), psReviewBubbleIn .28s ease !important;
+}
+.ps-review-bubble-pop.review-pos-0{left:26px !important;top:82px !important;right:auto !important;bottom:auto !important;}
+.ps-review-bubble-pop.review-pos-1{right:32px !important;top:82px !important;left:auto !important;bottom:auto !important;}
+.ps-review-bubble-pop.review-pos-2{left:34px !important;top:310px !important;right:auto !important;bottom:auto !important;}
+.ps-review-bubble-pop.review-pos-3{right:38px !important;top:330px !important;left:auto !important;bottom:auto !important;}
+.ps-review-bubble-pop.review-pos-4{left:50% !important;top:42px !important;right:auto !important;bottom:auto !important;transform:translateX(-50%) !important;}
+.ps-review-bubble-pop.review-pos-5{left:50% !important;top:560px !important;right:auto !important;bottom:auto !important;transform:translateX(-50%) !important;}
+.ps-review-bubble-pop.review-pos-6{left:22px !important;bottom:70px !important;right:auto !important;top:auto !important;}
+.ps-review-bubble-pop.review-pos-7{right:24px !important;bottom:76px !important;left:auto !important;top:auto !important;}
+@keyframes psReviewFloatV11{
+  0%,100%{translate:0 0;rotate:-.5deg}
+  25%{translate:10px -14px;rotate:.7deg}
+  55%{translate:-8px -8px;rotate:-.3deg}
+  80%{translate:6px 4px;rotate:.4deg}
+}
+
+/* Bonus level 4: karakter dipaksa di ground, bukan ikut langit/map */
+.ps-bonus3d-scene > .ps-bonus3d-player{
+  top:calc(100% - 132px) !important;
+  bottom:auto !important;
+  left:calc(11% + (var(--player-step,0) * 18%)) !important;
+  transform:scale(.82) !important;
+  z-index:20 !important;
+}
+.ps-bonus3d-scene > .ps-bonus3d-companion{
+  top:calc(100% - 112px) !important;
+  bottom:auto !important;
+  left:calc(19% + (var(--player-step,0) * 18%)) !important;
+  transform:scale(.80) !important;
+  z-index:21 !important;
+}
+.ps-bonus3d-scene > .ps-bonus3d-player::after,
+.ps-bonus3d-scene > .ps-bonus3d-companion::after{bottom:-8px !important;}
+.ps-bonus3d-road{bottom:22px !important;height:86px !important;z-index:3 !important;}
+
+/* Snake: arena full satu frame kanan, canvas mengisi semua stage */
+.ps-snake-wrap-big{
+  grid-template-columns:340px minmax(820px,1fr) !important;
+  gap:16px !important;
+  align-items:stretch !important;
+}
+.ps-snake-stage-big{
+  position:relative !important;
+  height:calc(100vh - 150px) !important;
+  min-height:760px !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  display:grid !important;
+  grid-template-rows:minmax(0,1fr) auto !important;
+  border-radius:30px !important;
+}
+.ps-snake-stage-big #psSnakeCanvas{
+  width:100% !important;
+  height:100% !important;
+  min-width:100% !important;
+  min-height:100% !important;
+  max-width:none !important;
+  max-height:none !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  object-fit:fill !important;
+}
+.ps-snake-arena-tip{
+  position:absolute;
+  left:var(--tip-x, 28%);
+  top:var(--tip-y, 18%);
+  max-width:360px;
+  padding:12px 14px;
+  border-radius:18px 18px 18px 6px;
+  background:rgba(255,247,237,.95);
+  border:2px solid #fed7aa;
+  color:#9a3412;
+  font-size:13px;
+  line-height:1.45;
+  font-weight:850;
+  box-shadow:0 18px 36px rgba(15,23,42,.22);
+  pointer-events:none;
+  animation:psSnakeTipDrift 2.2s ease-in-out infinite;
+  z-index:5;
+}
+.ps-snake-arena-tip::after{
+  content:"";
+  position:absolute;
+  left:20px;
+  bottom:-9px;
+  width:16px;
+  height:16px;
+  background:rgba(255,247,237,.95);
+  border-right:2px solid #fed7aa;
+  border-bottom:2px solid #fed7aa;
+  transform:rotate(45deg);
+}
+@keyframes psSnakeTipDrift{0%,100%{translate:0 0}50%{translate:0 -8px}}
+@media(max-width:1200px){
+  .ps-snake-wrap-big{grid-template-columns:1fr !important;}
+  .ps-snake-stage-big{height:78vh !important;min-height:680px !important;}
+  .ps-review-bubble-pop.review-pos-0,
+  .ps-review-bubble-pop.review-pos-1,
+  .ps-review-bubble-pop.review-pos-2,
+  .ps-review-bubble-pop.review-pos-3,
+  .ps-review-bubble-pop.review-pos-4,
+  .ps-review-bubble-pop.review-pos-5,
+  .ps-review-bubble-pop.review-pos-6,
+  .ps-review-bubble-pop.review-pos-7{
+    left:16px !important;
+    right:16px !important;
+    top:auto !important;
+    bottom:calc(92px + (var(--review-i,0) * 110px)) !important;
+    width:auto !important;
+    max-width:none !important;
+    transform:none !important;
+  }
+}
