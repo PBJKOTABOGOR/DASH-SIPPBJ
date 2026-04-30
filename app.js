@@ -952,7 +952,7 @@ function renderDashboardReady(data) {
           <div>
             <span class="section-kicker">${escapeHtml(profileKicker)}</span>
             <h3>Radar Pemanfaatan Sistem ITKP</h3>
-            <p class="section-subnote">Pilih satuan kerja untuk melihat komposisi skor per indikator. Baris <b>PEMERINTAH KOTA BOGOR</b> dipakai sebagai skor agregat kota, dibaca langsung dari kolom <b>Nilai ITKP Pemanfaatan Sistem</b>, dan tidak masuk ranking OPD.</p>
+            <p class="section-subnote">Pilih satuan kerja untuk melihat komposisi skor per indikator.</p>
           </div>
 
           <label class="satker-select-wrap">
@@ -1010,7 +1010,7 @@ function renderDashboardReady(data) {
           <div class="progress-track progress-track--tall">
             <div class="progress-bar progress-bar--${getToneByPercent(data.realisasiPersen)}" style="width:${Math.min(100, data.realisasiPersen)}%"></div>
           </div>
-          <p class="page-note">${escapeHtml(scopeDesc)}. Persentase dihitung dari nilai realisasi pada D_REALISASI dibanding nilai pagu pada D_PERENCANAAN.</p>
+          <p class="page-note">${escapeHtml(scopeDesc)}. Persentase dihitung dari nilai realisasi dibanding nilai pagu.</p>
         </div>
 
         <div class="status-mini-grid">
