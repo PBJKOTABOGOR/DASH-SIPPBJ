@@ -921,9 +921,9 @@ function renderDashboardReady(data) {
 
       <div class="hero-topline">
         <div>
-          <div class="hero-kicker">SIPPBJ · Kota Bogor Procurement Dashboard</div>
+          <div class="hero-kicker">SIPPBJ · Sistem Informasi Pelaporan Pengadaan Barang Jasa</div>
           <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
-          <p>Ringkasan interaktif dari ITKP Kota Bogor, profil perencanaan, realisasi paket, metode pengadaan, dan performa OPD/Sub OPD.</p>
+          <p>Ringkasan ITKP Kota Bogor, profil perencanaan, realisasi paket, metode pengadaan, dan performa OPD/Sub OPD.</p>
         </div>
 
         <div class="hero-badge">
