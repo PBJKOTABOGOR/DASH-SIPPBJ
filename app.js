@@ -1448,7 +1448,7 @@ function renderPlaceholderPage(pageKey, page) {
       <div class="placeholder-grid">
         <div class="placeholder-box">
           <h4>Modul belum dihubungkan</h4>
-          <p>Halaman ini sedang disiapkan di portal utama.</p>
+          <p>Halaman ini sedang disiapkan.</p>
         </div>
     </section>
   `;
