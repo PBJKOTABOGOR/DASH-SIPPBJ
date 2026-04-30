@@ -21,7 +21,9 @@
     rekapPage: 1,
     detailPage: 1,
     initialized: false,
-    destroyed: false
+    destroyed: false,
+    sortField: '',
+    sortDir: 'desc'
   };
 
   let EL = {};
@@ -68,6 +70,11 @@
       btnRefresh: qs('btnRefresh'),
       btnClearSelected: qs('btnClearSelected'),
 
+      btnSortPersen: qs('btnSortPersen'),
+      btnSortItkp: qs('btnSortItkp'),
+      sortPersenIcon: qs('sortPersenIcon'),
+      sortItkpIcon: qs('sortItkpIcon'),
+
       statJumlahOpd: qs('statJumlahOpd'),
       statJumlahPaket: qs('statJumlahPaket'),
       statTotalRup: qs('statTotalRup'),
@@ -84,7 +91,16 @@
       insightLowOpd: qs('insightLowOpd'),
       insightLowNote: qs('insightLowNote'),
       insightMetode: qs('insightMetode'),
-      insightMetodeNote: qs('insightMetodeNote')
+      insightMetodeNote: qs('insightMetodeNote'),
+      btnShowItkp10: qs('btnShowItkp10'),
+      btnShowBelow10: qs('btnShowBelow10'),
+
+      opdModal: qs('opdModal'),
+      modalTitle: qs('modalTitle'),
+      modalSubtitle: qs('modalSubtitle'),
+      modalCount: qs('modalCount'),
+      modalList: qs('modalList'),
+      btnCloseModal: qs('btnCloseModal')
     };
   }
 
@@ -154,10 +170,7 @@
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const response = await fetch(url, {
-          method: 'GET',
-          cache: 'no-store'
-        });
+        const response = await fetch(url, { method: 'GET', cache: 'no-store' });
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status} saat mengambil ${url}`);
@@ -176,7 +189,6 @@
         return text;
       } catch (error) {
         lastError = error;
-
         if (attempt < retries) {
           await wait(500 + (attempt * 700));
         }
@@ -276,8 +288,7 @@
       pdn: pick(row, ['produk_dalam_negeri', 'pdn']),
       sumber_dana: pick(row, ['sumber_dana']),
       waktu_pemilihan: pick(row, ['waktu_pemilihan'])
-    }))
-      .filter(row => row.satuan_kerja && row.nama_paket);
+    })).filter(row => row.satuan_kerja && row.nama_paket);
   }
 
   function normalizeScoreSirup(rows) {
@@ -289,8 +300,7 @@
       total_komitmen: toNumber(pick(row, ['total_komitmen'])),
       prosentase: toNumber(pick(row, ['prosentase', 'persentase'])),
       nilai_itkp: toNumber(pick(row, ['nilai_itkp']))
-    }))
-      .filter(row => row.satuan_kerja);
+    })).filter(row => row.satuan_kerja);
   }
 
   function showError(message) {
@@ -300,29 +310,10 @@
   }
 
   function buildFilterOptions() {
-    populateSelect(
-      EL.filterOpd,
-      uniqueSorted(APP_STATE.scoreSirup.map(x => x.satuan_kerja)),
-      'Semua Satuan Kerja'
-    );
-
-    populateSelect(
-      EL.filterMetode,
-      uniqueSorted(APP_STATE.rawSirup.map(x => x.metode_pemilihan)),
-      'Semua Metode'
-    );
-
-    populateSelect(
-      EL.filterSumberDana,
-      uniqueSorted(APP_STATE.rawSirup.map(x => x.sumber_dana)),
-      'Semua Sumber Dana'
-    );
-
-    populateSelect(
-      EL.filterWaktu,
-      uniqueSorted(APP_STATE.rawSirup.map(x => x.waktu_pemilihan)),
-      'Semua Waktu'
-    );
+    populateSelect(EL.filterOpd, uniqueSorted(APP_STATE.scoreSirup.map(x => x.satuan_kerja)), 'Semua Satuan Kerja');
+    populateSelect(EL.filterMetode, uniqueSorted(APP_STATE.rawSirup.map(x => x.metode_pemilihan)), 'Semua Metode');
+    populateSelect(EL.filterSumberDana, uniqueSorted(APP_STATE.rawSirup.map(x => x.sumber_dana)), 'Semua Sumber Dana');
+    populateSelect(EL.filterWaktu, uniqueSorted(APP_STATE.rawSirup.map(x => x.waktu_pemilihan)), 'Semua Waktu');
   }
 
   function populateSelect(selectEl, items, placeholder) {
@@ -355,26 +346,17 @@
 
     APP_STATE.filteredRawGlobal = APP_STATE.rawSirup.filter(row => {
       const matchOpd = !selectedOpdFilter || normalizeOpdName(row.satuan_kerja) === normalizeOpdName(selectedOpdFilter);
-      const matchMetode = !selectedMetode || row.metode_pemilihan.toLowerCase() === selectedMetode;
-      const matchDana = !selectedSumberDana || row.sumber_dana.toLowerCase() === selectedSumberDana;
-      const matchWaktu = !selectedWaktu || row.waktu_pemilihan.toLowerCase() === selectedWaktu;
+      const matchMetode = !selectedMetode || (row.metode_pemilihan || '').toLowerCase() === selectedMetode;
+      const matchDana = !selectedSumberDana || (row.sumber_dana || '').toLowerCase() === selectedSumberDana;
+      const matchWaktu = !selectedWaktu || (row.waktu_pemilihan || '').toLowerCase() === selectedWaktu;
 
-      const searchTarget = [
-        row.nama_paket,
-        row.program,
-        row.kegiatan,
-        row.sub_kegiatan,
-        row.kode_rup
-      ].join(' ').toLowerCase();
-
+      const searchTarget = [row.nama_paket, row.program, row.kegiatan, row.sub_kegiatan, row.kode_rup].join(' ').toLowerCase();
       const matchKeyword = !keyword || searchTarget.includes(keyword);
 
       return matchOpd && matchMetode && matchDana && matchWaktu && matchKeyword;
     });
 
-    const allowedOpdSet = new Set(
-      APP_STATE.filteredRawGlobal.map(row => normalizeOpdName(row.satuan_kerja))
-    );
+    const allowedOpdSet = new Set(APP_STATE.filteredRawGlobal.map(row => normalizeOpdName(row.satuan_kerja)));
 
     APP_STATE.filteredScore = APP_STATE.scoreSirup.filter(row => {
       const rowOpd = normalizeOpdName(row.satuan_kerja);
@@ -390,6 +372,8 @@
       return true;
     });
 
+    sortFilteredScore();
+    renderSortIndicators();
     renderStats(APP_STATE.filteredRawGlobal, APP_STATE.filteredScore);
     renderInsights(APP_STATE.filteredRawGlobal, APP_STATE.filteredScore);
     renderRekapTable(APP_STATE.filteredScore);
@@ -401,19 +385,55 @@
     }
   }
 
+  function sortFilteredScore() {
+    if (!APP_STATE.sortField) return;
+
+    const field = APP_STATE.sortField;
+    const dir = APP_STATE.sortDir === 'asc' ? 1 : -1;
+
+    APP_STATE.filteredScore.sort((a, b) => {
+      const av = Number(a[field] || 0);
+      const bv = Number(b[field] || 0);
+
+      if (av !== bv) return (av - bv) * dir;
+      return String(a.satuan_kerja || '').localeCompare(String(b.satuan_kerja || ''), 'id');
+    });
+  }
+
+  function toggleSort(field) {
+    if (APP_STATE.sortField === field) {
+      APP_STATE.sortDir = APP_STATE.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      APP_STATE.sortField = field;
+      APP_STATE.sortDir = 'desc';
+    }
+
+    APP_STATE.rekapPage = 1;
+    applyFilters();
+  }
+
+  function renderSortIndicators() {
+    if (EL.sortPersenIcon) {
+      EL.sortPersenIcon.textContent = APP_STATE.sortField === 'prosentase'
+        ? (APP_STATE.sortDir === 'asc' ? '↑' : '↓')
+        : '↕';
+    }
+
+    if (EL.sortItkpIcon) {
+      EL.sortItkpIcon.textContent = APP_STATE.sortField === 'nilai_itkp'
+        ? (APP_STATE.sortDir === 'asc' ? '↑' : '↓')
+        : '↕';
+    }
+  }
+
   function renderStats(filteredRaw, filteredScore) {
     const jumlahOpd = filteredScore.length;
     const jumlahPaket = filteredRaw.length;
     const totalRup = sum(filteredScore.map(x => x.total_rup_diumumkan));
     const totalKomitmen = sum(filteredScore.map(x => x.total_komitmen));
 
-    const avgPersen = filteredScore.length
-      ? sum(filteredScore.map(x => x.prosentase)) / filteredScore.length
-      : 0;
-
-    const avgItkp = filteredScore.length
-      ? sum(filteredScore.map(x => x.nilai_itkp)) / filteredScore.length
-      : 0;
+    const avgPersen = filteredScore.length ? sum(filteredScore.map(x => x.prosentase)) / filteredScore.length : 0;
+    const avgItkp = filteredScore.length ? sum(filteredScore.map(x => x.nilai_itkp)) / filteredScore.length : 0;
 
     safeSetText(EL.statJumlahOpd, formatNumber(jumlahOpd));
     safeSetText(EL.statJumlahPaket, formatNumber(jumlahPaket));
@@ -430,10 +450,10 @@
 
   function renderInsights(filteredRaw, filteredScore) {
     if (!filteredScore.length) {
-      safeSetText(EL.insightTopOpd, '-');
-      safeSetText(EL.insightTopNote, 'Belum ada data');
-      safeSetText(EL.insightLowOpd, '-');
-      safeSetText(EL.insightLowNote, 'Belum ada data');
+      safeSetText(EL.insightTopOpd, '0 OPD');
+      safeSetText(EL.insightTopNote, 'Belum ada OPD dengan nilai ITKP 10 pada filter aktif.');
+      safeSetText(EL.insightLowOpd, '0 OPD');
+      safeSetText(EL.insightLowNote, 'Belum ada OPD di bawah nilai ITKP 10 pada filter aktif.');
       safeSetText(EL.insightMetode, '-');
       safeSetText(EL.insightMetodeNote, 'Belum ada data');
       return;
@@ -455,31 +475,70 @@
       safeSetText(EL.insightMetodeNote, 'Belum ada data');
     }
 
-    const uniqueItkp = [...new Set(filteredScore.map(x => Number(x.nilai_itkp || 0)))];
-    const uniquePersen = [...new Set(filteredScore.map(x => Number(x.prosentase || 0)))];
+    const nilai10Rows = filteredScore.filter(row => Number(row.nilai_itkp || 0) >= 10);
+    const below10Rows = filteredScore.filter(row => Number(row.nilai_itkp || 0) < 10);
 
-    if (uniqueItkp.length === 1 && uniquePersen.length === 1) {
-      safeSetText(EL.insightTopOpd, 'Semua OPD Setara');
-      safeSetText(EL.insightTopNote, `Nilai ITKP ${formatDecimal(uniqueItkp[0])} | ${formatPercent(uniquePersen[0])}%`);
+    safeSetText(EL.insightTopOpd, `${formatNumber(nilai10Rows.length)} OPD`);
+    safeSetText(EL.insightTopNote, nilai10Rows.length
+      ? 'Sudah mencapai nilai ITKP 10 pada filter aktif.'
+      : 'Belum ada OPD dengan nilai ITKP 10 pada filter aktif.');
 
-      safeSetText(EL.insightLowOpd, 'Semua OPD Setara');
-      safeSetText(EL.insightLowNote, `Nilai ITKP ${formatDecimal(uniqueItkp[0])} | ${formatPercent(uniquePersen[0])}%`);
-      return;
-    }
+    safeSetText(EL.insightLowOpd, `${formatNumber(below10Rows.length)} OPD`);
+    safeSetText(EL.insightLowNote, below10Rows.length
+      ? 'Masih di bawah nilai ITKP 10 pada filter aktif.'
+      : 'Semua OPD pada filter aktif sudah bernilai 10.');
+  }
 
-    const sortedByItkp = [...filteredScore].sort((a, b) => {
+  function buildOpdListRows(type) {
+    const rows = [...APP_STATE.filteredScore];
+
+    const filtered = type === 'itkp10'
+      ? rows.filter(row => Number(row.nilai_itkp || 0) >= 10)
+      : rows.filter(row => Number(row.nilai_itkp || 0) < 10);
+
+    filtered.sort((a, b) => {
       if (b.nilai_itkp !== a.nilai_itkp) return b.nilai_itkp - a.nilai_itkp;
-      return b.prosentase - a.prosentase;
+      if (b.prosentase !== a.prosentase) return b.prosentase - a.prosentase;
+      return String(a.satuan_kerja || '').localeCompare(String(b.satuan_kerja || ''), 'id');
     });
 
-    const top = sortedByItkp[0];
-    const low = sortedByItkp[sortedByItkp.length - 1];
+    return filtered;
+  }
 
-    safeSetText(EL.insightTopOpd, top.satuan_kerja);
-    safeSetText(EL.insightTopNote, `Nilai ITKP ${formatDecimal(top.nilai_itkp)} | ${formatPercent(top.prosentase)}%`);
+  function openModal(type) {
+    if (!EL.opdModal) return;
 
-    safeSetText(EL.insightLowOpd, low.satuan_kerja);
-    safeSetText(EL.insightLowNote, `Nilai ITKP ${formatDecimal(low.nilai_itkp)} | ${formatPercent(low.prosentase)}%`);
+    const rows = buildOpdListRows(type);
+    const isTop = type === 'itkp10';
+
+    safeSetText(EL.modalTitle, isTop ? 'Daftar OPD Nilai ITKP 10' : 'Daftar OPD Di Bawah Nilai 10');
+    safeSetText(EL.modalSubtitle, isTop
+      ? 'Nama OPD yang sudah mencapai nilai ITKP 10 pada filter aktif.'
+      : 'Nama OPD yang masih berada di bawah nilai ITKP 10 pada filter aktif.');
+    safeSetText(EL.modalCount, `${formatNumber(rows.length)} OPD`);
+
+    if (EL.modalList) {
+      EL.modalList.innerHTML = rows.length
+        ? rows.map((row, index) => `
+            <div class="modal-item">
+              ${index + 1}. ${escapeHtml(row.satuan_kerja)}
+              <small>Nilai ITKP ${formatDecimal(row.nilai_itkp)} | Prosentase ${formatPercent(row.prosentase)}%</small>
+            </div>
+          `).join('')
+        : '<div class="modal-item">Belum ada data OPD pada filter aktif.</div>';
+    }
+
+    EL.opdModal.hidden = false;
+    EL.opdModal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    if (EL.opdModal) {
+      EL.opdModal.classList.remove('show');
+      EL.opdModal.hidden = true;
+    }
+    document.body.style.overflow = '';
   }
 
   function renderRekapTable(rows) {
@@ -499,23 +558,14 @@
     if (!pageRows.length) {
       EL.rekapTableBody.innerHTML = `
         <tr>
-          <td colspan="9" class="cell-muted center-cell">
-            Tidak ada data rekap yang sesuai filter.
-          </td>
+          <td colspan="9" class="cell-muted center-cell">Tidak ada data rekap yang sesuai filter.</td>
         </tr>
       `;
 
-      renderPagination(
-        EL.rekapPagination,
-        EL.rekapPaginationInfo,
-        totalRows,
-        APP_STATE.rekapPage,
-        PAGE_SIZE_REKAP,
-        page => {
-          APP_STATE.rekapPage = page;
-          renderRekapTable(APP_STATE.filteredScore);
-        }
-      );
+      renderPagination(EL.rekapPagination, EL.rekapPaginationInfo, totalRows, APP_STATE.rekapPage, PAGE_SIZE_REKAP, page => {
+        APP_STATE.rekapPage = page;
+        renderRekapTable(APP_STATE.filteredScore);
+      });
       return;
     }
 
@@ -529,11 +579,7 @@
         <td>${formatTableNumber(row.total_komitmen)}</td>
         <td>${renderPercentBadge(row.prosentase)}</td>
         <td>${renderItkpBadge(row.nilai_itkp)}</td>
-        <td>
-          <button type="button" class="action-btn" data-opd="${escapeAttr(row.satuan_kerja)}">
-            Lihat Paket
-          </button>
-        </td>
+        <td><button type="button" class="action-btn" data-opd="${escapeAttr(row.satuan_kerja)}">Lihat Paket</button></td>
       </tr>
     `).join('');
 
@@ -545,25 +591,15 @@
       });
     });
 
-    renderPagination(
-      EL.rekapPagination,
-      EL.rekapPaginationInfo,
-      totalRows,
-      APP_STATE.rekapPage,
-      PAGE_SIZE_REKAP,
-      page => {
-        APP_STATE.rekapPage = page;
-        renderRekapTable(APP_STATE.filteredScore);
-      }
-    );
+    renderPagination(EL.rekapPagination, EL.rekapPaginationInfo, totalRows, APP_STATE.rekapPage, PAGE_SIZE_REKAP, page => {
+      APP_STATE.rekapPage = page;
+      renderRekapTable(APP_STATE.filteredScore);
+    });
   }
 
   function renderDetailForOpd(opdName) {
     const opdKey = normalizeOpdName(opdName);
-
-    const rows = APP_STATE.filteredRawGlobal.filter(row =>
-      normalizeOpdName(row.satuan_kerja) === opdKey
-    );
+    const rows = APP_STATE.filteredRawGlobal.filter(row => normalizeOpdName(row.satuan_kerja) === opdKey);
 
     APP_STATE.selectedRawRows = rows;
 
@@ -585,22 +621,13 @@
 
     if (!pageRows.length) {
       EL.detailContent.innerHTML = `
-        <div class="empty-state">
-          Tidak ada detail paket untuk OPD ini sesuai filter yang dipilih.
-        </div>
+        <div class="empty-state">Tidak ada detail paket untuk OPD ini sesuai filter yang dipilih.</div>
       `;
 
-      renderPagination(
-        EL.detailPagination,
-        EL.detailPaginationInfo,
-        totalRows,
-        APP_STATE.detailPage,
-        PAGE_SIZE_DETAIL,
-        page => {
-          APP_STATE.detailPage = page;
-          renderDetailForOpd(APP_STATE.selectedOpd);
-        }
-      );
+      renderPagination(EL.detailPagination, EL.detailPaginationInfo, totalRows, APP_STATE.detailPage, PAGE_SIZE_DETAIL, page => {
+        APP_STATE.detailPage = page;
+        renderDetailForOpd(APP_STATE.selectedOpd);
+      });
       return;
     }
 
@@ -653,24 +680,14 @@
 
     setupDetailHorizontalScroll();
 
-    renderPagination(
-      EL.detailPagination,
-      EL.detailPaginationInfo,
-      totalRows,
-      APP_STATE.detailPage,
-      PAGE_SIZE_DETAIL,
-      page => {
-        APP_STATE.detailPage = page;
-        renderDetailForOpd(APP_STATE.selectedOpd);
-      }
-    );
+    renderPagination(EL.detailPagination, EL.detailPaginationInfo, totalRows, APP_STATE.detailPage, PAGE_SIZE_DETAIL, page => {
+      APP_STATE.detailPage = page;
+      renderDetailForOpd(APP_STATE.selectedOpd);
+    });
 
     const detailSection = getRoot().querySelector('.detail-panel') || document.querySelector('.detail-panel');
     if (detailSection) {
-      detailSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
+      detailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -681,9 +698,7 @@
     const detailTableWrap = root.querySelector('#detailTableWrap') || document.getElementById('detailTableWrap');
     const detailTable = root.querySelector('#detailTable') || document.getElementById('detailTable');
 
-    if (!topScrollWrap || !topScrollInner || !detailTableWrap || !detailTable) {
-      return;
-    }
+    if (!topScrollWrap || !topScrollInner || !detailTableWrap || !detailTable) return;
 
     const syncWidths = () => {
       topScrollInner.style.width = `${detailTable.scrollWidth}px`;
@@ -785,22 +800,12 @@
   }
 
   function renderPercentBadge(value) {
-    const cls = value >= 100
-      ? 'badge badge-green'
-      : value >= 80
-        ? 'badge badge-yellow'
-        : 'badge badge-red';
-
+    const cls = value >= 100 ? 'badge badge-green' : value >= 80 ? 'badge badge-yellow' : 'badge badge-red';
     return `<span class="${cls}">${formatPercent(value)}%</span>`;
   }
 
   function renderItkpBadge(value) {
-    const cls = value >= 10
-      ? 'badge badge-green'
-      : value >= 5
-        ? 'badge badge-yellow'
-        : 'badge badge-red';
-
+    const cls = value >= 10 ? 'badge badge-green' : value >= 5 ? 'badge badge-yellow' : 'badge badge-red';
     return `<span class="${cls}">${formatDecimal(value)}</span>`;
   }
 
@@ -810,9 +815,7 @@
 
   function renderPdnBadge(value) {
     const yes = String(value).trim().toLowerCase() === 'ya';
-    return yes
-      ? '<span class="badge badge-green">Ya</span>'
-      : '<span class="badge badge-red">Tidak</span>';
+    return yes ? '<span class="badge badge-green">Ya</span>' : '<span class="badge badge-red">Tidak</span>';
   }
 
   function exportRows(rows, filename) {
@@ -832,23 +835,16 @@
 
     const cleanRows = rows.map(row => {
       const obj = {};
-
       Object.keys(row || {}).forEach(key => {
         let value = row[key];
-
-        if (value == null) {
-          value = '';
-        }
-
+        if (value == null) value = '';
         obj[key] = value;
       });
-
       return obj;
     });
 
     const worksheet = XLSX.utils.json_to_sheet(cleanRows);
     const workbook = XLSX.utils.book_new();
-
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
 
     const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
@@ -860,7 +856,6 @@
       for (let row = range.s.r; row <= range.e.r; row++) {
         const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
         const cell = worksheet[cellAddress];
-
         if (cell && cell.v != null) {
           maxLength = Math.max(maxLength, String(cell.v).length);
         }
@@ -870,30 +865,23 @@
     }
 
     worksheet['!cols'] = colWidths;
-
     XLSX.writeFile(workbook, safeFilename);
   }
 
   function handleExportRekap() {
-    exportRows(
-      APP_STATE.filteredScore.map(row => ({
-        satuan_kerja: row.satuan_kerja,
-        penyedia_diumumkan: row.penyedia_diumumkan,
-        swakelola_diumumkan: row.swakelola_diumumkan,
-        total_rup_diumumkan: row.total_rup_diumumkan,
-        total_komitmen: row.total_komitmen,
-        prosentase: row.prosentase,
-        nilai_itkp: row.nilai_itkp
-      })),
-      'rekap_itkp_sirup.xlsx'
-    );
+    exportRows(APP_STATE.filteredScore.map(row => ({
+      satuan_kerja: row.satuan_kerja,
+      penyedia_diumumkan: row.penyedia_diumumkan,
+      swakelola_diumumkan: row.swakelola_diumumkan,
+      total_rup_diumumkan: row.total_rup_diumumkan,
+      total_komitmen: row.total_komitmen,
+      prosentase: row.prosentase,
+      nilai_itkp: row.nilai_itkp
+    })), 'rekap_itkp_sirup.xlsx');
   }
 
   function handleExportDetail() {
-    const rows = APP_STATE.selectedOpd
-      ? APP_STATE.selectedRawRows
-      : APP_STATE.filteredRawGlobal;
-
+    const rows = APP_STATE.selectedOpd ? APP_STATE.selectedRawRows : APP_STATE.filteredRawGlobal;
     exportRows(rows, 'detail_paket_sirup.xlsx');
   }
 
@@ -921,6 +909,10 @@
     APP_STATE.selectedOpd = '';
     APP_STATE.rekapPage = 1;
     APP_STATE.detailPage = 1;
+    APP_STATE.sortField = '';
+    APP_STATE.sortDir = 'desc';
+
+    renderSortIndicators();
     applyFilters();
   }
 
@@ -946,29 +938,19 @@
       }
     } else if (hasComma) {
       const parts = str.split(',');
-
       if (parts.length > 2) {
         str = parts.join('');
       } else {
         const tail = parts[1] || '';
-
-        if (tail.length === 3) {
-          str = parts.join('');
-        } else {
-          str = parts[0] + '.' + tail;
-        }
+        str = tail.length === 3 ? parts.join('') : (parts[0] + '.' + tail);
       }
     } else if (hasDot) {
       const parts = str.split('.');
-
       if (parts.length > 2) {
         str = parts.join('');
       } else {
         const tail = parts[1] || '';
-
-        if (tail.length === 3) {
-          str = parts.join('');
-        }
+        if (tail.length === 3) str = parts.join('');
       }
     }
 
@@ -1122,6 +1104,7 @@
       await nextPaint();
 
       buildFilterOptions();
+      renderSortIndicators();
       applyFilters();
 
       if (errors.length) {
@@ -1132,11 +1115,9 @@
       showError(`Data gagal dimuat. Detail: ${error.message}`);
     } finally {
       const elapsed = Date.now() - startedAt;
-
       if (elapsed < MIN_LOADING_MS) {
         await wait(MIN_LOADING_MS - elapsed);
       }
-
       if (!APP_STATE.destroyed) {
         clearLoading();
       }
@@ -1165,8 +1146,19 @@
       renderEmptyDetail();
     });
 
-    on(EL.btnRefresh, 'click', () => {
-      initMonitoringSirup();
+    on(EL.btnRefresh, 'click', () => initMonitoringSirup());
+    on(EL.btnSortPersen, 'click', () => toggleSort('prosentase'));
+    on(EL.btnSortItkp, 'click', () => toggleSort('nilai_itkp'));
+    on(EL.btnShowItkp10, 'click', () => openModal('itkp10'));
+    on(EL.btnShowBelow10, 'click', () => openModal('below10'));
+    on(EL.btnCloseModal, 'click', closeModal);
+
+    on(EL.opdModal, 'click', event => {
+      if (event.target === EL.opdModal) closeModal();
+    });
+
+    on(document, 'keydown', event => {
+      if (event.key === 'Escape') closeModal();
     });
   }
 
@@ -1183,7 +1175,6 @@
     });
 
     EL = getElements();
-
     bindEventsOnce();
     initMonitoringSirup();
 
@@ -1199,6 +1190,7 @@
       });
 
       APP_STATE.initialized = false;
+      closeModal();
 
       if (cleanupResizeHandler) {
         window.removeEventListener('resize', cleanupResizeHandler);
