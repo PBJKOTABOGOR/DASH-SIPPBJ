@@ -670,7 +670,7 @@ function buildItkpProfile(row, fallbackName = 'PEMERINTAH KOTA BOGOR') {
         accent: 'purple',
         route: 'monitoring-ekatalog',
         hint: 'Klik untuk buka Monitoring eKatalog',
-        detailText: formatPlainPair(paketAktifEpurchasing, paketSelesaiEpurchasing)
+        detailText: formatPlainPair(paketSelesaiEpurchasing, paketAktifEpurchasing)
       },
       {
         name: 'e-Tendering',
@@ -679,7 +679,7 @@ function buildItkpProfile(row, fallbackName = 'PEMERINTAH KOTA BOGOR') {
         accent: 'orange',
         route: 'monitoring-etendering',
         hint: 'Klik untuk buka Monitoring eTendering',
-        detailText: formatPlainPair(paketTerumumkanTender, paketSelesaiTender)
+        detailText: formatPlainPair(paketSelesaiTender, paketTerumumkanTender)
       },
       {
         name: 'e-Kontrak',
@@ -688,7 +688,7 @@ function buildItkpProfile(row, fallbackName = 'PEMERINTAH KOTA BOGOR') {
         accent: 'green',
         route: 'monitoring-ekontrak',
         hint: 'Klik untuk buka Monitoring eKontrak',
-        detailText: formatPlainPair(totalPaketAktifKontrak, totalPaketSelesaiKontrak)
+        detailText: formatPlainPair(totalPaketSelesaiKontrak, totalPaketAktifKontrak)
       },
       {
         name: 'Non eTendering / Non ePurchasing',
@@ -697,7 +697,7 @@ function buildItkpProfile(row, fallbackName = 'PEMERINTAH KOTA BOGOR') {
         accent: 'red',
         route: 'monitoring-nontender',
         hint: 'Klik untuk buka Monitoring Non eTendering',
-        detailText: formatCompactPair(totalPaguNonTender, totalRealisasiNonTender)
+        detailText: formatCompactPair(totalRealisasiNonTender, totalPaguNonTender)
       }
     ]
   };
