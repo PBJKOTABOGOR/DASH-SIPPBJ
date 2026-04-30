@@ -838,7 +838,7 @@ function renderDashboardSkeleton() {
         <div class="loading-orb"></div>
         <div>
           <b>Memuat data dashboard...</b>
-          <span>Mengambil data Google Sheet dan menyusun analisis Kota Bogor.</span>
+          <span>Mengambil data dan menyusun analisis Kota Bogor.</span>
         </div>
       </div>
     </section>
@@ -923,7 +923,7 @@ function renderDashboardReady(data) {
         <div>
           <div class="hero-kicker">SIPPBJ · Kota Bogor Procurement Dashboard</div>
           <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
-          <p>Ringkasan interaktif dari ITKP Kota Bogor, profil perencanaan, realisasi paket, metode pengadaan, dan performa OPD/Sub OPD berdasarkan data Google Sheet yang tersedia.</p>
+          <p>Ringkasan interaktif dari ITKP Kota Bogor, profil perencanaan, realisasi paket, metode pengadaan, dan performa OPD/Sub OPD.</p>
         </div>
 
         <div class="hero-badge">
