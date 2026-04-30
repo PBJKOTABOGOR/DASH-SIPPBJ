@@ -41,26 +41,26 @@ const APP_ROUTES = {
     js: 'modules/monitoring/itkp-ekontrak/itkp-ekontrak.js'
   },
 
-  'monitoring-nontender': {
-    title: 'Non eTendering/Non ePurchasing',
-    subtitle: 'Monitoring realisasi paket Non Tender dan capaian ITKP perangkat daerah.',
-    type: 'module',
-    html: 'modules/monitoring/itkp-nontender/itkp-nontender.html',
-    css: 'modules/monitoring/itkp-nontender/itkp-nontender.css',
-    js: 'modules/monitoring/itkp-nontender/itkp-nontender.js'
-  },
+'monitoring-nontender': {
+  title: 'Non eTendering/Non ePurchasing',
+  subtitle: 'Monitoring realisasi paket Non Tender dan capaian ITKP perangkat daerah.',
+  type: 'module',
+  html: 'modules/monitoring/itkp-nontender/itkp-nontender.html',
+  css: 'modules/monitoring/itkp-nontender/itkp-nontender.css',
+  js: 'modules/monitoring/itkp-nontender/itkp-nontender.js'
+},
 
-  'rapor-pbj': {
-    title: 'Rapor PBJ',
-    subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
-    type: 'module',
-    html: 'modules/rapor-pbj/rapor-pbj.html',
-    css: 'modules/rapor-pbj/rapor-pbj.css',
-    js: 'modules/rapor-pbj/rapor-pbj.js',
-    externalScripts: [
-      'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
-    ]
-  },
+'rapor-pbj': {
+  title: 'Rapor PBJ',
+  subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
+  type: 'module',
+  html: 'modules/rapor-pbj/rapor-pbj.html',
+  css: 'modules/rapor-pbj/rapor-pbj.css',
+  js: 'modules/rapor-pbj/rapor-pbj.js',
+  externalScripts: [
+    'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
+  ]
+},
 
   'monitoring-perencanaan': {
     title: 'Monitoring Realisasi',
@@ -226,6 +226,96 @@ const DASHBOARD_STATE = {
   selectedItkpSatker: 'PEMERINTAH KOTA BOGOR'
 };
 
+const DASHBOARD_CONTEXT_KEY = 'traxpbj_dashboard_context';
+
+function getDashboardContext() {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_CONTEXT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function persistDashboardContext() {
+  const payload = {
+    selectedSatker: DASHBOARD_STATE.selectedItkpSatker || 'PEMERINTAH KOTA BOGOR',
+    updatedAt: Date.now()
+  };
+
+  try {
+    localStorage.setItem(DASHBOARD_CONTEXT_KEY, JSON.stringify(payload));
+  } catch (error) {
+    // ignore storage issues
+  }
+
+  window.__dashboardSelectedSatker = payload.selectedSatker;
+  return payload;
+}
+
+function escapeSelectorValue(value) {
+  if (window.CSS && typeof window.CSS.escape === 'function') {
+    return window.CSS.escape(String(value || ''));
+  }
+  return String(value || '').replace(/(["'\\.#:[\]()])/g, '\\$1');
+}
+
+function applyDashboardSatkerToModule(moduleContainer) {
+  const context = getDashboardContext();
+  const selectedSatker = String(context.selectedSatker || '').trim();
+  if (!selectedSatker) return false;
+
+  const root = moduleContainer || contentArea || document;
+  let applied = false;
+
+  const selectCandidates = Array.from(root.querySelectorAll('select'));
+  selectCandidates.forEach((select) => {
+    if (applied) return;
+    const descriptor = [select.id, select.name, select.getAttribute('aria-label'), select.getAttribute('data-filter'), select.closest('label')?.textContent]
+      .join(' ')
+      .toLowerCase();
+    if (!/satker|satuan kerja|perangkat daerah|opd/.test(descriptor)) return;
+
+    const option = Array.from(select.options || []).find((item) => String(item.textContent || item.value || '').trim().toUpperCase() === selectedSatker.toUpperCase());
+    if (!option) return;
+
+    select.value = option.value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    select.dispatchEvent(new Event('input', { bubbles: true }));
+    applied = true;
+  });
+
+  if (applied) return true;
+
+  const inputCandidates = Array.from(root.querySelectorAll('input[type="search"], input[type="text"], .choices__input, [role="combobox"] input'));
+  inputCandidates.forEach((input) => {
+    if (applied) return;
+    const descriptor = [input.id, input.name, input.placeholder, input.getAttribute('aria-label'), input.closest('label')?.textContent]
+      .join(' ')
+      .toLowerCase();
+    if (!/satker|satuan kerja|perangkat daerah|opd/.test(descriptor)) return;
+
+    input.value = selectedSatker;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    applied = true;
+  });
+
+  return applied;
+}
+
+function applyDashboardContextToModule(page, moduleContainer) {
+  if (!page || !page.html) return;
+  if (!/itkp-sirup|itkp-ekatalog|itkp-etendering|itkp-ekontrak|itkp-nontender/.test(page.html)) return;
+
+  [120, 400, 900, 1600].forEach((delay) => {
+    window.setTimeout(() => {
+      applyDashboardSatkerToModule(moduleContainer);
+    }, delay);
+  });
+}
+
+
 function normalizeHeader(value) {
   return String(value || '')
     .toLowerCase()
@@ -299,6 +389,36 @@ function formatMoney(value) {
   if (number >= 1_000_000_000) return `Rp ${(number / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} M`;
   if (number >= 1_000_000) return `Rp ${(number / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Jt`;
   return `Rp ${formatNumber(number)}`;
+}
+
+function formatCompactMetric(value) {
+  const number = toNumber(value);
+  if (number >= 1_000_000_000_000) return `${(number / 1_000_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} T`;
+  if (number >= 1_000_000_000) return `${(number / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} M`;
+  if (number >= 1_000_000) return `${(number / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Jt`;
+  return formatNumber(number);
+}
+
+function formatCompactPair(leftValue, rightValue) {
+  return `${formatCompactMetric(leftValue)} / ${formatCompactMetric(rightValue)}`;
+}
+
+function formatPlainPair(leftValue, rightValue) {
+  return `${formatNumber(leftValue)} / ${formatNumber(rightValue)}`;
+}
+
+function getToneByPercent(percent) {
+  const value = Math.max(0, Math.min(100, toNumber(percent)));
+  if (value < 50) return 'danger';
+  if (value < 80) return 'warning';
+  return 'success';
+}
+
+function getToneColor(percent) {
+  const tone = getToneByPercent(percent);
+  if (tone === 'danger') return '#dc2626';
+  if (tone === 'warning') return '#f59e0b';
+  return '#16a34a';
 }
 
 function formatPercent(value) {
@@ -504,60 +624,80 @@ function getItkpScore(row) {
 }
 
 function buildItkpProfile(row, fallbackName = 'PEMERINTAH KOTA BOGOR') {
-  const name = getField(row || {}, ['Satuan Kerja', 'Nama Satuan Kerja', 'nama_satker']) || fallbackName;
+  const sourceRow = row || {};
+  const name = getField(sourceRow, ['Satuan Kerja', 'Nama Satuan Kerja', 'nama_satker']) || fallbackName;
+
+  const totalKomitmenSirup = getField(sourceRow, ['Total Komitmen (SIRUP)', 'Total Komitmen Sirup']);
+  const totalRupSirup = getField(sourceRow, ['Total RUP Diumumkan (SIRUP)', 'Total RUP Diumumkan Sirup']);
+  const paketAktifEpurchasing = getField(sourceRow, ['Paket Aktif(ePurchasing)', 'Paket Aktif (ePurchasing)', 'Paket Aktif epurchasing']);
+  const paketSelesaiEpurchasing = getField(sourceRow, ['Paket Selesai (ePurchasing)', 'Paket Selesai ePurchasing']);
+  const paketTerumumkanTender = getField(sourceRow, ['Paket Terumumkan (etendering)', 'Paket Terumumkan etendering']);
+  const paketSelesaiTender = getField(sourceRow, ['Paket Selesai (etendering)', 'Paket Selesai etendering']);
+  const totalPaketAktifKontrak = getField(sourceRow, ['Total Paket Aktif (ekontrak)', 'Total Paket Aktif ekontrak']);
+  const totalPaketSelesaiKontrak = getField(sourceRow, ['Total Paket Selesai (ekontrak)', 'Total Paket Selesai ekontrak']);
+  const totalPaguNonTender = getField(sourceRow, ['Total Pagu (Non etendering & Non ePurchasing)', 'Total Pagu Non etendering & Non ePurchasing', 'Total Pagu']);
+  const totalRealisasiNonTender = getField(sourceRow, ['Total Realisasi (Non etendering & Non ePurchasing)', 'Total Realisasi Non etendering & Non ePurchasing', 'Total Realisasi']);
+  const tokoDaringValue = toNumber(getField(sourceRow, ['Nilai ITKP - skor maksimal 1 (point) (Toko Daring)', 'Toko Daring']));
 
   return {
     name,
-    __sourceRow: row || {},
-    score: getItkpScore(row || {}),
+    __sourceRow: sourceRow,
+    score: getItkpScore(sourceRow),
     dimensions: [
       {
         name: 'SiRUP',
-        value: toNumber(getField(row || {}, ['Nilai ITKP - skor maksimal 10 (point) (SIRUP)', 'SIRUP'])),
+        value: toNumber(getField(sourceRow, ['Nilai ITKP - skor maksimal 10 (point) (SIRUP)', 'SIRUP'])),
         max: 10,
         accent: 'blue',
         route: 'monitoring-sirup',
-        hint: 'Klik untuk buka Monitoring SiRUP'
+        hint: 'Klik untuk buka Monitoring SiRUP',
+        detailText: formatCompactPair(totalKomitmenSirup, totalRupSirup),
+        detailHref: 'https://datastudio.google.com/reporting/d940ac07-c54f-4ff8-af5e-36424698d5a2'
       },
       {
         name: 'Toko Daring',
-        value: toNumber(getField(row || {}, ['Nilai ITKP - skor maksimal 1 (point) (Toko Daring)', 'Toko Daring'])),
+        value: tokoDaringValue,
         max: 1,
         accent: 'teal',
         route: 'monitoring-ekatalog',
-        hint: 'Klik untuk buka Monitoring eKatalog/Toko Daring'
+        hint: 'Klik untuk buka Monitoring eKatalog/Toko Daring',
+        detailText: `${tokoDaringValue.toLocaleString('id-ID', { maximumFractionDigits: 0 })} / 1`
       },
       {
         name: 'e-Purchasing',
-        value: toNumber(getField(row || {}, ['Nilai ITKP - skor maksimal 4 (point) (Epurchasing)', 'Epurchasing', 'ePurchasing'])),
+        value: toNumber(getField(sourceRow, ['Nilai ITKP - skor maksimal 4 (point) (Epurchasing)', 'Epurchasing', 'ePurchasing'])),
         max: 4,
         accent: 'purple',
         route: 'monitoring-ekatalog',
-        hint: 'Klik untuk buka Monitoring eKatalog'
+        hint: 'Klik untuk buka Monitoring eKatalog',
+        detailText: formatPlainPair(paketAktifEpurchasing, paketSelesaiEpurchasing)
       },
       {
         name: 'e-Tendering',
-        value: toNumber(getField(row || {}, ['Nilai ITKP - skor maksimal 5 (point) (etendering)', 'eTendering'])),
+        value: toNumber(getField(sourceRow, ['Nilai ITKP - skor maksimal 5 (point) (etendering)', 'eTendering'])),
         max: 5,
         accent: 'orange',
         route: 'monitoring-etendering',
-        hint: 'Klik untuk buka Monitoring eTendering'
+        hint: 'Klik untuk buka Monitoring eTendering',
+        detailText: formatPlainPair(paketTerumumkanTender, paketSelesaiTender)
       },
       {
         name: 'e-Kontrak',
-        value: toNumber(getField(row || {}, ['Nilai ITKP - skor maksimal 5 (point) (ekontrak)', 'eKontrak'])),
+        value: toNumber(getField(sourceRow, ['Nilai ITKP - skor maksimal 5 (point) (ekontrak)', 'eKontrak'])),
         max: 5,
         accent: 'green',
         route: 'monitoring-ekontrak',
-        hint: 'Klik untuk buka Monitoring eKontrak'
+        hint: 'Klik untuk buka Monitoring eKontrak',
+        detailText: formatPlainPair(totalPaketAktifKontrak, totalPaketSelesaiKontrak)
       },
       {
         name: 'Non eTendering / Non ePurchasing',
-        value: toNumber(getField(row || {}, ['Nilai ITKP - skor maksimal 5 (point) (Non etendering & Non ePurchasing)', 'Non etendering', 'Non ePurchasing', 'Non Tender'])),
+        value: toNumber(getField(sourceRow, ['Nilai ITKP - skor maksimal 5 (point) (Non etendering & Non ePurchasing)', 'Non etendering', 'Non ePurchasing', 'Non Tender'])),
         max: 5,
         accent: 'red',
         route: 'monitoring-nontender',
-        hint: 'Klik untuk buka Monitoring Non eTendering'
+        hint: 'Klik untuk buka Monitoring Non eTendering',
+        detailText: formatCompactPair(totalPaguNonTender, totalRealisasiNonTender)
       }
     ]
   };
@@ -685,10 +825,12 @@ async function loadDashboardData(force = false) {
 }
 
 function renderDashboardSkeleton() {
+  persistDashboardContext();
+
   contentArea.innerHTML = `
     <section class="hero-card hero-card--dashboard">
       <div class="hero-glow"></div>
-      <div class="hero-kicker">UKPBJ · Kota Bogor</div>
+      <div class="hero-kicker">SIPPBJ · Kota Bogor Procurement Dashboard</div>
       <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
       <p>Menarik data dari FIX ITKP OPD, D_PERENCANAAN, dan D_REALISASI untuk merangkum profil ITKP, perencanaan, realisasi, metode pengadaan, OPD dominan, serta indikator progress pengadaan.</p>
 
@@ -704,6 +846,8 @@ function renderDashboardSkeleton() {
 }
 
 function renderDashboardError(error) {
+  persistDashboardContext();
+
   contentArea.innerHTML = `
     <section class="hero-card hero-card--dashboard">
       <div class="hero-kicker">SIPPBJ · Dashboard</div>
@@ -769,13 +913,15 @@ function renderDashboardReady(data) {
     ? 'Profile Kota Bogor'
     : `Profile ${selectedProfile.name}`;
 
+  persistDashboardContext();
+
   contentArea.innerHTML = `
     <section class="hero-card hero-card--dashboard">
       <div class="hero-glow"></div>
 
       <div class="hero-topline">
         <div>
-          <div class="hero-kicker">SIPPBJ · Sistem Informasi Pelaporan Pengadaan Barang Jasa</div>
+          <div class="hero-kicker">SIPPBJ · Kota Bogor Procurement Dashboard</div>
           <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
           <p>Ringkasan interaktif dari ITKP Kota Bogor, profil perencanaan, realisasi paket, metode pengadaan, dan performa OPD/Sub OPD berdasarkan data Google Sheet yang tersedia.</p>
         </div>
@@ -787,10 +933,10 @@ function renderDashboardReady(data) {
       </div>
 
       <div class="stats-grid dashboard-kpi-grid">
-        ${renderKpiCard('Skor ITKP Kota Bogor', formatScore(data.itkpOverall), 'Mengambil baris agregat PEMERINTAH KOTA BOGOR, tidak dihitung ulang dari OPD', '📊')}
-        ${renderKpiCard('Pagu Perencanaan', formatMoney(data.totalPagu), `${formatNumber(data.totalPaketRup)} paket · ${scopeLabel}`, '🧾')}
-        ${renderKpiCard('Realisasi', formatMoney(data.totalRealisasi), `${formatPercent(data.realisasiPersen)} dari pagu · ${scopeLabel}`, '💰')}
-        ${renderKpiCard('Paket Realisasi', formatNumber(data.totalPaketRealisasi), `${formatNumber(data.selesaiCount)} selesai · ${formatNumber(data.processCount)} proses · ${scopeLabel}`, '📦')}
+        ${renderKpiCard(data.scopeIsCity ? 'Skor ITKP Kota Bogor' : 'Skor ITKP Satuan Kerja', formatScore(selectedProfile.score), data.scopeIsCity ? 'Mengambil baris agregat PEMERINTAH KOTA BOGOR, tidak dihitung ulang dari OPD' : selectedProfile.name, '📊', '')}
+        ${renderKpiCard('Perencanaan', formatMoney(data.totalPagu), `${formatNumber(data.totalPaketRup)} paket · ${scopeLabel}`, '🧾', '')}
+        ${renderKpiCard('Pagu Realisasi', formatMoney(data.totalRealisasi), `${formatPercent(data.realisasiPersen)} dari pagu · ${scopeLabel}`, '💰', getToneByPercent(data.realisasiPersen))}
+        ${renderKpiCard('Paket Realisasi', formatNumber(data.totalPaketRealisasi), `${formatNumber(data.selesaiCount)} selesai · ${formatNumber(data.processCount)} proses · ${scopeLabel}`, '📦', '')}
       </div>
 
       <div class="hero-actions">
@@ -811,19 +957,23 @@ function renderDashboardReady(data) {
 
           <label class="satker-select-wrap">
             <span>Pilih Satuan Kerja</span>
-            <select id="itkpSatkerSelect" class="satker-select">
-              ${data.itkpProfiles.map((profile) => `
-                <option value="${escapeHtml(profile.name)}" ${profile.name === selectedProfile.name ? 'selected' : ''}>
-                  ${escapeHtml(profile.name)}
-                </option>
-              `).join('')}
-            </select>
+            <div class="satker-combobox" id="itkpSatkerCombobox">
+              <div class="satker-combobox-top">
+                <input type="search" id="itkpSatkerSearch" class="satker-select satker-search" autocomplete="off" placeholder="Cari satuan kerja..." value="${escapeHtml(selectedProfile.name)}">
+                <button class="satker-combobox-toggle" type="button" id="itkpSatkerToggle" aria-label="Buka daftar satuan kerja">▾</button>
+              </div>
+              <div class="satker-dropdown" id="itkpSatkerDropdown">
+                ${data.itkpProfiles.map((profile) => `
+                  <button class="satker-option ${profile.name === selectedProfile.name ? 'is-active' : ''}" type="button" data-satker-option="${escapeHtml(profile.name)}">${escapeHtml(profile.name)}</button>
+                `).join('')}
+              </div>
+            </div>
           </label>
         </div>
 
         <div class="itkp-radar-layout">
           <div class="score-orbit">
-            <div class="score-ring" style="--score:${Math.min(100, (selectedProfile.score / 30) * 100)}">
+            <div class="score-ring score-ring--${getToneByPercent((selectedProfile.score / 30) * 100)}" style="--score:${Math.min(100, (selectedProfile.score / 30) * 100)}; --score-color:${getToneColor((selectedProfile.score / 30) * 100)}">
               <div class="score-core">
                 <span>${escapeHtml(selectedProfile.name === 'PEMERINTAH KOTA BOGOR' ? 'ITKP KOTA' : 'ITKP OPD')}</span>
                 <b>${formatScore(selectedProfile.score)}</b>
@@ -845,7 +995,7 @@ function renderDashboardReady(data) {
             <span class="section-kicker">Kinerja Realisasi · ${escapeHtml(scopeLabel)}</span>
             <h3>Progress Pagu vs Realisasi</h3>
           </div>
-          <span class="soft-pill">${formatPercent(data.realisasiPersen)}</span>
+          <span class="soft-pill soft-pill--${getToneByPercent(data.realisasiPersen)}">${formatPercent(data.realisasiPersen)}</span>
         </div>
 
         <div class="money-progress">
@@ -858,15 +1008,25 @@ function renderDashboardReady(data) {
             <b>${formatMoney(data.totalRealisasi)}</b>
           </div>
           <div class="progress-track progress-track--tall">
-            <div class="progress-bar" style="width:${Math.min(100, data.realisasiPersen)}%"></div>
+            <div class="progress-bar progress-bar--${getToneByPercent(data.realisasiPersen)}" style="width:${Math.min(100, data.realisasiPersen)}%"></div>
           </div>
           <p class="page-note">${escapeHtml(scopeDesc)}. Persentase dihitung dari nilai realisasi pada D_REALISASI dibanding nilai pagu pada D_PERENCANAAN.</p>
         </div>
 
         <div class="status-mini-grid">
-          ${renderSmallMetric('BAST Terisi', data.bastCount, 'Dokumen/referensi BAST')}
-          ${renderSmallMetric('Selesai', data.selesaiCount, 'Status paket selesai')}
-          ${renderSmallMetric('Proses', data.processCount, 'Masih berjalan/proses')}
+          ${renderSmallMetric('BAST Terisi', data.bastCount, 'Dokumen/referensi BAST', data.totalPaketRealisasi ? (data.bastCount / data.totalPaketRealisasi) * 100 : 0)}
+          ${renderSmallMetric('Selesai', data.selesaiCount, 'Status paket selesai', data.totalPaketRealisasi ? (data.selesaiCount / data.totalPaketRealisasi) * 100 : 0)}
+          ${renderSmallMetric('Proses', data.processCount, 'Masih berjalan/proses', data.totalPaketRealisasi ? (data.processCount / data.totalPaketRealisasi) * 100 : 0)}
+        </div>
+
+        <div class="dashboard-card-links">
+          <div class="dashboard-card-links-title">Akses Cepat</div>
+          <div class="quick-grid quick-grid--compact">
+            ${renderQuickCard('🧩', 'linear-gradient(135deg,#2563eb,#22c55e)', 'Monitoring Paket Konsolidasi', 'Pantau paket konsolidasi yang sudah disiapkan di portal.', 'monitoring-konsolidasi')}
+            ${renderQuickCard('📦', 'linear-gradient(135deg,#7c54e9,#a075f3)', 'Monitoring Realisasi', 'Pantau progress realisasi paket perangkat daerah.', 'monitoring-perencanaan')}
+            ${renderQuickCard('🗓️', 'linear-gradient(135deg,#ef8d21,#f8b14c)', 'Simulasi Timeline', 'Simulasikan jadwal pengadaan secara terstruktur.', 'simulasi-timeline')}
+            ${renderQuickCard('📈', 'linear-gradient(135deg,#0f766e,#22c55e)', 'Looker Studio ITKP', 'Buka dashboard indikator pemanfaatan sistem di Looker Studio.', '', 'https://datastudio.google.com/reporting/d940ac07-c54f-4ff8-af5e-36424698d5a2')}
+          </div>
         </div>
       </div>
     </section>
@@ -953,13 +1113,6 @@ function renderDashboardReady(data) {
       </div>
     </section>
 
-    <section class="quick-grid">
-      ${renderQuickCard('📊', 'linear-gradient(135deg,#2665df,#3a8bff)', 'ITKP - SiRUP', 'Lihat monitoring indikator ITKP dari modul SiRUP.', 'monitoring-sirup')}
-      ${renderQuickCard('🛒', 'linear-gradient(135deg,#123a72,#2f9a8f)', 'ITKP - eKatalog', 'Pantau pemanfaatan transaksi katalog.', 'monitoring-ekatalog')}
-      ${renderQuickCard('📦', 'linear-gradient(135deg,#7c54e9,#a075f3)', 'Monitoring Realisasi', 'Pantau progress realisasi paket perangkat daerah.', 'monitoring-perencanaan')}
-      ${renderQuickCard('🗓️', 'linear-gradient(135deg,#ef8d21,#f8b14c)', 'Simulasi Timeline', 'Simulasikan jadwal pengadaan secara terstruktur.', 'simulasi-timeline')}
-    </section>
-
     <div class="footer-note">© BenRama 2026 SIPPBJ - Dashboard UKPBJ Kota Bogor</div>
   `;
 }
@@ -974,52 +1127,130 @@ function bindDashboardEvents() {
     });
   }
 
-  const satkerSelect = document.getElementById('itkpSatkerSelect');
+  const rerenderDashboardBySatker = (satkerName) => {
+    DASHBOARD_STATE.selectedItkpSatker = satkerName;
+    persistDashboardContext();
 
-  if (satkerSelect) {
-    satkerSelect.addEventListener('change', () => {
-      DASHBOARD_STATE.selectedItkpSatker = satkerSelect.value;
-      if (DASHBOARD_STATE.data) {
-        DASHBOARD_STATE.data = analyzeDashboardData({
-          itkp: DASHBOARD_STATE.data.cityProfile && DASHBOARD_STATE.data.cityProfile.__sourceRow
-            ? DASHBOARD_STATE.data.itkpRows.concat([DASHBOARD_STATE.data.cityProfile.__sourceRow])
-            : DASHBOARD_STATE.data.itkpRows,
-          itkpSubOpd: DASHBOARD_STATE.data.itkpSubOpdRows,
-          perencanaan: DASHBOARD_STATE.data.planningRows,
-          realisasi: DASHBOARD_STATE.data.realRows
-        });
-        renderDashboardReady(DASHBOARD_STATE.data);
-        bindDashboardEvents();
-        initScrollAnimation();
+    if (DASHBOARD_STATE.data) {
+      DASHBOARD_STATE.data = analyzeDashboardData({
+        itkp: DASHBOARD_STATE.data.cityProfile && DASHBOARD_STATE.data.cityProfile.__sourceRow
+          ? DASHBOARD_STATE.data.itkpRows.concat([DASHBOARD_STATE.data.cityProfile.__sourceRow])
+          : DASHBOARD_STATE.data.itkpRows,
+        itkpSubOpd: DASHBOARD_STATE.data.itkpSubOpdRows,
+        perencanaan: DASHBOARD_STATE.data.planningRows,
+        realisasi: DASHBOARD_STATE.data.realRows
+      });
+      renderDashboardReady(DASHBOARD_STATE.data);
+      bindDashboardEvents();
+      initScrollAnimation();
+    }
+  };
+
+  const satkerSearch = document.getElementById('itkpSatkerSearch');
+  const satkerToggle = document.getElementById('itkpSatkerToggle');
+  const satkerDropdown = document.getElementById('itkpSatkerDropdown');
+  const satkerCombobox = document.getElementById('itkpSatkerCombobox');
+
+  if (satkerSearch && satkerDropdown) {
+    const optionButtons = () => Array.from(satkerDropdown.querySelectorAll('[data-satker-option]'));
+
+    const openDropdown = () => satkerCombobox?.classList.add('is-open');
+    const closeDropdown = () => satkerCombobox?.classList.remove('is-open');
+
+    const filterOptions = () => {
+      const keyword = String(satkerSearch.value || '').trim().toLowerCase();
+      let visibleCount = 0;
+
+      optionButtons().forEach((button) => {
+        const name = String(button.dataset.satkerOption || '').toLowerCase();
+        const visible = !keyword || name.includes(keyword);
+        button.hidden = !visible;
+        if (visible) visibleCount += 1;
+      });
+
+      satkerDropdown.classList.toggle('is-empty', visibleCount === 0);
+    };
+
+    satkerSearch.addEventListener('focus', () => {
+      openDropdown();
+      filterOptions();
+    });
+
+    satkerSearch.addEventListener('input', () => {
+      openDropdown();
+      filterOptions();
+    });
+
+    satkerSearch.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeDropdown();
+      if (event.key === 'Enter') {
+        const exactButton = optionButtons().find((button) => !button.hidden && String(button.dataset.satkerOption || '').toUpperCase() === String(satkerSearch.value || '').trim().toUpperCase());
+        if (exactButton) {
+          event.preventDefault();
+          rerenderDashboardBySatker(exactButton.dataset.satkerOption);
+          closeDropdown();
+        }
+      }
+    });
+
+    satkerToggle?.addEventListener('click', () => {
+      satkerCombobox?.classList.toggle('is-open');
+      filterOptions();
+      if (satkerCombobox?.classList.contains('is-open')) satkerSearch.focus();
+    });
+
+    optionButtons().forEach((button) => {
+      button.addEventListener('click', () => {
+        satkerSearch.value = button.dataset.satkerOption || '';
+        rerenderDashboardBySatker(button.dataset.satkerOption || 'PEMERINTAH KOTA BOGOR');
+        closeDropdown();
+      });
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!satkerCombobox?.contains(event.target)) {
+        closeDropdown();
       }
     });
   }
 
-  contentArea.querySelectorAll('[data-quick], [data-route]').forEach((item) => {
+  contentArea.querySelectorAll('[data-quick], [data-route], [data-external]').forEach((item) => {
     item.addEventListener('click', () => {
+      const externalUrl = item.dataset.external;
+      if (externalUrl) {
+        window.open(externalUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
       const route = item.dataset.quick || item.dataset.route;
-      if (route) loadPage(route);
+      if (route) { persistDashboardContext(); loadPage(route); }
     });
   });
 }
 
-function renderKpiCard(label, value, desc, icon) {
+function renderKpiCard(label, value, desc, icon, tone = '') {
+  const toneClass = tone ? ` stat-card--${tone}` : '';
   return `
-    <div class="stat-card stat-card--lux">
-      <div class="stat-icon">${icon}</div>
-      <div class="label">${escapeHtml(label)}</div>
+    <div class="stat-card stat-card--lux${toneClass}">
+      <div class="stat-card-top">
+        <div class="stat-icon">${icon}</div>
+        <div class="label">${escapeHtml(label)}</div>
+      </div>
       <div class="value">${escapeHtml(value)}</div>
       <div class="desc">${escapeHtml(desc)}</div>
     </div>
   `;
 }
 
-function renderSmallMetric(label, value, desc) {
+function renderSmallMetric(label, value, desc, percent = 0) {
+  const tone = getToneByPercent(percent);
   return `
-    <div class="small-metric">
+    <div class="small-metric small-metric--${tone}">
       <b>${formatNumber(value)}</b>
       <span>${escapeHtml(label)}</span>
       <small>${escapeHtml(desc)}</small>
+      <div class="small-metric-percent">${percent.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</div>
+      <div class="small-metric-track"><span class="small-metric-bar small-metric-bar--${tone}" style="width:${Math.max(0, Math.min(100, percent))}%"></span></div>
     </div>
   `;
 }
@@ -1027,15 +1258,26 @@ function renderSmallMetric(label, value, desc) {
 function renderDimension(item) {
   const percent = item.max > 0 ? Math.min(100, (toNumber(item.value) / item.max) * 100) : 0;
   const route = item.route || '';
+  const tone = getToneByPercent(percent);
+  const detailText = String(item.detailText || '').trim();
+  const detailHref = String(item.detailHref || '').trim();
+  const detailHtml = detailText
+    ? detailHref
+      ? `<a class="dim-detail-link" href="${escapeHtml(detailHref)}" target="_blank" rel="noopener noreferrer">${escapeHtml(detailText)}</a>`
+      : `<span class="dim-detail-text">${escapeHtml(detailText)}</span>`
+    : '';
 
   return `
-    <button class="dim-row dim-row--${escapeHtml(item.accent || 'blue')} dim-row--button" type="button" data-route="${escapeHtml(route)}" title="${escapeHtml(item.hint || 'Klik untuk membuka modul monitoring')}">
+    <button class="dim-row dim-row--${escapeHtml(item.accent || 'blue')} dim-row--button dim-row--${tone}" type="button" data-route="${escapeHtml(route)}" title="${escapeHtml(item.hint || 'Klik untuk membuka modul monitoring')}">
       <div class="dim-name">
         <span>${escapeHtml(item.name)}</span>
         <small>${escapeHtml(item.hint || 'Buka detail')}</small>
       </div>
-      <div class="bar">
-        <span style="width:${percent}%"></span>
+      <div class="dim-progress-wrap">
+        <div class="bar">
+          <span class="dim-progress-fill dim-progress-fill--${tone}" style="width:${percent}%"></span>
+        </div>
+        ${detailHtml ? `<div class="dim-detail">${detailHtml}</div>` : ''}
       </div>
       <div class="dim-value">${toNumber(item.value).toLocaleString('id-ID', { maximumFractionDigits: 2 })}/${item.max}</div>
     </button>
@@ -1117,9 +1359,13 @@ function renderActivity(color, icon, title, text, time) {
   `;
 }
 
-function renderQuickCard(icon, bg, title, text, route) {
+function renderQuickCard(icon, bg, title, text, route, externalUrl = '') {
+  const dataAttrs = externalUrl
+    ? `data-external="${escapeHtml(externalUrl)}"`
+    : `data-quick="${escapeHtml(route)}"`;
+
   return `
-    <button class="quick-card" type="button" data-quick="${escapeHtml(route)}">
+    <button class="quick-card" type="button" ${dataAttrs}>
       <div class="quick-icon" style="background:${bg}">${icon}</div>
 
       <div>
@@ -1139,7 +1385,7 @@ function renderIframePage(page) {
   contentArea.innerHTML = `
     <section class="embed-card ${isSimNontender ? 'embed-card--simppk' : ''}">
       <h3>${escapeHtml(page.title)}</h3>
-      <div class="page-note">Simulasi Pencatatan Non Tender.</div>
+      <div class="page-note">Halaman dimuat dari project/modul yang sudah ada.</div>
 
       <div class="embed-frame-wrap ${isSimNontender ? 'embed-frame-wrap--simppk' : ''}">
         <iframe
@@ -1433,6 +1679,7 @@ async function renderModulePage(page) {
       currentModuleDestroy = null;
     }
 
+    applyDashboardContextToModule(page, moduleContainer);
     return true;
   } catch (error) {
     console.error('Gagal memuat module:', error);
