@@ -831,7 +831,7 @@ function renderDashboardSkeleton() {
     <section class="hero-card hero-card--dashboard">
       <div class="hero-glow"></div>
       <div class="hero-kicker">SIPPBJ · Sistem Informasi Pelaporan Pengadaan Barang Jasa</div>
-      <h3>Dashboard Profil Pengadaan Barang/Jasa Kota Bogor</h3>
+      <h3>Dashboard Pengadaan Barang/Jasa Kota Bogor</h3>
       <p></p>
 
       <div class="dashboard-loading">
