@@ -1047,13 +1047,13 @@
       EL = getElements();
       resetUiState();
       showError('');
-      setLoading('Menghubungkan ke Google Sheet...', true);
+      setLoading('Menghubungkan Data ...', true);
       await nextPaint();
 
       const rawUrl = buildCsvUrl(SHEET_CONFIG.rawGid);
       const scoreUrl = buildCsvUrl(SHEET_CONFIG.scoreGid);
 
-      setLoading('Mengambil data RAW_SIRUP dan SCORE_ITKP_SIRUP...', true);
+      setLoading('Mengambil Data ...', true);
       await nextPaint();
 
       const [rawResult, scoreResult] = await Promise.allSettled([
