@@ -1448,14 +1448,8 @@ function renderPlaceholderPage(pageKey, page) {
       <div class="placeholder-grid">
         <div class="placeholder-box">
           <h4>Modul belum dihubungkan</h4>
-          <p>Halaman ini sudah disiapkan di portal utama. Nanti saat project GitHub/halaman monitoring selesai, tinggal isi URL atau module path di file <b>app.js</b>.</p>
+          <p>Halaman ini sedang disiapkan di portal utama.</p>
         </div>
-
-        <div class="placeholder-box">
-          <h4>Langkah berikutnya</h4>
-          <p>Cari route <b>${escapeHtml(pageKey)}</b> pada objek <b>APP_ROUTES</b>, lalu ubah <b>type</b> menjadi <b>iframe</b> atau <b>module</b>.</p>
-        </div>
-      </div>
     </section>
   `;
 }
