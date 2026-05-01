@@ -1615,6 +1615,7 @@ async function renderModulePage(page) {
   const token = ++activeModuleToken;
 
   cleanupDynamicModule();
+  showModuleLoading(page.title || 'Memuat modul...');
 
   try {
     if (Array.isArray(page.externalScripts) && page.externalScripts.length) {
