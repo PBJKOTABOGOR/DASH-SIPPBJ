@@ -1121,7 +1121,7 @@ function renderDashboardReady(data) {
       </div>
 
       <div class="stats-grid dashboard-kpi-grid">
-        ${renderKpiCard(data.scopeIsCity ? 'Skor ITKP Kota Bogor' : 'Skor ITKP Satuan Kerja', formatScore(selectedProfile.score), data.scopeIsCity ? 'Mengambil baris agregat PEMERINTAH KOTA BOGOR, tidak dihitung ulang dari OPD' : selectedProfile.name, '📊', '')}
+        ${renderKpiCard(data.scopeIsCity ? 'Skor ITKP Kota Bogor' : 'Skor ITKP Satuan Kerja', formatScore(selectedProfile.score), data.scopeIsCity ? 'PEMERINTAH KOTA BOGOR' : selectedProfile.name, '📊', '')}
         ${renderKpiCard('Perencanaan', formatMoney(data.totalPagu), `${formatNumber(data.totalPaketRup)} paket · ${scopeLabel}`, '🧾', '')}
         ${renderKpiCard('Pagu Realisasi', formatMoney(data.totalRealisasi), `${formatPercent(data.realisasiPersen)} dari pagu · ${scopeLabel}`, '💰', getToneByPercent(data.realisasiPersen))}
         ${renderKpiCard('Paket Realisasi', formatNumber(data.totalPaketRealisasi), `${formatNumber(data.selesaiCount)} selesai · ${formatNumber(data.processCount)} proses · ${scopeLabel}`, '📦', '')}
