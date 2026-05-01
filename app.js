@@ -117,6 +117,181 @@ let activePageKey = '';
 let loadingPageKey = '';
 let scrollAnimationDestroy = null;
 
+let dashboardBootShownThisSession = false;
+let dashboardBootOverlayEl = null;
+let dashboardBootProgressTimer = null;
+
+function ensureDashboardBootOverlay() {
+  if (dashboardBootOverlayEl && document.body.contains(dashboardBootOverlayEl)) {
+    return dashboardBootOverlayEl;
+  }
+
+  if (!document.getElementById('dashboardBootOverlayStyle')) {
+    const style = document.createElement('style');
+    style.id = 'dashboardBootOverlayStyle';
+    style.textContent = `
+      .dashboard-boot-overlay{
+        position:fixed;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:24px;
+        background:rgba(239,244,251,.58);
+        backdrop-filter:blur(10px);
+        -webkit-backdrop-filter:blur(10px);
+        z-index:999999;
+        opacity:0;
+        pointer-events:none;
+        transition:opacity .28s ease;
+      }
+      .dashboard-boot-overlay.show{
+        opacity:1;
+        pointer-events:auto;
+      }
+      .dashboard-boot-card{
+        width:min(100%, 380px);
+        border-radius:26px;
+        padding:18px 18px 16px;
+        color:#fff;
+        background:linear-gradient(135deg,#123a72 0%,#245a9b 58%,#2f9a8f 100%);
+        box-shadow:0 26px 60px rgba(18,58,114,.24);
+        border:1px solid rgba(255,255,255,.16);
+      }
+      .dashboard-boot-kicker{
+        display:inline-flex;
+        align-items:center;
+        min-height:22px;
+        padding:0 10px;
+        border-radius:999px;
+        background:rgba(255,255,255,.14);
+        border:1px solid rgba(255,255,255,.18);
+        color:rgba(255,255,255,.92);
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+      }
+      .dashboard-boot-title{
+        margin:12px 0 6px;
+        font-size:18px;
+        font-weight:900;
+        line-height:1.15;
+      }
+      .dashboard-boot-text{
+        margin:0;
+        font-size:12px;
+        line-height:1.55;
+        color:rgba(255,255,255,.86);
+      }
+      .dashboard-boot-progress-row{
+        display:grid;
+        grid-template-columns:1fr auto;
+        gap:12px;
+        align-items:center;
+        margin-top:14px;
+      }
+      .dashboard-boot-track{
+        position:relative;
+        height:10px;
+        border-radius:999px;
+        overflow:hidden;
+        background:rgba(255,255,255,.18);
+      }
+      .dashboard-boot-bar{
+        height:100%;
+        width:0%;
+        border-radius:inherit;
+        background:linear-gradient(90deg,#ffffff,#8ce7d7);
+        box-shadow:0 0 18px rgba(255,255,255,.26);
+        transition:width .26s ease;
+      }
+      .dashboard-boot-percent{
+        font-size:15px;
+        font-weight:900;
+        color:#fff;
+        min-width:44px;
+        text-align:right;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  dashboardBootOverlayEl = document.createElement('div');
+  dashboardBootOverlayEl.className = 'dashboard-boot-overlay';
+  dashboardBootOverlayEl.innerHTML = `
+    <div class="dashboard-boot-card">
+      <div class="dashboard-boot-kicker">SIPPBJ · Dashboard Monitoring</div>
+      <div class="dashboard-boot-title" id="dashboardBootTitle">Memuat dashboard...</div>
+      <p class="dashboard-boot-text" id="dashboardBootText">Menyiapkan tampilan dan mengambil data dashboard.</p>
+      <div class="dashboard-boot-progress-row">
+        <div class="dashboard-boot-track"><div class="dashboard-boot-bar" id="dashboardBootBar"></div></div>
+        <div class="dashboard-boot-percent" id="dashboardBootPercent">0%</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(dashboardBootOverlayEl);
+  return dashboardBootOverlayEl;
+}
+
+function setDashboardBootProgress(percent, title, text) {
+  const overlay = ensureDashboardBootOverlay();
+  const safePercent = Math.max(0, Math.min(100, Number(percent || 0)));
+  const titleEl = overlay.querySelector('#dashboardBootTitle');
+  const textEl = overlay.querySelector('#dashboardBootText');
+  const barEl = overlay.querySelector('#dashboardBootBar');
+  const percentEl = overlay.querySelector('#dashboardBootPercent');
+
+  if (titleEl && title) titleEl.textContent = title;
+  if (textEl && text) textEl.textContent = text;
+  if (barEl) barEl.style.width = `${safePercent}%`;
+  if (percentEl) percentEl.textContent = `${Math.round(safePercent)}%`;
+}
+
+function clearDashboardBootTimer() {
+  if (dashboardBootProgressTimer) {
+    window.clearInterval(dashboardBootProgressTimer);
+    dashboardBootProgressTimer = null;
+  }
+}
+
+function showDashboardBootLoading() {
+  const overlay = ensureDashboardBootOverlay();
+  clearDashboardBootTimer();
+  setDashboardBootProgress(6, 'Memuat dashboard...', 'Menyiapkan tampilan dan mengambil data dashboard.');
+  overlay.classList.add('show');
+
+  const steps = [14, 27, 39, 52, 66, 78, 86, 92];
+  let index = 0;
+  dashboardBootProgressTimer = window.setInterval(() => {
+    if (index >= steps.length) {
+      clearDashboardBootTimer();
+      return;
+    }
+    setDashboardBootProgress(steps[index], null, index < 2
+      ? 'Menghubungkan ke sumber data dashboard.'
+      : index < 5
+        ? 'Menyusun kartu, radar, dan ringkasan performa.'
+        : 'Hampir selesai, panel dashboard sedang dirapikan.');
+    index += 1;
+  }, 240);
+}
+
+function hideDashboardBootLoading(success = true) {
+  const overlay = ensureDashboardBootOverlay();
+  clearDashboardBootTimer();
+
+  if (success) {
+    setDashboardBootProgress(100, 'Merapikan tampilan dashboard...', 'Hampir selesai, panel dan kartu sedang ditampilkan.');
+    window.setTimeout(() => {
+      overlay.classList.remove('show');
+    }, 320);
+    return;
+  }
+
+  overlay.classList.remove('show');
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -887,15 +1062,28 @@ function renderDashboardError(error) {
 }
 
 async function renderDashboard(force = false) {
+  const shouldShowBootLoading = !dashboardBootShownThisSession;
+
+  if (shouldShowBootLoading) {
+    dashboardBootShownThisSession = true;
+    showDashboardBootLoading();
+  }
+
   renderDashboardSkeleton();
 
   try {
     const data = await loadDashboardData(force);
     renderDashboardReady(data);
     bindDashboardEvents();
+    if (shouldShowBootLoading) {
+      hideDashboardBootLoading(true);
+    }
   } catch (error) {
     console.error('Dashboard gagal dimuat:', error);
     renderDashboardError(error);
+    if (shouldShowBootLoading) {
+      hideDashboardBootLoading(false);
+    }
   }
 }
 
