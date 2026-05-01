@@ -1301,7 +1301,7 @@ function renderDashboardReady(data) {
       </div>
     </section>
 
-    <div class="footer-note">© BenRama 2023 TRAXPBJ</div>
+    <div class="footer-note">© 2023 BenRama - TRAXPBJ</div>
   `;
 }
 
