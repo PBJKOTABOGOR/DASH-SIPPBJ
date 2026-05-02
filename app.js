@@ -80,6 +80,15 @@ const APP_ROUTES = {
     type: 'placeholder'
   },
 
+    'pemenang-pengadaan': {
+  title: 'Pemenang Pengadaan',
+  subtitle: 'Portal pencarian paket penyedia dan paket pengadaan aktif.',
+  type: 'module',
+  html: 'modules/pemenang-pengadaan/pemenang-pengadaan.html',
+  css: 'modules/pemenang-pengadaan/pemenang-pengadaan.css',
+  js: 'modules/pemenang-pengadaan/pemenang-pengadaan.js'
+},
+
   'simulasi-procurement-stacker': {
     title: 'Procurement Stacker',
     subtitle: 'Game edukasi interaktif untuk memahami alur, metode, risiko, adendum, dan keputusan PBJ.',
