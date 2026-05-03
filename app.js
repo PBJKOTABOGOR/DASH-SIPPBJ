@@ -112,12 +112,42 @@ const APP_ROUTES = {
     subtitle: 'Simulasi PPK untuk pencatatan paket non tender.',
     type: 'iframe',
     url: 'https://pbjkotabogor.github.io/SIMPPK/login.html'
-  }
+  },
+
+'rapor-pbj-input-internal': {
+  title: 'Input Rapor PBJ',
+  subtitle: 'Form internal pegawai untuk input dan upload dokumen Rapor PBJ.',
+  type: 'iframe',
+  url: 'https://script.google.com/macros/s/AKfycbx7r228pPRdeO6egj_6bDsJu0-V4TY64XiQOG0sZCjhTLexaUV-oqk3PJCKpc3oSsIbTA/exec?embed=1'
+},
+
+'rapor-pbj-qc-internal': {
+  title: 'QC Rapor PBJ',
+  subtitle: 'Panel internal QC untuk review dan persetujuan rapor.',
+  type: 'iframe',
+  url: 'https://script.google.com/macros/s/AKfycbx7r228pPRdeO6egj_6bDsJu0-V4TY64XiQOG0sZCjhTLexaUV-oqk3PJCKpc3oSsIbTA/exec?page=qc&embed=1'
+}
+
 };
 
 const contentArea = document.getElementById('contentArea');
 const sidebar = document.getElementById('sidebar');
 const sidebarToggleButton = document.getElementById('sidebarToggleButton');
+
+const secretTrigger = document.getElementById('secretTrigger');
+const secretLoginOverlay = document.getElementById('secretLoginOverlay');
+const secretLoginForm = document.getElementById('secretLoginForm');
+const secretUsername = document.getElementById('secretUsername');
+const secretPassword = document.getElementById('secretPassword');
+const secretLoginError = document.getElementById('secretLoginError');
+const secretLoginCancel = document.getElementById('secretLoginCancel');
+const secretLoginToast = document.getElementById('secretLoginToast');
+const internalNavGroup = document.getElementById('internalNavGroup');
+const SECRET_LOGIN_USER = 'admin';
+const SECRET_LOGIN_PASS = 'adminpbjkota123#';
+const SECRET_SESSION_KEY = 'sippbj_internal_menu_unlocked';
+let secretTriggerCount = 0;
+let secretTriggerTimer = null;
 
 let activeModuleToken = 0;
 let currentModuleDestroy = null;
@@ -1578,24 +1608,44 @@ function renderQuickCard(icon, bg, title, text, route, externalUrl = '') {
 function renderIframePage(page) {
   const lowerUrl = String(page.url || '').toLowerCase();
   const isSimNontender = lowerUrl.includes('simppk');
+  const isInternalRapor = lowerUrl.includes('script.google.com/macros');
+  const iframeId = isSimNontender ? 'simppkFrame' : (isInternalRapor ? 'internalRaporFrame' : 'genericEmbedFrame');
 
-  contentArea.innerHTML = `
-    <section class="embed-card ${isSimNontender ? 'embed-card--simppk' : ''}">
-      <h3>${escapeHtml(page.title)}</h3>
-      <div class="page-note">Halaman dimuat dari project/modul yang sudah ada.</div>
+  if (isInternalRapor) {
+    contentArea.classList.add('iframe-internal-rapor-mode');
+    contentArea.innerHTML = `
+      <section class="embed-card embed-card--internal-full">
+        <div class="embed-frame-wrap embed-frame-wrap--internal-full">
+          <iframe
+            id="${iframeId}"
+            class="embed-frame embed-frame--internal-full"
+            src="${page.url}"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            scrolling="yes">
+          </iframe>
+        </div>
+      </section>
+    `;
+  } else {
+    contentArea.innerHTML = `
+      <section class="embed-card ${isSimNontender ? 'embed-card--simppk' : ''}">
+        <h3>${escapeHtml(page.title)}</h3>
+        <div class="page-note">Halaman dimuat dari project/modul yang sudah ada.</div>
 
-      <div class="embed-frame-wrap ${isSimNontender ? 'embed-frame-wrap--simppk' : ''}">
-        <iframe
-          id="${isSimNontender ? 'simppkFrame' : ''}"
-          class="embed-frame ${isSimNontender ? 'embed-frame--simppk' : ''}"
-          src="${page.url}"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          scrolling="${isSimNontender ? 'no' : 'yes'}">
-        </iframe>
-      </div>
-    </section>
-  `;
+        <div class="embed-frame-wrap ${isSimNontender ? 'embed-frame-wrap--simppk' : ''}">
+          <iframe
+            id="${iframeId}"
+            class="embed-frame ${isSimNontender ? 'embed-frame--simppk' : ''}"
+            src="${page.url}"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            scrolling="${isSimNontender ? 'no' : 'yes'}">
+          </iframe>
+        </div>
+      </section>
+    `;
+  }
 
   if (isSimNontender) {
     const iframe = document.getElementById('simppkFrame');
@@ -1634,6 +1684,15 @@ function renderIframePage(page) {
       setTimeout(resizeIframe, 1000);
       setTimeout(resizeIframe, 2000);
     });
+  }
+
+  if (isInternalRapor) {
+    const iframe = document.getElementById('internalRaporFrame');
+    if (iframe) {
+      iframe.addEventListener('load', () => {
+        iframe.classList.add('is-loaded');
+      });
+    }
   }
 }
 
@@ -1913,6 +1972,7 @@ async function loadPage(key) {
       activeModuleToken++;
       cleanupDynamicModule();
       contentArea.classList.remove('module-mode');
+      contentArea.classList.remove('iframe-internal-rapor-mode');
     } else {
       contentArea.classList.add('module-mode');
     }
@@ -1940,6 +2000,112 @@ async function loadPage(key) {
     if (loadingPageKey === key) {
       loadingPageKey = '';
     }
+  }
+}
+
+
+function showSecretLogin() {
+  if (!secretLoginOverlay) return;
+  if (secretLoginError) secretLoginError.textContent = '';
+  if (secretUsername) secretUsername.value = '';
+  if (secretPassword) secretPassword.value = '';
+  secretLoginOverlay.classList.add('show');
+  secretLoginOverlay.setAttribute('aria-hidden', 'false');
+  window.setTimeout(() => {
+    if (secretUsername) secretUsername.focus();
+  }, 30);
+}
+
+function hideSecretLogin() {
+  if (!secretLoginOverlay) return;
+  secretLoginOverlay.classList.remove('show');
+  secretLoginOverlay.setAttribute('aria-hidden', 'true');
+}
+
+function showSecretToast(message = 'Mode internal aktif') {
+  if (!secretLoginToast) return;
+  secretLoginToast.textContent = message;
+  secretLoginToast.classList.add('show');
+  window.clearTimeout(showSecretToast._timer);
+  showSecretToast._timer = window.setTimeout(() => {
+    secretLoginToast.classList.remove('show');
+  }, 2200);
+}
+
+function setInternalMenuVisible(isVisible) {
+  if (!internalNavGroup) return;
+  internalNavGroup.hidden = !isVisible;
+  if (!isVisible) {
+    internalNavGroup.classList.remove('open');
+  }
+}
+
+function unlockInternalMenu() {
+  sessionStorage.setItem(SECRET_SESSION_KEY, '1');
+  setInternalMenuVisible(true);
+  showSecretToast('Panel internal aktif');
+}
+
+function restoreInternalMenu() {
+  setInternalMenuVisible(sessionStorage.getItem(SECRET_SESSION_KEY) === '1');
+}
+
+function handleSecretTriggerClick() {
+  secretTriggerCount += 1;
+  window.clearTimeout(secretTriggerTimer);
+  secretTriggerTimer = window.setTimeout(() => {
+    secretTriggerCount = 0;
+  }, 1300);
+
+  if (secretTriggerCount >= 5) {
+    secretTriggerCount = 0;
+    showSecretLogin();
+  }
+}
+
+function bindSecretLogin() {
+  restoreInternalMenu();
+
+  if (secretTrigger) {
+    secretTrigger.addEventListener('click', handleSecretTriggerClick);
+  }
+
+  if (secretLoginCancel) {
+    secretLoginCancel.addEventListener('click', hideSecretLogin);
+  }
+
+  if (secretLoginOverlay) {
+    secretLoginOverlay.addEventListener('click', (event) => {
+      if (event.target === secretLoginOverlay) {
+        hideSecretLogin();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && secretLoginOverlay && secretLoginOverlay.classList.contains('show')) {
+      hideSecretLogin();
+    }
+  });
+
+  if (secretLoginForm) {
+    secretLoginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const username = String(secretUsername?.value || '').trim();
+      const password = String(secretPassword?.value || '');
+
+      if (username === SECRET_LOGIN_USER && password === SECRET_LOGIN_PASS) {
+        unlockInternalMenu();
+        hideSecretLogin();
+        return;
+      }
+
+      if (secretLoginError) {
+        secretLoginError.textContent = 'Username atau password salah.';
+      }
+      if (secretPassword) secretPassword.value = '';
+      if (secretPassword) secretPassword.focus();
+    });
   }
 }
 
@@ -2035,7 +2201,8 @@ function toggleFlyout(toggleButton, groupName) {
   const titleMap = {
     itkp: 'ITKP',
     realisasi: 'Realisasi Paket',
-    simulasi: 'Simulasi'
+    simulasi: 'Simulasi',
+    internal: 'Panel Internal'
   };
 
   const flyout = document.createElement('div');
@@ -2073,5 +2240,6 @@ function toggleFlyout(toggleButton, groupName) {
   activeFlyout = flyout;
 }
 
+bindSecretLogin();
 bindMenu();
 loadPage('dashboard');
