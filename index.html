@@ -18,7 +18,7 @@
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand-block">
-        <div class="brand-left">
+        <div class="brand-left secret-trigger" id="secretTrigger" title="Klik 5x untuk akses internal">
            <div class="brand-logo brand-logo-img">
   <img src="assets/logo-sippbj.png" alt="SIPPBJ">
 </div>
@@ -111,6 +111,21 @@
     <span class="nav-text">Pemenang Pengadaan</span>
   </span>
 </button>
+
+        <div class="nav-group nav-group-internal" id="internalNavGroup" data-group="internal" hidden>
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="internal">
+            <span class="nav-left">
+              <span class="nav-icon">🔒</span>
+              <span class="nav-text">Panel Internal</span>
+            </span>
+            <span class="nav-caret">⌄</span>
+          </button>
+
+          <div class="submenu">
+            <button class="submenu-link submenu-link-internal" type="button" data-page="rapor-pbj-input-internal">Input Rapor PBJ</button>
+            <button class="submenu-link submenu-link-internal" type="button" data-page="rapor-pbj-qc-internal">QC Rapor PBJ</button>
+          </div>
+        </div>
       </nav>
 
       <a
@@ -129,6 +144,32 @@
 
     <main class="content-area" id="contentArea"></main>
   </div>
+  
+
+  <div class="secret-login-overlay" id="secretLoginOverlay" aria-hidden="true">
+    <div class="secret-login-modal">
+      <div class="secret-login-kicker">AKSES INTERNAL</div>
+      <h3>Panel Rapor PBJ</h3>
+      <p>Menu internal hanya untuk pegawai/operator yang sudah diberi akses.</p>
+
+      <form id="secretLoginForm" class="secret-login-form">
+        <label>Username</label>
+        <input type="text" id="secretUsername" autocomplete="username" placeholder="Masukkan username">
+
+        <label>Password</label>
+        <input type="password" id="secretPassword" autocomplete="current-password" placeholder="Masukkan password">
+
+        <div class="secret-login-actions">
+          <button type="submit" class="secret-login-submit">Masuk</button>
+          <button type="button" class="secret-login-cancel" id="secretLoginCancel">Batal</button>
+        </div>
+      </form>
+
+      <div class="secret-login-error" id="secretLoginError"></div>
+    </div>
+  </div>
+
+  <div class="secret-login-toast" id="secretLoginToast">Mode internal aktif</div>
   
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="app.js"></script>
