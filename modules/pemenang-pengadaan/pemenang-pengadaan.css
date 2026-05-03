@@ -33,3 +33,24 @@
   .pp-login-wrap{padding:8px 0 24px}
   .pp-login-card{width:100%}
 }
+
+.pp-search-box{position:relative}
+.pp-search-suggest{display:none;position:absolute;left:0;right:0;top:100%;z-index:40;margin-top:6px;padding:6px;border:1px solid #dfe7f2;border-radius:14px;background:#fff;box-shadow:0 18px 42px rgba(15,23,42,.12);max-height:250px;overflow:auto}
+.pp-search-suggest.show{display:block}
+.pp-suggest-item{display:block;width:100%;padding:10px 12px;border:0;background:#fff;border-radius:10px;text-align:left;color:#24364f;font-weight:850}
+.pp-suggest-item:hover{background:#f3f7fc}
+.pp-badge--red{color:#b42318;background:#fff0f1;border-color:#ffd3d6}
+.pp-badge--blue{color:#1d4ed8;background:#eff6ff;border-color:#c7dcff}
+.pp-badge--indigo{color:#4338ca;background:#eef2ff;border-color:#d5d9ff}
+.pp-badge--violet{color:#7c3aed;background:#f5f3ff;border-color:#e9ddff}
+.pp-badge--teal{color:#0f766e;background:#ecfeff;border-color:#b9f0ed}
+.pp-badge--orange{color:#c2410c;background:#fff7ed;border-color:#fed7aa}
+.pp-badge--emerald{color:#047857;background:#ecfdf5;border-color:#bbf7d0}
+.pp-chip[data-tone="red"].active{background:#ef4444}
+.pp-chip[data-tone="blue"].active{background:#2563eb}
+.pp-chip[data-tone="indigo"].active{background:#4f46e5}
+.pp-chip[data-tone="violet"].active{background:#8b5cf6}
+.pp-chip[data-tone="teal"].active{background:#0d9488}
+.pp-chip[data-tone="orange"].active{background:#f97316}
+.pp-chip[data-tone="emerald"].active{background:#10b981}
+.pp-chip[data-tone="green"].active{background:#16a34a}
