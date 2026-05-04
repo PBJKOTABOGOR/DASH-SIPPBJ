@@ -6,6 +6,7 @@
       sirup: 'SIRUP_STRUKTUR_ANGGARAN',
       perencanaan: 'PERENCANAAN',
       realisasi: 'REALISASI',
+      monitoring: 'MONITORING_JADWAL',
       pelaku: 'PELAKU',
       itkp: 'ITKP',
       analisis: 'ANALISIS_MANUAL',
@@ -432,6 +433,7 @@
           <div class="rp-report-page"><div class="rp-page-head"><h2>STRUKTUR ANGGARAN PBJ PERANGKAT DAERAH</h2></div><div class="rp-page-body"><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Total Pagu Penyedia</div><div class="value" id="sirup_penyedia">-</div></div><div class="rp-summary-box"><div class="label">Total Pagu Swakelola</div><div class="value" id="sirup_swakelola">-</div></div><div class="rp-summary-box"><div class="label">Total Pagu SiRUP</div><div class="value" id="sirup_total">-</div></div></div><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Struktur Anggaran RUP</div><div class="value" id="sirup_struktur">-</div></div><div class="rp-summary-box"><div class="label">Prosentase Keterumuman</div><div class="value" id="sirup_persentase">-</div></div><div class="rp-summary-box"><div class="label">Bulan / Tahun</div><div class="value"><span id="v_bulan">-</span> / <span id="v_tahun">-</span></div></div></div><div style="font-size:20px;font-weight:800;color:#0f4c81;text-transform:uppercase;margin:20px 0 18px;">Screenshot Struktur Anggaran</div><div id="img_struktur">-</div></div></div>
           <div class="rp-report-page"><div class="rp-page-head"><h2>PROSENTASE KETERUMUMAN SIRUP</h2></div><div class="rp-page-body"><div class="rp-table-wrap"><table><tbody><tr><th style="width:50%;">Uraian</th><th>Nilai</th></tr><tr><td>Total Pagu Penyedia</td><td id="sirup_penyedia_2" class="right">-</td></tr><tr><td>Total Pagu Swakelola</td><td id="sirup_swakelola_2" class="right">-</td></tr><tr><td>Total Pagu SiRUP</td><td id="sirup_total_2" class="right">-</td></tr><tr><td>Total Struktur Anggaran RUP</td><td id="sirup_struktur_2" class="right">-</td></tr><tr><td class="bold">Prosentase</td><td id="sirup_persentase_2" class="right bold">-</td></tr></tbody></table></div></div></div>
           ${renderPlanningTables()}
+          ${renderMonitoringSection()}
           <div class="rp-report-page"><div class="rp-page-head"><h2>PELAKU PENGADAAN DI PERANGKAT DAERAH</h2></div><div class="rp-page-body"><div class="rp-meta-grid"><div class="rp-meta-box"><div class="rp-meta-label">Jumlah PP&PPK</div><div class="rp-meta-value" id="pelaku_jumlah">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Daftar PP&PPK</div><div class="rp-meta-value" id="pelaku_daftar" style="font-size:14px;font-weight:600;">-</div></div></div><div class="rp-meta-box"><div class="rp-meta-label">Dokumen Pendukung</div><div id="pelaku_file" class="rp-meta-value" style="font-size:14px;font-weight:600;">-</div></div></div></div>
           <div class="rp-report-page"><div class="rp-page-head"><h2>ITKP OPD INDIKATOR PEMANFAATAN SISTEM PENGADAAN</h2></div><div class="rp-page-body"><div id="img_itkp">-</div></div></div>
           <div class="rp-report-page"><div class="rp-page-head"><h2>KESIMPULAN DAN SARAN</h2></div><div class="rp-page-body"><div id="analisis_manual">-</div></div></div>
@@ -445,6 +447,12 @@
     $('#stopNarasiButton')?.addEventListener('click', stopNarasiAI);
   }
 
+
+
+  function renderMonitoringSection() {
+    return `<div class="rp-report-page"><div class="rp-page-head"><h2>MONITORING JADWAL PEMILIHAN</h2></div><div class="rp-page-body"><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Total Paket</div><div class="value" id="monitoring_total_paket">-</div></div><div class="rp-summary-box"><div class="label">Sedang Berjalan</div><div class="value" id="monitoring_sedang_berjalan">-</div></div><div class="rp-summary-box"><div class="label">Selesai</div><div class="value" id="monitoring_selesai">-</div></div></div><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Selesai Proses Pemilihan</div><div class="value" id="monitoring_selesai_proses_pemilihan">-</div></div><div class="rp-summary-box"><div class="label">Melewati Waktu Pemilihan</div><div class="value" id="monitoring_melewati_waktu_pemilihan">-</div></div><div class="rp-summary-box"><div class="label">Melebihi Target Pemilihan</div><div class="value" id="monitoring_melebihi_target_pemilihan">-</div></div></div><div class="rp-meta-grid"><div class="rp-meta-box"><div class="rp-meta-label">Sinkron Terakhir</div><div class="rp-meta-value" id="monitoring_source_sync_at" style="font-size:15px;">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Catatan Monitoring</div><div class="rp-meta-value" id="monitoring_catatan" style="font-size:15px;line-height:1.7;">-</div></div></div></div></div>`;
+  }
+
   function renderPlanningTables() {
     return `<div class="rp-report-page"><div class="rp-page-head"><h2>DATA PERENCANAAN PENGADAAN PERANGKAT DAERAH</h2></div><div class="rp-page-body"><div class="rp-table-wrap"><table><thead><tr><th>Cara Pengadaan</th><th>Metode Pemilihan Penyedia</th><th>Jumlah Paket</th><th>Jumlah Anggaran (Rp)</th><th>Prosentase Anggaran (%)</th></tr></thead><tbody>${['Tender & Seleksi','Pengadaan Langsung','E-Purchasing','Dikecualikan','-'].map((m,i)=>`<tr><td class="center">${i===4?'Swakelola':'Penyedia'}</td><td>${m}</td><td id="p_paket_${['tender','non','epur','catat','swak'][i]}" class="center">-</td><td id="p_pagu_${['tender','non','epur','catat','swak'][i]}" class="right">-</td><td id="p_pct_${['tender','non','epur','catat','swak'][i]}" class="center">-</td></tr>`).join('')}<tr><td class="center bold" colspan="2">TOTAL</td><td id="p_total_paket" class="center bold">-</td><td id="p_total_pagu" class="right bold">-</td><td id="p_total_pct" class="center bold">100,00%</td></tr></tbody></table></div></div></div>
     <div class="rp-report-page"><div class="rp-page-head"><h2>REALISASI PELAKSANAAN PBJ DI PERANGKAT DAERAH</h2></div><div class="rp-page-body"><div class="rp-table-wrap"><table><thead><tr><th rowspan="2">Cara Pengadaan</th><th rowspan="2">Metode Pemilihan Penyedia</th><th colspan="2">Rencana Pengadaan</th><th colspan="2">Realisasi</th></tr><tr><th>Jumlah Paket</th><th>Jumlah Anggaran (Rp)</th><th>Jumlah Paket</th><th>Jumlah Anggaran (Rp)</th></tr></thead><tbody>${['Tender & Seleksi','Pengadaan Langsung','E-Purchasing','Dikecualikan','-'].map((m,i)=>`<tr><td class="center">${i===4?'Swakelola':'Penyedia'}</td><td>${m}</td><td id="rp_paket_${['tender','non','epur','catat','swak'][i]}" class="center">-</td><td id="rp_pagu_${['tender','non','epur','catat','swak'][i]}" class="right">-</td><td id="r_paket_${['tender','non','epur','catat','swak'][i]}" class="center">-</td><td id="r_anggaran_${['tender','non','epur','catat','swak'][i]}" class="right">-</td></tr>`).join('')}<tr><td class="center bold" colspan="2">TOTAL</td><td id="rp_total_paket" class="center bold">-</td><td id="rp_total_pagu" class="right bold">-</td><td id="r_total_paket" class="center bold">-</td><td id="r_total_anggaran" class="right bold">-</td></tr></tbody></table></div></div></div>`;
@@ -454,13 +462,13 @@
     renderReportShell(id);
     if (!id) { setText('#status', 'Parameter id kosong.'); return; }
     try {
-      const [indexRows,sirupRows,perencanaanRows,realisasiRows,pelakuRows,itkpRows,analisisRows,aiRows] = await Promise.all([
+      const [indexRows,sirupRows,perencanaanRows,realisasiRows,monitoringRows,pelakuRows,itkpRows,analisisRows,aiRows] = await Promise.all([
         fetchSheet(CONFIG.SHEETS.index), fetchSheet(CONFIG.SHEETS.sirup), fetchSheet(CONFIG.SHEETS.perencanaan), fetchSheet(CONFIG.SHEETS.realisasi),
-        fetchSheet(CONFIG.SHEETS.pelaku), fetchSheet(CONFIG.SHEETS.itkp), fetchSheet(CONFIG.SHEETS.analisis), fetchSheet(CONFIG.SHEETS.aiReport)
+        fetchSheet(CONFIG.SHEETS.monitoring), fetchSheet(CONFIG.SHEETS.pelaku), fetchSheet(CONFIG.SHEETS.itkp), fetchSheet(CONFIG.SHEETS.analisis), fetchSheet(CONFIG.SHEETS.aiReport)
       ]);
       const data = {
         index: findRowById(indexRows, id), sirup: findRowById(sirupRows, id), perencanaan: findRowById(perencanaanRows, id),
-        realisasi: findRowById(realisasiRows, id), pelaku: findRowById(pelakuRows, id), itkp: findRowById(itkpRows, id),
+        realisasi: findRowById(realisasiRows, id), monitoring_jadwal: findRowById(monitoringRows, id), pelaku: findRowById(pelakuRows, id), itkp: findRowById(itkpRows, id),
         analisis_manual: findRowById(analisisRows, id), ai_report: findRowById(aiRows, id)
       };
       if (!data.index.id_rapot) { setText('#status', 'Data report tidak ditemukan untuk ID: ' + id); return; }
@@ -472,7 +480,7 @@
   }
 
   function renderReportData(data) {
-    const index = data.index || {}, sirup = data.sirup || {}, perencanaan = data.perencanaan || {}, realisasi = data.realisasi || {}, pelaku = data.pelaku || {}, itkp = data.itkp || {}, analisis = data.analisis_manual || {}, aiReport = data.ai_report || {};
+    const index = data.index || {}, sirup = data.sirup || {}, perencanaan = data.perencanaan || {}, realisasi = data.realisasi || {}, monitoring = data.monitoring_jadwal || {}, pelaku = data.pelaku || {}, itkp = data.itkp || {}, analisis = data.analisis_manual || {}, aiReport = data.ai_report || {};
     $('#status')?.classList.add('rp-hidden'); $('#content')?.classList.remove('rp-hidden');
     const bulanText = monthLabel(index.bulan); const tahunText = index.tahun || '-';
     setText('#v_id_rapot', index.id_rapot || '-'); setText('#v_tahun', tahunText); setText('#v_bulan', index.bulan || '-'); setText('#v_status_qc', index.status_qc || '-'); setText('#v_kode_opd', index.kode_opd || '-'); setText('#v_nama_opd', index.nama_opd || '-');
@@ -496,6 +504,14 @@
     const rAng = [realisasi.realisasi_tender_seleksi, realisasi.realisasi_non_tender, realisasi.realisasi_epurchasing, realisasi.realisasi_pencatatan, realisasi.realisasi_swakelola].map(parseMoney);
     keys.forEach((k,i)=>{ setText(`#r_paket_${k}`, formatInteger(rPaket[i])); setText(`#r_anggaran_${k}`, formatMoney(rAng[i])); });
     setText('#r_total_paket', formatInteger(rPaket.reduce((a,b)=>a+b,0))); setText('#r_total_anggaran', formatMoney(rAng.reduce((a,b)=>a+b,0)));
+    setText('#monitoring_total_paket', formatInteger(monitoring.total_paket));
+    setText('#monitoring_sedang_berjalan', formatInteger(monitoring.sedang_berjalan));
+    setText('#monitoring_selesai', formatInteger(monitoring.selesai));
+    setText('#monitoring_selesai_proses_pemilihan', formatInteger(monitoring.selesai_proses_pemilihan));
+    setText('#monitoring_melewati_waktu_pemilihan', formatInteger(monitoring.melewati_waktu_pemilihan));
+    setText('#monitoring_melebihi_target_pemilihan', formatInteger(monitoring.melebihi_target_pemilihan));
+    setText('#monitoring_source_sync_at', monitoring.source_sync_at || monitoring.updated_at || monitoring.timestamp || '-');
+    setText('#monitoring_catatan', monitoring.catatan_monitoring || '-');
     setText('#pelaku_jumlah', pelaku.jumlah_pp_ppk || '-'); setText('#pelaku_daftar', pelaku.daftar_pp_ppk || '-'); setHtml('#pelaku_file', renderLinkOnly(pelaku.link_dokumen_pendukung || pelaku.file_url || '', 'Dokumen Pendukung'));
     setHtml('#img_itkp', renderImageOrLink(itkp.file_screenshot || itkp.file_screenshot_itkp || itkp.file_url || '', 'ITKP'));
     setHtml('#analisis_manual', renderBullets(analisis.kesimpulan_progres || '-'));
