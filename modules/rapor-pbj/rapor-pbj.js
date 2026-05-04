@@ -6,6 +6,7 @@
       sirup: 'SIRUP_STRUKTUR_ANGGARAN',
       perencanaan: 'PERENCANAAN',
       realisasi: 'REALISASI',
+      monitoring: 'MONITORING_JADWAL',
       pelaku: 'PELAKU',
       itkp: 'ITKP',
       analisis: 'ANALISIS_MANUAL',
@@ -64,15 +65,6 @@
 .rp-report-page{background:#fff;border-radius:18px;margin-bottom:24px;overflow:hidden;box-shadow:0 4px 18px rgba(15,23,42,.08);page-break-after:always}.rp-report-page:last-child{page-break-after:auto}.rp-page-head{background:linear-gradient(135deg,#0f4c81,#1f6aa5);color:#fff;padding:28px 32px}.rp-page-head h1,.rp-page-head h2{margin:0}.rp-cover{min-height:420px;display:flex;flex-direction:column;justify-content:center;text-align:center}.rp-main-title{font-size:40px;font-weight:800;line-height:1.2;margin-bottom:18px;text-transform:uppercase}.rp-sub-title{font-size:26px;font-weight:700;line-height:1.4;text-transform:uppercase}.rp-period{margin-top:22px;font-size:22px;font-weight:700;text-transform:uppercase}.rp-page-body{padding:24px 28px 28px}.rp-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}.rp-meta-box,.rp-summary-box,.rp-link-box,.rp-note-box{background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:14px 16px}.rp-meta-label,.rp-summary-box .label{font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px}.rp-meta-value{font-size:18px;font-weight:700;word-break:break-word}.rp-note-line{font-size:14px;color:#475569;margin-top:10px}.rp-report-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}.rp-summary-box .value{font-size:18px;font-weight:800;color:#0f172a}.center{text-align:center}.right{text-align:right}.bold{font-weight:700}.rp-img-box{background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:14px;min-height:120px}.rp-img-box img{display:block;max-width:100%;max-height:520px;object-fit:contain;margin:0 auto;border-radius:10px;background:#fff}.rp-link-box,.rp-note-box{word-break:break-word;white-space:pre-wrap;line-height:1.7}.rp-bullets{margin:0;padding-left:20px;line-height:1.8;font-size:15px}.rp-muted{color:#64748b;font-size:13px}.rp-narasi-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.rp-head-toggle-btn{border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.18);color:#fff;backdrop-filter:blur(4px);width:auto}.rp-voice-panel{background:#f8fbff;border:1px solid #dbeafe;border-radius:14px;padding:14px;margin-top:14px}.rp-voice-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;color:#0f172a;margin-bottom:10px}.rp-voice-progress{width:100%;height:10px;background:#dbe4ee;border-radius:999px;overflow:hidden}.rp-voice-progress-fill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#0f4c81,#2f7cc2);transition:width .12s linear}.rp-hidden{display:none!important}
     @media(max-width:1100px){.rp-summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.rp-grid-5{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:900px){.rp-hero{padding:24px 20px}.rp-hero h1{font-size:34px}.rp-summary-strip,.rp-grid-5,.rp-grid-2,.rp-meta-grid,.rp-report-summary{grid-template-columns:1fr}.rp-inline-actions{flex-direction:column}.rp-inline-actions button{width:100%}.rp-main-title{font-size:30px}.rp-sub-title{font-size:21px}.rp-period{font-size:18px}}
-    @media print{
-      :host{display:block!important}
-      .rp-toolbar{display:none!important}
-      .rp-report-wrap,.rp-wrap{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
-      .rp-report-page{box-shadow:none!important;border-radius:0!important;margin:0 0 8mm 0!important;page-break-after:always!important}
-      .rp-report-page:last-child{page-break-after:auto!important}
-      .rp-page-head{border-radius:0!important}
-      .rp-card,.rp-meta-box,.rp-summary-box,.rp-link-box,.rp-note-box,.rp-img-box,.rp-table-wrap{box-shadow:none!important}
-    }
   `;
 
   function $(selector) { return shadow ? shadow.querySelector(selector) : null; }
@@ -441,6 +433,7 @@
           <div class="rp-report-page"><div class="rp-page-head"><h2>STRUKTUR ANGGARAN PBJ PERANGKAT DAERAH</h2></div><div class="rp-page-body"><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Total Pagu Penyedia</div><div class="value" id="sirup_penyedia">-</div></div><div class="rp-summary-box"><div class="label">Total Pagu Swakelola</div><div class="value" id="sirup_swakelola">-</div></div><div class="rp-summary-box"><div class="label">Total Pagu SiRUP</div><div class="value" id="sirup_total">-</div></div></div><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Struktur Anggaran RUP</div><div class="value" id="sirup_struktur">-</div></div><div class="rp-summary-box"><div class="label">Prosentase Keterumuman</div><div class="value" id="sirup_persentase">-</div></div><div class="rp-summary-box"><div class="label">Bulan / Tahun</div><div class="value"><span id="v_bulan">-</span> / <span id="v_tahun">-</span></div></div></div><div style="font-size:20px;font-weight:800;color:#0f4c81;text-transform:uppercase;margin:20px 0 18px;">Screenshot Struktur Anggaran</div><div id="img_struktur">-</div></div></div>
           <div class="rp-report-page"><div class="rp-page-head"><h2>PROSENTASE KETERUMUMAN SIRUP</h2></div><div class="rp-page-body"><div class="rp-table-wrap"><table><tbody><tr><th style="width:50%;">Uraian</th><th>Nilai</th></tr><tr><td>Total Pagu Penyedia</td><td id="sirup_penyedia_2" class="right">-</td></tr><tr><td>Total Pagu Swakelola</td><td id="sirup_swakelola_2" class="right">-</td></tr><tr><td>Total Pagu SiRUP</td><td id="sirup_total_2" class="right">-</td></tr><tr><td>Total Struktur Anggaran RUP</td><td id="sirup_struktur_2" class="right">-</td></tr><tr><td class="bold">Prosentase</td><td id="sirup_persentase_2" class="right bold">-</td></tr></tbody></table></div></div></div>
           ${renderPlanningTables()}
+          ${renderMonitoringSection()}
           <div class="rp-report-page"><div class="rp-page-head"><h2>PELAKU PENGADAAN DI PERANGKAT DAERAH</h2></div><div class="rp-page-body"><div class="rp-meta-grid"><div class="rp-meta-box"><div class="rp-meta-label">Jumlah PP&PPK</div><div class="rp-meta-value" id="pelaku_jumlah">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Daftar PP&PPK</div><div class="rp-meta-value" id="pelaku_daftar" style="font-size:14px;font-weight:600;">-</div></div></div><div class="rp-meta-box"><div class="rp-meta-label">Dokumen Pendukung</div><div id="pelaku_file" class="rp-meta-value" style="font-size:14px;font-weight:600;">-</div></div></div></div>
           <div class="rp-report-page"><div class="rp-page-head"><h2>ITKP OPD INDIKATOR PEMANFAATAN SISTEM PENGADAAN</h2></div><div class="rp-page-body"><div id="img_itkp">-</div></div></div>
           <div class="rp-report-page"><div class="rp-page-head"><h2>KESIMPULAN DAN SARAN</h2></div><div class="rp-page-body"><div id="analisis_manual">-</div></div></div>
@@ -448,10 +441,16 @@
         </div>
       </div>`;
     $('#backToDashboardButton')?.addEventListener('click', () => { stopNarasiAI(); renderDashboardShell(); loadDashboardData(); });
-    $('#printReportButton')?.addEventListener('click', () => printReportOnly());
+    $('#printReportButton')?.addEventListener('click', () => window.print());
     $('#narasi_toggle_btn')?.addEventListener('click', toggleNarasiSection);
     $('#playNarasiButton')?.addEventListener('click', playNarasiAI);
     $('#stopNarasiButton')?.addEventListener('click', stopNarasiAI);
+  }
+
+
+
+  function renderMonitoringSection() {
+    return `<div class="rp-report-page"><div class="rp-page-head"><h2>MONITORING JADWAL PEMILIHAN</h2></div><div class="rp-page-body"><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Total Paket</div><div class="value" id="monitoring_total_paket">-</div></div><div class="rp-summary-box"><div class="label">Sedang Berjalan</div><div class="value" id="monitoring_sedang_berjalan">-</div></div><div class="rp-summary-box"><div class="label">Selesai</div><div class="value" id="monitoring_selesai">-</div></div></div><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Selesai Proses Pemilihan</div><div class="value" id="monitoring_selesai_proses_pemilihan">-</div></div><div class="rp-summary-box"><div class="label">Melewati Waktu Pemilihan</div><div class="value" id="monitoring_melewati_waktu_pemilihan">-</div></div><div class="rp-summary-box"><div class="label">Melebihi Target Pemilihan</div><div class="value" id="monitoring_melebihi_target_pemilihan">-</div></div></div><div class="rp-meta-grid"><div class="rp-meta-box"><div class="rp-meta-label">Sinkron Terakhir</div><div class="rp-meta-value" id="monitoring_source_sync_at" style="font-size:15px;">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Catatan Monitoring</div><div class="rp-meta-value" id="monitoring_catatan" style="font-size:15px;line-height:1.7;">-</div></div></div></div></div>`;
   }
 
   function renderPlanningTables() {
@@ -463,13 +462,13 @@
     renderReportShell(id);
     if (!id) { setText('#status', 'Parameter id kosong.'); return; }
     try {
-      const [indexRows,sirupRows,perencanaanRows,realisasiRows,pelakuRows,itkpRows,analisisRows,aiRows] = await Promise.all([
+      const [indexRows,sirupRows,perencanaanRows,realisasiRows,monitoringRows,pelakuRows,itkpRows,analisisRows,aiRows] = await Promise.all([
         fetchSheet(CONFIG.SHEETS.index), fetchSheet(CONFIG.SHEETS.sirup), fetchSheet(CONFIG.SHEETS.perencanaan), fetchSheet(CONFIG.SHEETS.realisasi),
-        fetchSheet(CONFIG.SHEETS.pelaku), fetchSheet(CONFIG.SHEETS.itkp), fetchSheet(CONFIG.SHEETS.analisis), fetchSheet(CONFIG.SHEETS.aiReport)
+        fetchSheet(CONFIG.SHEETS.monitoring), fetchSheet(CONFIG.SHEETS.pelaku), fetchSheet(CONFIG.SHEETS.itkp), fetchSheet(CONFIG.SHEETS.analisis), fetchSheet(CONFIG.SHEETS.aiReport)
       ]);
       const data = {
         index: findRowById(indexRows, id), sirup: findRowById(sirupRows, id), perencanaan: findRowById(perencanaanRows, id),
-        realisasi: findRowById(realisasiRows, id), pelaku: findRowById(pelakuRows, id), itkp: findRowById(itkpRows, id),
+        realisasi: findRowById(realisasiRows, id), monitoring_jadwal: findRowById(monitoringRows, id), pelaku: findRowById(pelakuRows, id), itkp: findRowById(itkpRows, id),
         analisis_manual: findRowById(analisisRows, id), ai_report: findRowById(aiRows, id)
       };
       if (!data.index.id_rapot) { setText('#status', 'Data report tidak ditemukan untuk ID: ' + id); return; }
@@ -481,7 +480,7 @@
   }
 
   function renderReportData(data) {
-    const index = data.index || {}, sirup = data.sirup || {}, perencanaan = data.perencanaan || {}, realisasi = data.realisasi || {}, pelaku = data.pelaku || {}, itkp = data.itkp || {}, analisis = data.analisis_manual || {}, aiReport = data.ai_report || {};
+    const index = data.index || {}, sirup = data.sirup || {}, perencanaan = data.perencanaan || {}, realisasi = data.realisasi || {}, monitoring = data.monitoring_jadwal || {}, pelaku = data.pelaku || {}, itkp = data.itkp || {}, analisis = data.analisis_manual || {}, aiReport = data.ai_report || {};
     $('#status')?.classList.add('rp-hidden'); $('#content')?.classList.remove('rp-hidden');
     const bulanText = monthLabel(index.bulan); const tahunText = index.tahun || '-';
     setText('#v_id_rapot', index.id_rapot || '-'); setText('#v_tahun', tahunText); setText('#v_bulan', index.bulan || '-'); setText('#v_status_qc', index.status_qc || '-'); setText('#v_kode_opd', index.kode_opd || '-'); setText('#v_nama_opd', index.nama_opd || '-');
@@ -505,6 +504,14 @@
     const rAng = [realisasi.realisasi_tender_seleksi, realisasi.realisasi_non_tender, realisasi.realisasi_epurchasing, realisasi.realisasi_pencatatan, realisasi.realisasi_swakelola].map(parseMoney);
     keys.forEach((k,i)=>{ setText(`#r_paket_${k}`, formatInteger(rPaket[i])); setText(`#r_anggaran_${k}`, formatMoney(rAng[i])); });
     setText('#r_total_paket', formatInteger(rPaket.reduce((a,b)=>a+b,0))); setText('#r_total_anggaran', formatMoney(rAng.reduce((a,b)=>a+b,0)));
+    setText('#monitoring_total_paket', formatInteger(monitoring.total_paket));
+    setText('#monitoring_sedang_berjalan', formatInteger(monitoring.sedang_berjalan));
+    setText('#monitoring_selesai', formatInteger(monitoring.selesai));
+    setText('#monitoring_selesai_proses_pemilihan', formatInteger(monitoring.selesai_proses_pemilihan));
+    setText('#monitoring_melewati_waktu_pemilihan', formatInteger(monitoring.melewati_waktu_pemilihan));
+    setText('#monitoring_melebihi_target_pemilihan', formatInteger(monitoring.melebihi_target_pemilihan));
+    setText('#monitoring_source_sync_at', monitoring.source_sync_at || monitoring.updated_at || monitoring.timestamp || '-');
+    setText('#monitoring_catatan', monitoring.catatan_monitoring || '-');
     setText('#pelaku_jumlah', pelaku.jumlah_pp_ppk || '-'); setText('#pelaku_daftar', pelaku.daftar_pp_ppk || '-'); setHtml('#pelaku_file', renderLinkOnly(pelaku.link_dokumen_pendukung || pelaku.file_url || '', 'Dokumen Pendukung'));
     setHtml('#img_itkp', renderImageOrLink(itkp.file_screenshot || itkp.file_screenshot_itkp || itkp.file_url || '', 'ITKP'));
     setHtml('#analisis_manual', renderBullets(analisis.kesimpulan_progres || '-'));
@@ -525,48 +532,6 @@
   function playNarasiAI(){ if(!('speechSynthesis' in window)){ setText('#voice_status_box','Browser ini tidak mendukung suara AI bawaan.'); return; } const text=String(aiVoiceText || $('#narasi_ai_box')?.innerText || '').trim(); if(!text || text==='Belum ada Analisa AI.'){ setText('#voice_status_box','Analisa AI belum tersedia untuk dibacakan.'); return; } const rate=1.08; window.speechSynthesis.cancel(); currentUtterance=new SpeechSynthesisUtterance(text); currentUtterance.lang='id-ID'; currentUtterance.rate=rate; currentUtterance.pitch=1; currentUtterance.volume=1; const voice=getPreferredVoice(); if(voice) currentUtterance.voice=voice; const estimated=estimateSpeechDurationMs(text,rate); currentUtterance.onstart=()=>{ startVoiceProgress(estimated); setText('#voice_status_box','Sedang membacakan Analisa AI...'); }; currentUtterance.onend=()=>{ currentUtterance=null; completeVoiceProgress(); setText('#voice_status_box','Selesai membacakan Analisa AI.'); }; currentUtterance.onerror=(e)=>{ currentUtterance=null; stopVoiceProgress(); setText('#voice_status_box','Gagal memutar suara AI: '+(e&&e.error?e.error:'unknown error')); }; setTimeout(()=>window.speechSynthesis.speak(currentUtterance),150); }
   function stopNarasiAI(){ if(!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); currentUtterance=null; stopVoiceProgress(); setText('#voice_status_box','Suara dihentikan.'); }
   function toggleNarasiSection(){ const body=$('#narasi_ai_body'); const btn=$('#narasi_toggle_btn'); if(!body||!btn) return; const hidden=body.classList.contains('rp-hidden'); body.classList.toggle('rp-hidden',!hidden); btn.innerText=hidden?'Minimize':'Tampilkan'; }
-
-
-  function ensureGlobalReportPrintStyle() {
-    const styleId = 'rapor-pbj-global-print-style';
-    let styleEl = document.getElementById(styleId);
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = styleId;
-      document.head.appendChild(styleEl);
-    }
-    styleEl.textContent = `
-      @media print {
-        body.report-print-only * {
-          visibility: hidden !important;
-        }
-        body.report-print-only #raporPbjModuleRoot,
-        body.report-print-only #raporPbjModuleRoot * {
-          visibility: visible !important;
-        }
-        body.report-print-only #raporPbjModuleRoot {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          max-width: none !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #fff !important;
-        }
-      }
-    `;
-  }
-
-  function printReportOnly() {
-    ensureGlobalReportPrintStyle();
-    document.body.classList.add('report-print-only');
-    setTimeout(() => window.print(), 80);
-  }
-
-  window.addEventListener('afterprint', function() {
-    document.body.classList.remove('report-print-only');
-  });
 
   window.__moduleInit = function ({ container }) {
     destroyed = false;
