@@ -511,7 +511,6 @@
     setText('#monitoring_melewati_waktu_pemilihan', formatInteger(monitoring.melewati_waktu_pemilihan));
     setText('#monitoring_melebihi_target_pemilihan', formatInteger(monitoring.melebihi_target_pemilihan));
     setText('#monitoring_source_sync_at', monitoring.source_sync_at || monitoring.updated_at || monitoring.timestamp || '-');
-    setText('#monitoring_catatan', monitoring.catatan_monitoring || '-');
     setText('#pelaku_jumlah', pelaku.jumlah_pp_ppk || '-'); setText('#pelaku_daftar', pelaku.daftar_pp_ppk || '-'); setHtml('#pelaku_file', renderLinkOnly(pelaku.link_dokumen_pendukung || pelaku.file_url || '', 'Dokumen Pendukung'));
     setHtml('#img_itkp', renderImageOrLink(itkp.file_screenshot || itkp.file_screenshot_itkp || itkp.file_url || '', 'ITKP'));
     setHtml('#analisis_manual', renderBullets(analisis.kesimpulan_progres || '-'));
