@@ -1,12 +1,15 @@
 (function () {
   const CONFIG = {
-    SHEET_ID: '1ccDgtXNATxSYMZuDgd3polvRiTFNiFnjIGMP7b9qmrU',
+    SHEET_IDS: {
+      main: '1ccDgtXNATxSYMZuDgd3polvRiTFNiFnjIGMP7b9qmrU',
+      monitoring: '181iiPjY6AiW1dMZIu14fouSzpPVB5Wwon-mmReU7v8I'
+    },
     SHEETS: {
       index: 'INDEX_RAPOT',
       sirup: 'SIRUP_STRUKTUR_ANGGARAN',
       perencanaan: 'PERENCANAAN',
       realisasi: 'REALISASI',
-      monitoring: 'MONITORING_JADWAL',
+      monitoring: 'JADWAL_P',
       pelaku: 'PELAKU',
       itkp: 'ITKP',
       analisis: 'ANALISIS_MANUAL',
@@ -38,13 +41,7 @@
     :host{display:block;color:#122033;font-family:"Inter","Segoe UI",Arial,sans-serif;}
     *{box-sizing:border-box}
     a{color:#123a72}
-    .rp-wrap{
-  width:100%;
-  max-width:none;
-  margin:0;
-  padding:0 0 22px;
-  color:#122033;
-}
+    .rp-wrap{width:100%;max-width:none;margin:0;padding:0 0 22px;color:#122033;}
     .rp-hero{position:relative;overflow:hidden;isolation:isolate;background:radial-gradient(circle at top right,rgba(34,211,238,.22),transparent 28%),radial-gradient(circle at left top,rgba(255,255,255,.10),transparent 22%),linear-gradient(135deg,#102544 0%,#123a72 48%,#245a9b 78%,#0f766e 100%);color:#fff;border-radius:30px;padding:28px 28px 30px;box-shadow:0 22px 58px rgba(18,58,114,.20);margin-bottom:18px;border:1px solid rgba(255,255,255,.20)}
     .rp-hero::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(135deg,rgba(0,0,0,.88),transparent 86%);opacity:.8}
     .rp-hero::after{content:"";position:absolute;top:-70%;left:-42%;width:34%;height:240%;z-index:0;pointer-events:none;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.06) 18%,rgba(255,255,255,.34) 48%,rgba(34,211,238,.16) 62%,transparent 100%);transform:rotate(24deg) translateX(-120%);animation:rpHeroReflex 5.2s ease-in-out infinite}
@@ -57,12 +54,8 @@
     .rp-table-wrap{overflow:auto;border:1px solid #dbe5f0;border-radius:18px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.06)}table{width:100%;border-collapse:collapse;min-width:1000px;font-size:14px}th,td{padding:11px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;text-align:left;line-height:1.5}th{background:linear-gradient(135deg,#123a72 0%,#245a9b 100%);color:#fff;font-size:13px;font-weight:800}.rp-badge-status{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:900;border:1px solid transparent;white-space:nowrap}.st-draft{background:#fff8ea;color:#9a6100;border-color:#f2cf83}.st-menunggu{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}.st-revisi{background:#fff1f2;color:#b91c1c;border-color:#fecdd3}.st-ok{background:#ecfdf5;color:#0f766e;border-color:#bbf7d0}.st-belum{background:#fff1f2;color:#b91c1c;border-color:#fecdd3}.st-default{background:#f8fafc;color:#475569;border-color:#e2e8f0}.rp-btn-link{display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:68px;padding:9px 12px;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;background:linear-gradient(180deg,#fff 0%,#edf3fb 100%);color:#16324f;border:1px solid #dbe5f0;text-decoration:none;box-shadow:0 6px 18px rgba(15,23,42,.06)}.rp-btn-link.disabled{opacity:.55;cursor:not-allowed;pointer-events:none;filter:grayscale(.1)}
     .rp-pagination-wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}.rp-pagination-info{font-size:13px;color:#64748b;font-weight:700}.rp-pagination{display:flex;gap:8px;flex-wrap:wrap}.rp-page-btn{min-width:42px;width:auto;padding:10px 12px;border-radius:12px;border:1px solid #dbe5f0;background:#fff;color:#18324f;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(15,23,42,.06)}.rp-page-btn.active{background:linear-gradient(135deg,#123a72 0%,#245a9b 100%);color:#fff;border-color:transparent}.rp-page-btn:disabled{opacity:.5;cursor:not-allowed}
     .rp-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-    .rp-report-wrap{
-  width:100%;
-  max-width:none;
-  margin:0;
-}
-.rp-report-page{background:#fff;border-radius:18px;margin-bottom:24px;overflow:hidden;box-shadow:0 4px 18px rgba(15,23,42,.08);page-break-after:always}.rp-report-page:last-child{page-break-after:auto}.rp-page-head{background:linear-gradient(135deg,#0f4c81,#1f6aa5);color:#fff;padding:28px 32px}.rp-page-head h1,.rp-page-head h2{margin:0}.rp-cover{min-height:420px;display:flex;flex-direction:column;justify-content:center;text-align:center}.rp-main-title{font-size:40px;font-weight:800;line-height:1.2;margin-bottom:18px;text-transform:uppercase}.rp-sub-title{font-size:26px;font-weight:700;line-height:1.4;text-transform:uppercase}.rp-period{margin-top:22px;font-size:22px;font-weight:700;text-transform:uppercase}.rp-page-body{padding:24px 28px 28px}.rp-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}.rp-meta-box,.rp-summary-box,.rp-link-box,.rp-note-box{background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:14px 16px}.rp-meta-label,.rp-summary-box .label{font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px}.rp-meta-value{font-size:18px;font-weight:700;word-break:break-word}.rp-note-line{font-size:14px;color:#475569;margin-top:10px}.rp-report-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}.rp-summary-box .value{font-size:18px;font-weight:800;color:#0f172a}.center{text-align:center}.right{text-align:right}.bold{font-weight:700}.rp-img-box{background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:14px;min-height:120px}.rp-img-box img{display:block;max-width:100%;max-height:520px;object-fit:contain;margin:0 auto;border-radius:10px;background:#fff}.rp-link-box,.rp-note-box{word-break:break-word;white-space:pre-wrap;line-height:1.7}.rp-bullets{margin:0;padding-left:20px;line-height:1.8;font-size:15px}.rp-muted{color:#64748b;font-size:13px}.rp-narasi-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.rp-head-toggle-btn{border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.18);color:#fff;backdrop-filter:blur(4px);width:auto}.rp-voice-panel{background:#f8fbff;border:1px solid #dbeafe;border-radius:14px;padding:14px;margin-top:14px}.rp-voice-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;color:#0f172a;margin-bottom:10px}.rp-voice-progress{width:100%;height:10px;background:#dbe4ee;border-radius:999px;overflow:hidden}.rp-voice-progress-fill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#0f4c81,#2f7cc2);transition:width .12s linear}.rp-hidden{display:none!important}
+    .rp-report-wrap{width:100%;max-width:none;margin:0;}
+    .rp-report-page{background:#fff;border-radius:18px;margin-bottom:24px;overflow:hidden;box-shadow:0 4px 18px rgba(15,23,42,.08);page-break-after:always}.rp-report-page:last-child{page-break-after:auto}.rp-page-head{background:linear-gradient(135deg,#0f4c81,#1f6aa5);color:#fff;padding:28px 32px}.rp-page-head h1,.rp-page-head h2{margin:0}.rp-cover{min-height:420px;display:flex;flex-direction:column;justify-content:center;text-align:center}.rp-main-title{font-size:40px;font-weight:800;line-height:1.2;margin-bottom:18px;text-transform:uppercase}.rp-sub-title{font-size:26px;font-weight:700;line-height:1.4;text-transform:uppercase}.rp-period{margin-top:22px;font-size:22px;font-weight:700;text-transform:uppercase}.rp-page-body{padding:24px 28px 28px}.rp-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}.rp-meta-box,.rp-summary-box,.rp-link-box,.rp-note-box{background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:14px 16px}.rp-meta-label,.rp-summary-box .label{font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px}.rp-meta-value{font-size:18px;font-weight:700;word-break:break-word}.rp-note-line{font-size:14px;color:#475569;margin-top:10px}.rp-report-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}.rp-summary-box .value{font-size:18px;font-weight:800;color:#0f172a}.center{text-align:center}.right{text-align:right}.bold{font-weight:700}.rp-img-box{background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:14px;min-height:120px}.rp-img-box img{display:block;max-width:100%;max-height:520px;object-fit:contain;margin:0 auto;border-radius:10px;background:#fff}.rp-link-box,.rp-note-box{word-break:break-word;white-space:pre-wrap;line-height:1.7}.rp-bullets{margin:0;padding-left:20px;line-height:1.8;font-size:15px}.rp-muted{color:#64748b;font-size:13px}.rp-narasi-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.rp-head-toggle-btn{border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.18);color:#fff;backdrop-filter:blur(4px);width:auto}.rp-voice-panel{background:#f8fbff;border:1px solid #dbeafe;border-radius:14px;padding:14px;margin-top:14px}.rp-voice-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;color:#0f172a;margin-bottom:10px}.rp-voice-progress{width:100%;height:10px;background:#dbe4ee;border-radius:999px;overflow:hidden}.rp-voice-progress-fill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#0f4c81,#2f7cc2);transition:width .12s linear}.rp-hidden{display:none!important}
     @media(max-width:1100px){.rp-summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.rp-grid-5{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:900px){.rp-hero{padding:24px 20px}.rp-hero h1{font-size:34px}.rp-summary-strip,.rp-grid-5,.rp-grid-2,.rp-meta-grid,.rp-report-summary{grid-template-columns:1fr}.rp-inline-actions{flex-direction:column}.rp-inline-actions button{width:100%}.rp-main-title{font-size:30px}.rp-sub-title{font-size:21px}.rp-period{font-size:18px}}
   `;
@@ -72,6 +65,7 @@
   function setText(selector, val) { const el = typeof selector === 'string' ? $(selector) : selector; if (el) el.innerText = (val === undefined || val === null || val === '') ? '-' : val; }
   function setHtml(selector, html) { const el = typeof selector === 'string' ? $(selector) : selector; if (el) el.innerHTML = html || '-'; }
   function esc(v) { return String(v || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+  function norm(v) { return String(v || '').trim().toLowerCase().replace(/\s+/g,' '); }
 
   function csvUrlBySheetName(sheetId, sheetName) {
     return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
@@ -81,7 +75,11 @@
     return new Promise((resolve, reject) => {
       if (window.Papa && typeof window.Papa.parse === 'function') { resolve(); return; }
       const existing = document.querySelector('script[data-rapor-papa="true"]');
-      if (existing) { existing.addEventListener('load', resolve, { once:true }); existing.addEventListener('error', reject, { once:true }); return; }
+      if (existing) {
+        existing.addEventListener('load', resolve, { once:true });
+        existing.addEventListener('error', reject, { once:true });
+        return;
+      }
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
       script.dataset.raporPapa = 'true';
@@ -91,9 +89,15 @@
     });
   }
 
+  function getSheetIdByName(sheetName) {
+    return sheetName === CONFIG.SHEETS.monitoring
+      ? CONFIG.SHEET_IDS.monitoring
+      : CONFIG.SHEET_IDS.main;
+  }
+
   function fetchSheet(sheetName) {
     return ensurePapa().then(() => new Promise((resolve, reject) => {
-      window.Papa.parse(csvUrlBySheetName(CONFIG.SHEET_ID, sheetName), {
+      window.Papa.parse(csvUrlBySheetName(getSheetIdByName(sheetName), sheetName), {
         download: true,
         header: true,
         skipEmptyLines: true,
@@ -375,6 +379,13 @@
     return (rows || []).map(normalizeRecordKeys).find((r) => String(r.id_rapot || '').trim() === String(idRapot || '').trim()) || {};
   }
 
+  function findMonitoringRow(rows, indexRow) {
+    const list = (rows || []).map(normalizeRecordKeys);
+    const kode = norm(indexRow && indexRow.kode_opd);
+    const nama = norm(indexRow && indexRow.nama_opd);
+    return list.find((r) => norm(r.kode_opd) === kode) || list.find((r) => norm(r.nama_opd) === nama) || {};
+  }
+
   function parseMoney(value) {
     if (value == null) return 0;
     if (typeof value === 'number') return value;
@@ -447,10 +458,8 @@
     $('#stopNarasiButton')?.addEventListener('click', stopNarasiAI);
   }
 
-
-
   function renderMonitoringSection() {
-    return `<div class="rp-report-page"><div class="rp-page-head"><h2>MONITORING JADWAL PEMILIHAN</h2></div><div class="rp-page-body"><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Total Paket</div><div class="value" id="monitoring_total_paket">-</div></div><div class="rp-summary-box"><div class="label">Sedang Berjalan</div><div class="value" id="monitoring_sedang_berjalan">-</div></div><div class="rp-summary-box"><div class="label">Selesai</div><div class="value" id="monitoring_selesai">-</div></div></div><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Selesai Proses Pemilihan</div><div class="value" id="monitoring_selesai_proses_pemilihan">-</div></div><div class="rp-summary-box"><div class="label">Melewati Waktu Pemilihan</div><div class="value" id="monitoring_melewati_waktu_pemilihan">-</div></div><div class="rp-summary-box"><div class="label">Melebihi Target Pemilihan</div><div class="value" id="monitoring_melebihi_target_pemilihan">-</div></div></div><div class="rp-meta-grid"><div class="rp-meta-box"><div class="rp-meta-label">Sinkron Terakhir</div><div class="rp-meta-value" id="monitoring_source_sync_at" style="font-size:15px;">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Catatan Monitoring</div><div class="rp-meta-value" id="monitoring_catatan" style="font-size:15px;line-height:1.7;">-</div></div></div></div></div>`;
+    return `<div class="rp-report-page"><div class="rp-page-head"><h2>MONITORING JADWAL PEMILIHAN</h2></div><div class="rp-page-body"><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Total Paket</div><div class="value" id="monitoring_total_paket">-</div></div><div class="rp-summary-box"><div class="label">Sedang Berjalan</div><div class="value" id="monitoring_sedang_berjalan">-</div></div><div class="rp-summary-box"><div class="label">Selesai</div><div class="value" id="monitoring_selesai">-</div></div></div><div class="rp-report-summary"><div class="rp-summary-box"><div class="label">Belum Berjalan</div><div class="value" id="monitoring_belum_berjalan">-</div></div><div class="rp-summary-box"><div class="label">Melewati Waktu Pemilihan</div><div class="value" id="monitoring_melewati_waktu_pemilihan">-</div></div><div class="rp-summary-box"><div class="label">Melebihi Target Pemilihan</div><div class="value" id="monitoring_melebihi_target_pemilihan">-</div></div></div><div class="rp-meta-grid"><div class="rp-meta-box"><div class="rp-meta-label">Updated At</div><div class="rp-meta-value" id="monitoring_source_sync_at" style="font-size:15px;">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Catatan Monitoring</div><div class="rp-meta-value" id="monitoring_catatan" style="font-size:15px;line-height:1.7;">-</div></div></div></div></div>`;
   }
 
   function renderPlanningTables() {
@@ -466,10 +475,17 @@
         fetchSheet(CONFIG.SHEETS.index), fetchSheet(CONFIG.SHEETS.sirup), fetchSheet(CONFIG.SHEETS.perencanaan), fetchSheet(CONFIG.SHEETS.realisasi),
         fetchSheet(CONFIG.SHEETS.monitoring), fetchSheet(CONFIG.SHEETS.pelaku), fetchSheet(CONFIG.SHEETS.itkp), fetchSheet(CONFIG.SHEETS.analisis), fetchSheet(CONFIG.SHEETS.aiReport)
       ]);
+      const index = findRowById(indexRows, id);
       const data = {
-        index: findRowById(indexRows, id), sirup: findRowById(sirupRows, id), perencanaan: findRowById(perencanaanRows, id),
-        realisasi: findRowById(realisasiRows, id), monitoring_jadwal: findRowById(monitoringRows, id), pelaku: findRowById(pelakuRows, id), itkp: findRowById(itkpRows, id),
-        analisis_manual: findRowById(analisisRows, id), ai_report: findRowById(aiRows, id)
+        index,
+        sirup: findRowById(sirupRows, id),
+        perencanaan: findRowById(perencanaanRows, id),
+        realisasi: findRowById(realisasiRows, id),
+        monitoring_jadwal: findMonitoringRow(monitoringRows, index),
+        pelaku: findRowById(pelakuRows, id),
+        itkp: findRowById(itkpRows, id),
+        analisis_manual: findRowById(analisisRows, id),
+        ai_report: findRowById(aiRows, id)
       };
       if (!data.index.id_rapot) { setText('#status', 'Data report tidak ditemukan untuk ID: ' + id); return; }
       renderReportData(data);
@@ -504,13 +520,16 @@
     const rAng = [realisasi.realisasi_tender_seleksi, realisasi.realisasi_non_tender, realisasi.realisasi_epurchasing, realisasi.realisasi_pencatatan, realisasi.realisasi_swakelola].map(parseMoney);
     keys.forEach((k,i)=>{ setText(`#r_paket_${k}`, formatInteger(rPaket[i])); setText(`#r_anggaran_${k}`, formatMoney(rAng[i])); });
     setText('#r_total_paket', formatInteger(rPaket.reduce((a,b)=>a+b,0))); setText('#r_total_anggaran', formatMoney(rAng.reduce((a,b)=>a+b,0)));
+
     setText('#monitoring_total_paket', formatInteger(monitoring.total_paket));
-    setText('#monitoring_sedang_berjalan', formatInteger(monitoring.sedang_berjalan));
-    setText('#monitoring_selesai', formatInteger(monitoring.selesai));
-    setText('#monitoring_selesai_proses_pemilihan', formatInteger(monitoring.selesai_proses_pemilihan));
-    setText('#monitoring_melewati_waktu_pemilihan', formatInteger(monitoring.melewati_waktu_pemilihan));
-    setText('#monitoring_melebihi_target_pemilihan', formatInteger(monitoring.melebihi_target_pemilihan));
-    setText('#monitoring_source_sync_at', monitoring.source_sync_at || monitoring.updated_at || monitoring.timestamp || '-');
+    setText('#monitoring_sedang_berjalan', formatInteger(monitoring.total_berjalan || monitoring.sedang_berjalan));
+    setText('#monitoring_selesai', formatInteger(monitoring.total_selesai || monitoring.selesai));
+    setText('#monitoring_belum_berjalan', formatInteger(monitoring.total_belum || monitoring.belum_berjalan));
+    setText('#monitoring_melewati_waktu_pemilihan', formatInteger(monitoring.total_melewati || monitoring.melewati_waktu_pemilihan));
+    setText('#monitoring_melebihi_target_pemilihan', formatInteger(monitoring.total_meleibihi || monitoring.total_melebihi || monitoring.melebihi_target_pemilihan));
+    setText('#monitoring_source_sync_at', monitoring.updated_at || monitoring.source_sync_at || '-');
+    setText('#monitoring_catatan', monitoring.catatan_monitoring || '-');
+
     setText('#pelaku_jumlah', pelaku.jumlah_pp_ppk || '-'); setText('#pelaku_daftar', pelaku.daftar_pp_ppk || '-'); setHtml('#pelaku_file', renderLinkOnly(pelaku.link_dokumen_pendukung || pelaku.file_url || '', 'Dokumen Pendukung'));
     setHtml('#img_itkp', renderImageOrLink(itkp.file_screenshot || itkp.file_screenshot_itkp || itkp.file_url || '', 'ITKP'));
     setHtml('#analisis_manual', renderBullets(analisis.kesimpulan_progres || '-'));
