@@ -1,15 +1,12 @@
 (function () {
   const CONFIG = {
-    SHEET_IDS: {
-      main: '1ccDgtXNATxSYMZuDgd3polvRiTFNiFnjIGMP7b9qmrU',
-      monitoring: '181iiPjY6AiW1dMZIu14fouSzpPVB5Wwon-mmReU7v8I'
-    },
+    SHEET_ID: '1ccDgtXNATxSYMZuDgd3polvRiTFNiFnjIGMP7b9qmrU',
     SHEETS: {
       index: 'INDEX_RAPOT',
       sirup: 'SIRUP_STRUKTUR_ANGGARAN',
       perencanaan: 'PERENCANAAN',
       realisasi: 'REALISASI',
-      monitoring: 'JADWAL_P',
+      monitoring: 'MONITORING_JADWAL',
       pelaku: 'PELAKU',
       itkp: 'ITKP',
       analisis: 'ANALISIS_MANUAL',
@@ -89,15 +86,10 @@
     });
   }
 
-  function getSheetIdByName(sheetName) {
-    return sheetName === CONFIG.SHEETS.monitoring
-      ? CONFIG.SHEET_IDS.monitoring
-      : CONFIG.SHEET_IDS.main;
-  }
 
   function fetchSheet(sheetName) {
     return ensurePapa().then(() => new Promise((resolve, reject) => {
-      window.Papa.parse(csvUrlBySheetName(getSheetIdByName(sheetName), sheetName), {
+      window.Papa.parse(csvUrlBySheetName(CONFIG.SHEET_ID, sheetName), {
         download: true,
         header: true,
         skipEmptyLines: true,
@@ -381,9 +373,15 @@
 
   function findMonitoringRow(rows, indexRow) {
     const list = (rows || []).map(normalizeRecordKeys);
+    const idRapot = norm(indexRow && indexRow.id_rapot);
     const kode = norm(indexRow && indexRow.kode_opd);
     const nama = norm(indexRow && indexRow.nama_opd);
-    return list.find((r) => norm(r.kode_opd) === kode) || list.find((r) => norm(r.nama_opd) === nama) || {};
+    return list.find((r) => norm(r.id_rapot) === idRapot)
+      || list.find((r) => norm(r.kode_opd) === kode && norm(r.tahun) === norm(indexRow && indexRow.tahun) && norm(r.bulan) === norm(indexRow && indexRow.bulan))
+      || list.find((r) => norm(r.nama_opd) === nama && norm(r.tahun) === norm(indexRow && indexRow.tahun) && norm(r.bulan) === norm(indexRow && indexRow.bulan))
+      || list.find((r) => norm(r.kode_opd) === kode)
+      || list.find((r) => norm(r.nama_opd) === nama)
+      || {};
   }
 
   function parseMoney(value) {
@@ -522,11 +520,11 @@
     setText('#r_total_paket', formatInteger(rPaket.reduce((a,b)=>a+b,0))); setText('#r_total_anggaran', formatMoney(rAng.reduce((a,b)=>a+b,0)));
 
     setText('#monitoring_total_paket', formatInteger(monitoring.total_paket));
-    setText('#monitoring_sedang_berjalan', formatInteger(monitoring.total_berjalan || monitoring.sedang_berjalan));
-    setText('#monitoring_selesai', formatInteger(monitoring.total_selesai || monitoring.selesai));
-    setText('#monitoring_belum_berjalan', formatInteger(monitoring.total_belum || monitoring.belum_berjalan));
-    setText('#monitoring_melewati_waktu_pemilihan', formatInteger(monitoring.total_melewati || monitoring.melewati_waktu_pemilihan));
-    setText('#monitoring_melebihi_target_pemilihan', formatInteger(monitoring.total_meleibihi || monitoring.total_melebihi || monitoring.melebihi_target_pemilihan));
+    setText('#monitoring_sedang_berjalan', formatInteger(monitoring.sedang_berjalan || monitoring.total_berjalan));
+    setText('#monitoring_selesai', formatInteger(monitoring.selesai || monitoring.total_selesai));
+    setText('#monitoring_belum_berjalan', formatInteger(monitoring.belum_berjalan || monitoring.total_belum));
+    setText('#monitoring_melewati_waktu_pemilihan', formatInteger(monitoring.melewati_waktu_pemilihan || monitoring.total_melewati));
+    setText('#monitoring_melebihi_target_pemilihan', formatInteger(monitoring.melebihi_target_pemilihan || monitoring.total_meleibihi || monitoring.total_melebihi || monitoring.melewati_waktu_pe));
     setText('#monitoring_source_sync_at', monitoring.updated_at || monitoring.source_sync_at || '-');
     setText('#monitoring_catatan', monitoring.catatan_monitoring || '-');
 
