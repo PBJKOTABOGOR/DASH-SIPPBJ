@@ -6,7 +6,7 @@
   };
 
   const EKATALOG_MIN_LOADING_MS = 700;
-  const EKATALOG_PAGE_SIZE = 50;
+  const EKATALOG_PAGE_SIZE = 20;
   const EKATALOG_DETAIL_PAGE_SIZE = 10;
 
   window.__moduleInit = function ({ container }) {
