@@ -41,26 +41,26 @@ const APP_ROUTES = {
     js: 'modules/monitoring/itkp-ekontrak/itkp-ekontrak.js'
   },
 
-'monitoring-nontender': {
-  title: 'Non eTendering/Non ePurchasing',
-  subtitle: 'Monitoring realisasi paket Non Tender dan capaian ITKP perangkat daerah.',
-  type: 'module',
-  html: 'modules/monitoring/itkp-nontender/itkp-nontender.html',
-  css: 'modules/monitoring/itkp-nontender/itkp-nontender.css',
-  js: 'modules/monitoring/itkp-nontender/itkp-nontender.js'
-},
+  'monitoring-nontender': {
+    title: 'Non eTendering/Non ePurchasing',
+    subtitle: 'Monitoring realisasi paket Non Tender dan capaian ITKP perangkat daerah.',
+    type: 'module',
+    html: 'modules/monitoring/itkp-nontender/itkp-nontender.html',
+    css: 'modules/monitoring/itkp-nontender/itkp-nontender.css',
+    js: 'modules/monitoring/itkp-nontender/itkp-nontender.js'
+  },
 
-'rapor-pbj': {
-  title: 'Rapor PBJ',
-  subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
-  type: 'module',
-  html: 'modules/rapor-pbj/rapor-pbj.html',
-  css: 'modules/rapor-pbj/rapor-pbj.css',
-  js: 'modules/rapor-pbj/rapor-pbj.js',
-  externalScripts: [
-    'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
-  ]
-},
+  'rapor-pbj': {
+    title: 'Rapor PBJ',
+    subtitle: 'Portal laporan Rapor PBJ perangkat daerah.',
+    type: 'module',
+    html: 'modules/rapor-pbj/rapor-pbj.html',
+    css: 'modules/rapor-pbj/rapor-pbj.css',
+    js: 'modules/rapor-pbj/rapor-pbj.js',
+    externalScripts: [
+      'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
+    ]
+  },
 
   'monitoring-perencanaan': {
     title: 'Monitoring Realisasi',
@@ -80,14 +80,14 @@ const APP_ROUTES = {
     type: 'placeholder'
   },
 
-    'pemenang-pengadaan': {
-  title: 'Pemenang Pengadaan',
-  subtitle: 'Portal pencarian paket penyedia dan paket pengadaan aktif.',
-  type: 'module',
-  html: 'modules/pemenang-pengadaan/pemenang-pengadaan.html',
-  css: 'modules/pemenang-pengadaan/pemenang-pengadaan.css',
-  js: 'modules/pemenang-pengadaan/pemenang-pengadaan.js'
-},
+  'pemenang-pengadaan': {
+    title: 'Pemenang Pengadaan',
+    subtitle: 'Portal pencarian paket penyedia dan paket pengadaan aktif.',
+    type: 'module',
+    html: 'modules/pemenang-pengadaan/pemenang-pengadaan.html',
+    css: 'modules/pemenang-pengadaan/pemenang-pengadaan.css',
+    js: 'modules/pemenang-pengadaan/pemenang-pengadaan.js'
+  },
 
   'simulasi-procurement-stacker': {
     title: 'Procurement Stacker',
@@ -114,20 +114,19 @@ const APP_ROUTES = {
     url: 'https://pbjkotabogor.github.io/SIMPPK/login.html'
   },
 
-'rapor-pbj-input-internal': {
-  title: 'Input Rapor PBJ',
-  subtitle: 'Form internal pegawai untuk input dan upload dokumen Rapor PBJ.',
-  type: 'iframe',
-  url: 'https://script.google.com/macros/s/AKfycbx7r228pPRdeO6egj_6bDsJu0-V4TY64XiQOG0sZCjhTLexaUV-oqk3PJCKpc3oSsIbTA/exec?embed=1'
-},
+  'rapor-pbj-input-internal': {
+    title: 'Input Rapor PBJ',
+    subtitle: 'Form internal pegawai untuk input dan upload dokumen Rapor PBJ.',
+    type: 'iframe',
+    url: 'https://script.google.com/macros/s/AKfycbx7r228pPRdeO6egj_6bDsJu0-V4TY64XiQOG0sZCjhTLexaUV-oqk3PJCKpc3oSsIbTA/exec?embed=1'
+  },
 
-'rapor-pbj-qc-internal': {
-  title: 'QC Rapor PBJ',
-  subtitle: 'Panel internal QC untuk review dan persetujuan rapor.',
-  type: 'iframe',
-  url: 'https://script.google.com/macros/s/AKfycbx7r228pPRdeO6egj_6bDsJu0-V4TY64XiQOG0sZCjhTLexaUV-oqk3PJCKpc3oSsIbTA/exec?page=qc&embed=1'
-}
-
+  'rapor-pbj-qc-internal': {
+    title: 'QC Rapor PBJ',
+    subtitle: 'Panel internal QC untuk review dan persetujuan rapor.',
+    type: 'iframe',
+    url: 'https://script.google.com/macros/s/AKfycbx7r228pPRdeO6egj_6bDsJu0-V4TY64XiQOG0sZCjhTLexaUV-oqk3PJCKpc3oSsIbTA/exec?page=qc&embed=1'
+  }
 };
 
 const contentArea = document.getElementById('contentArea');
@@ -429,6 +428,11 @@ const DASHBOARD_SHEETS = {
     title: 'D_REALISASI',
     spreadsheetId: '1ccDgtXNATxSYMZuDgd3polvRiTFNiFnjIGMP7b9qmrU',
     gid: '325886021'
+  },
+  allprog: {
+    title: 'ALLPROG',
+    spreadsheetId: '14i9ni_b0X_3D681j_GHNxap2nfJBmIoaOmy8KNCIHRc',
+    gid: '693324486'
   }
 };
 
@@ -438,6 +442,15 @@ const DASHBOARD_STATE = {
   error: null,
   data: null,
   selectedItkpSatker: 'PEMERINTAH KOTA BOGOR'
+};
+
+const WARNING_MODAL_STATE = {
+  rows: [],
+  filteredRows: [],
+  type: '',
+  title: '',
+  page: 1,
+  pageSize: 10
 };
 
 const DASHBOARD_CONTEXT_KEY = 'traxpbj_dashboard_context';
@@ -528,7 +541,6 @@ function applyDashboardContextToModule(page, moduleContainer) {
     }, delay);
   });
 }
-
 
 function normalizeHeader(value) {
   return String(value || '')
@@ -717,6 +729,11 @@ async function fetchSheetRows(config) {
       normalized[normalizeHeader(cleanHeader)] = cell;
     });
 
+    // Simpan bentuk asli CSV supaya sheet tertentu yang kolomnya sudah pasti
+    // bisa dibaca berdasarkan posisi kolom. Ini penting untuk ALLPROG karena
+    // Google Visualization kadang membuat pencarian header menjadi terlalu longgar.
+    row.__headers = headers.map((header) => String(header || '').trim());
+    row.__cells = cells.map((cell) => String(cell || '').trim());
     row.__normalized = normalized;
     return row;
   }).filter((row) => {
@@ -917,7 +934,6 @@ function buildItkpProfile(row, fallbackName = 'PEMERINTAH KOTA BOGOR') {
   };
 }
 
-
 function isBlankDash(v) {
   const s = String(v || '').trim();
   return s === '' || s === '-';
@@ -1016,87 +1032,435 @@ function analyzeDashboardPackageStatuses(rows, metodeRup) {
 }
 
 function buildDashboardWarningSummary(planningRows, realRows, getFieldFn) {
-  const grouped = {};
-  const currentOrder = getCurrentMonthOrder();
-
-  (realRows || []).forEach((r) => {
-    const kode = String(getFieldFn(r, ['Kode RUP', 'kode_rup']) || '').trim();
-    if (!kode) return;
-
-    if (!grouped[kode]) {
-      grouped[kode] = {
-        recall_paket: 0,
-        total_realisasi: 0,
-        rows: [],
-        first_order: null
-      };
-    }
-
-    const nilai = toNumber(getFieldFn(r, ['Nilai Realisasi', 'nilai_realisasi', 'Total Realisasi']));
-    const waktuOrder = getMonthOrder(getFieldFn(r, ['Waktu Pemilihan', 'waktu_pemilihan']));
-
-    grouped[kode].recall_paket += 1;
-    grouped[kode].total_realisasi += nilai;
-
-    if (waktuOrder > 0) {
-      if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
-        grouped[kode].first_order = waktuOrder;
-      }
-    }
-
-    grouped[kode].rows.push({
-      status_paket: String(getFieldFn(r, ['Status Paket', 'status_paket']) || '').trim(),
-      sumber_transaksi: String(getFieldFn(r, ['Sumber Transaksi', 'sumber_transaksi']) || '').trim(),
-      bast: String(getFieldFn(r, ['BAST', 'dok_realisasi']) || '').trim()
-    });
-  });
-
-  const result = {
+  return {
     sedangBerjalan: 0,
     selesaiProsesPemilihan: 0,
     melewatiWaktuPemilihan: 0,
     melebihiTargetPemilihan: 0,
     melebihiPaguRealisasi: 0
   };
+}
 
-  (planningRows || []).forEach((r) => {
-    const kode = String(getFieldFn(r, ['Kode RUP', 'kode_rup']) || '').trim();
-    if (!kode) return;
+function normalizeSatkerName(value) {
+  return String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, ' ');
+}
 
-    const pagu = toNumber(getFieldFn(r, ['Nilai Pagu', 'Pagu', 'Total Pagu']));
-    const waktuPemilihanOrder = getMonthOrder(getFieldFn(r, ['Waktu Pemilihan', 'waktu_pemilihan']));
-    const metode = String(getFieldFn(r, ['Metode Pengadaan', 'metode_pengadaan']) || '').trim();
+function getAllprogCell(row, index, candidates) {
+  const cells = Array.isArray(row && row.__cells) ? row.__cells : [];
+  const valueByIndex = String(cells[index] || '').trim();
 
-    const real = grouped[kode] || { recall_paket: 0, total_realisasi: 0, rows: [], first_order: null };
-    const detail = analyzeDashboardPackageStatuses(real.rows || [], metode);
+  // ALLPROG punya struktur kolom tetap:
+  // A Cara Pengadaan, B Jenis Pengadaan, C Kode RUP, D Satuan Kerja,
+  // E Metode Pengadaan, F Sumber Transaksi, G Nama Paket, H Nilai Pagu,
+  // I Nilai Realisasi, J Status Paket, K Waktu Pemilihan, L Warning.
+  // Jadi popup dan export harus ambil dari posisi kolom ini, bukan tebakan header.
+  if (valueByIndex) return valueByIndex;
 
-    if (real.recall_paket > 0) {
-      if (detail.berjalan > 0) result.sedangBerjalan += 1;
-      else if (detail.selesaiPemilihan > 0) result.selesaiProsesPemilihan += 1;
+  return getField(row, candidates || []);
+}
+
+function getAllprogSatker(row) {
+  return getAllprogCell(row, 3, [
+    'Satuan Kerja',
+    'Nama Satuan Kerja',
+    'Satker',
+    'Nama Satker',
+    'OPD',
+    'Nama OPD',
+    'Perangkat Daerah',
+    'Unit Kerja'
+  ]);
+}
+
+function mapAllprogRows(rows, selectedProfileName, selectedIsCity) {
+  const selectedKey = normalizeSatkerName(selectedProfileName);
+
+  return (rows || []).map((row) => ({
+    caraPengadaan: getAllprogCell(row, 0, ['Cara Pengadaan']),
+    jenisPengadaan: getAllprogCell(row, 1, ['Jenis Pengadaan']),
+    kodeRup: getAllprogCell(row, 2, ['Kode RUP', 'Kode Rup']),
+    satker: getAllprogSatker(row),
+    metodePengadaan: getAllprogCell(row, 4, ['Metode Pengadaan']),
+    sumberTransaksi: getAllprogCell(row, 5, ['Sumber Transaksi']),
+    namaPaket: getAllprogCell(row, 6, ['Nama Paket']),
+    nilaiPagu: toNumber(getAllprogCell(row, 7, ['Nilai Pagu', 'Pagu'])),
+    nilaiRealisasi: toNumber(getAllprogCell(row, 8, ['Nilai Realisasi', 'Realisasi'])),
+    statusPaket: getAllprogCell(row, 9, ['Status Paket', 'Status']),
+    waktuPemilihan: getAllprogCell(row, 10, ['Waktu Pemilihan', 'Waktu_Pemilihan', 'Waktu Pemilihan Paket']),
+    warning: getAllprogCell(row, 11, ['Warning'])
+  })).filter((item) => {
+    if (selectedIsCity) return true;
+    return normalizeSatkerName(item.satker) === selectedKey;
+  });
+}
+
+function normalizeWarningText(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function buildAllprogWarningSummary(rows) {
+  const summary = {
+    totalPaket: (rows || []).length,
+    selesai: 0,
+    sedangBerjalan: 0,
+    belumBerjalan: 0,
+    melewatiWaktuPemilihan: 0,
+    melebihiTargetPemilihan: 0
+  };
+
+  (rows || []).forEach((item) => {
+    const warning = normalizeWarningText(item.warning);
+
+    if (warning === 'selesai') {
+      summary.selesai += 1;
+      return;
     }
-
-    if (real.recall_paket === 0 && waktuPemilihanOrder > 0 && waktuPemilihanOrder < currentOrder) {
-      result.melewatiWaktuPemilihan += 1;
+    if (warning === 'sedang berjalan') {
+      summary.sedangBerjalan += 1;
+      return;
     }
-
-    if (real.recall_paket > 0 && real.first_order && waktuPemilihanOrder > 0 && real.first_order < waktuPemilihanOrder) {
-      result.melebihiTargetPemilihan += 1;
+    if (warning === 'belum berjalan') {
+      summary.belumBerjalan += 1;
+      return;
     }
-
-    if (real.recall_paket > 0 && real.total_realisasi > pagu) {
-      result.melebihiPaguRealisasi += 1;
+    if (warning === 'melewati waktu pemilihan') {
+      summary.melewatiWaktuPemilihan += 1;
+      return;
+    }
+    if (warning === 'melebihi target pemilihan') {
+      summary.melebihiTargetPemilihan += 1;
     }
   });
 
-  return result;
+  return summary;
 }
 
+function getWarningTypeTitle(type) {
+  return ({
+    selesai: 'Selesai',
+    sedangBerjalan: 'Sedang Berjalan',
+    belumBerjalan: 'Belum Berjalan',
+    melewatiWaktuPemilihan: 'Melewati Waktu Pemilihan',
+    melebihiTargetPemilihan: 'Melebihi Target Pemilihan'
+  })[type] || 'Detail Paket Warning';
+}
+
+function filterWarningRowsByType(rows, type) {
+  return (rows || []).filter((item) => {
+    const warning = normalizeWarningText(item.warning);
+    if (type === 'selesai') return warning === 'selesai';
+    if (type === 'sedangBerjalan') return warning === 'sedang berjalan';
+    if (type === 'belumBerjalan') return warning === 'belum berjalan';
+    if (type === 'melewatiWaktuPemilihan') return warning === 'melewati waktu pemilihan';
+    if (type === 'melebihiTargetPemilihan') return warning === 'melebihi target pemilihan';
+    return false;
+  });
+}
+
+function ensureWarningModalStyle() {
+  if (document.getElementById('warningModalStyle')) return;
+
+  const style = document.createElement('style');
+  style.id = 'warningModalStyle';
+  style.textContent = `
+    .warning-modal-overlay{position:fixed;inset:0;z-index:999999;background:rgba(15,23,42,.42);display:flex;align-items:center;justify-content:center;padding:24px;}
+    .warning-modal-card{width:min(1180px,100%);max-height:min(86vh,920px);background:#fff;border-radius:24px;border:1px solid #dbe7f3;box-shadow:0 26px 60px rgba(15,23,42,.22);display:flex;flex-direction:column;overflow:hidden;}
+    .warning-modal-header,.warning-modal-toolbar,.warning-modal-footer{padding:14px 18px;}
+    .warning-modal-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1px solid #e8eff7;}
+    .warning-modal-kicker{color:#64748b;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;}
+    .warning-modal-header h3{margin:6px 0 0;color:#102544;font-size:28px;line-height:1.1;}
+    .warning-modal-close{border:none;width:38px;height:38px;border-radius:999px;cursor:pointer;background:#eef5fb;color:#123a72;font-size:24px;}
+    .warning-modal-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #e8eff7;}
+    .warning-modal-caption{color:#64748b;font-size:13px;font-weight:700;}
+    .warning-modal-button{border:none;background:#123a72;color:#fff;border-radius:12px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:800;}
+    .warning-modal-button:disabled{opacity:.45;cursor:not-allowed;}
+    .warning-modal-body{padding:16px 18px;overflow:auto;min-height:220px;}
+    .warning-empty{padding:24px;border:1px dashed #dbe7f3;border-radius:18px;color:#64748b;font-weight:700;}
+    .warning-table-top-scroll{height:16px;overflow-x:auto;overflow-y:hidden;margin:0 0 8px;border-radius:999px;background:#f3f7fc;}
+    .warning-table-top-scroll-inner{height:1px;min-width:1280px;}
+    .warning-table-wrap{overflow:auto;}
+    .warning-table{width:100%;border-collapse:collapse;min-width:1280px;}
+    .warning-table th,.warning-table td{padding:10px 12px;border-bottom:1px solid #edf3f9;text-align:left;font-size:13px;vertical-align:top;}
+    .warning-table th{position:sticky;top:0;background:#f8fbff;color:#123a72;font-size:12px;text-transform:uppercase;letter-spacing:.04em;z-index:2;}
+    .warning-table tbody tr.warning-row--selesai{background:linear-gradient(90deg,rgba(34,197,94,.11),rgba(255,255,255,.96));}
+    .warning-table tbody tr.warning-row--sedang{background:linear-gradient(90deg,rgba(59,130,246,.10),rgba(255,255,255,.96));}
+    .warning-table tbody tr.warning-row--belum{background:linear-gradient(90deg,rgba(100,116,139,.10),rgba(255,255,255,.96));}
+    .warning-table tbody tr.warning-row--melewati{background:linear-gradient(90deg,rgba(239,68,68,.12),rgba(255,255,255,.96));}
+    .warning-table tbody tr.warning-row--melebihi{background:linear-gradient(90deg,rgba(245,158,11,.14),rgba(255,255,255,.96));}
+    .warning-badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900;white-space:nowrap;}
+    .warning-badge--selesai{background:#dcfce7;color:#166534;}
+    .warning-badge--sedang{background:#dbeafe;color:#1d4ed8;}
+    .warning-badge--belum{background:#f1f5f9;color:#475569;}
+    .warning-badge--melewati{background:#fee2e2;color:#b91c1c;}
+    .warning-badge--melebihi{background:#fef3c7;color:#b45309;}
+    .summary-stat--clickable{width:100%;text-align:left;cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;}
+    .summary-stat--clickable:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(18,58,114,.10);border-color:#b8d4ef;}
+    .summary-stat--success{border-left-color:#22c55e!important;}
+    .summary-stat--success b{color:#166534!important;}
+    .summary-stat--info{border-left-color:#3b82f6!important;}
+    .summary-stat--info b{color:#1d4ed8!important;}
+    .summary-stat--muted{border-left-color:#94a3b8!important;}
+    .summary-stat--muted b{color:#475569!important;}
+    @media (max-width:900px){.warning-modal-card{max-height:92vh;border-radius:18px;}.warning-modal-header h3{font-size:22px;}}
+  `;
+  document.head.appendChild(style);
+}
+
+function closeWarningModal() {
+  const overlay = document.getElementById('warningModalOverlay');
+  if (overlay) overlay.remove();
+}
+
+
+function getWarningUiKey(value) {
+  const warning = normalizeWarningText(value);
+  if (warning === 'selesai') return 'selesai';
+  if (warning === 'sedang berjalan') return 'sedang';
+  if (warning === 'belum berjalan') return 'belum';
+  if (warning === 'melewati waktu pemilihan') return 'melewati';
+  if (warning === 'melebihi target pemilihan') return 'melebihi';
+  return 'belum';
+}
+
+function renderWarningBadge(value) {
+  const key = getWarningUiKey(value);
+  return `<span class="warning-badge warning-badge--${key}">${escapeHtml(value || '-')}</span>`;
+}
+
+function syncWarningModalScrollers() {
+  const topScroll = document.getElementById('warningTableTopScroll');
+  const topInner = document.getElementById('warningTableTopScrollInner');
+  const tableWrap = document.getElementById('warningTableWrap');
+  const table = tableWrap ? tableWrap.querySelector('.warning-table') : null;
+  if (!topScroll || !topInner || !tableWrap || !table) return;
+
+  topInner.style.width = `${Math.max(table.scrollWidth, tableWrap.scrollWidth)}px`;
+
+  let syncing = false;
+  topScroll.onscroll = () => {
+    if (syncing) return;
+    syncing = true;
+    tableWrap.scrollLeft = topScroll.scrollLeft;
+    syncing = false;
+  };
+  tableWrap.onscroll = () => {
+    if (syncing) return;
+    syncing = true;
+    topScroll.scrollLeft = tableWrap.scrollLeft;
+    syncing = false;
+  };
+}
+
+function renderWarningModalPage() {
+  const body = document.getElementById('warningModalBody');
+  const titleEl = document.getElementById('warningModalTitle');
+  const pageInfo = document.getElementById('warningModalPageInfo');
+  const prevBtn = document.getElementById('warningModalPrev');
+  const nextBtn = document.getElementById('warningModalNext');
+
+  if (!body || !titleEl) return;
+
+  const totalRows = WARNING_MODAL_STATE.filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / WARNING_MODAL_STATE.pageSize));
+  WARNING_MODAL_STATE.page = Math.min(Math.max(1, WARNING_MODAL_STATE.page), totalPages);
+
+  const start = (WARNING_MODAL_STATE.page - 1) * WARNING_MODAL_STATE.pageSize;
+  const pageRows = WARNING_MODAL_STATE.filteredRows.slice(start, start + WARNING_MODAL_STATE.pageSize);
+
+  titleEl.textContent = `${WARNING_MODAL_STATE.title} · ${totalRows.toLocaleString('id-ID')} paket`;
+
+  if (!pageRows.length) {
+    body.innerHTML = `<div class="warning-empty">Tidak ada data untuk kategori ini.</div>`;
+  } else {
+    body.innerHTML = `
+      <div class="warning-table-top-scroll" id="warningTableTopScroll"><div class="warning-table-top-scroll-inner" id="warningTableTopScrollInner"></div></div>
+      <div class="warning-table-wrap" id="warningTableWrap">
+        <table class="warning-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Cara Pengadaan</th>
+              <th>Jenis Pengadaan</th>
+              <th>Kode RUP</th>
+              <th>Satuan Kerja</th>
+              <th>Metode Pengadaan</th>
+              <th>Sumber Transaksi</th>
+              <th>Nama Paket</th>
+              <th>Nilai Pagu</th>
+              <th>Nilai Realisasi</th>
+              <th>Status Paket</th>
+              <th>Waktu Pemilihan</th>
+              <th>Warning</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageRows.map((item, index) => `
+              <tr class="warning-row--${getWarningUiKey(item.warning)}">
+                <td>${start + index + 1}</td>
+                <td>${escapeHtml(item.caraPengadaan || '-')}</td>
+                <td>${escapeHtml(item.jenisPengadaan || '-')}</td>
+                <td>${escapeHtml(item.kodeRup || '-')}</td>
+                <td>${escapeHtml(item.satker || '-')}</td>
+                <td>${escapeHtml(item.metodePengadaan || '-')}</td>
+                <td>${escapeHtml(item.sumberTransaksi || '-')}</td>
+                <td>${escapeHtml(item.namaPaket || '-')}</td>
+                <td>${escapeHtml(formatMoney(item.nilaiPagu || 0))}</td>
+                <td>${escapeHtml(formatMoney(item.nilaiRealisasi || 0))}</td>
+                <td>${escapeHtml(item.statusPaket || '-')}</td>
+                <td>${escapeHtml(item.waktuPemilihan || '-')}</td>
+                <td>${renderWarningBadge(item.warning)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  window.setTimeout(syncWarningModalScrollers, 0);
+
+  if (pageInfo) pageInfo.textContent = `Page ${WARNING_MODAL_STATE.page} / ${totalPages}`;
+  if (prevBtn) prevBtn.disabled = WARNING_MODAL_STATE.page <= 1;
+  if (nextBtn) nextBtn.disabled = WARNING_MODAL_STATE.page >= totalPages;
+}
+
+function ensureXlsxLibrary() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById('xlsxLibraryLoader');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(window.XLSX), { once: true });
+      existing.addEventListener('error', reject, { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'xlsxLibraryLoader';
+    script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    script.onload = () => resolve(window.XLSX);
+    script.onerror = () => reject(new Error('Gagal memuat library XLSX'));
+    document.body.appendChild(script);
+  });
+}
+
+async function exportWarningRowsToXlsx() {
+  await ensureXlsxLibrary();
+  const rows = WARNING_MODAL_STATE.filteredRows.map((item) => ({
+    'Satuan Kerja': item.satker || '',
+    'Cara Pengadaan': item.caraPengadaan || '',
+    'Jenis Pengadaan': item.jenisPengadaan || '',
+    'Kode RUP': item.kodeRup || '',
+    'Metode Pengadaan': item.metodePengadaan || '',
+    'Sumber Transaksi': item.sumberTransaksi || '',
+    'Nama Paket': item.namaPaket || '',
+    'Nilai Pagu': item.nilaiPagu || 0,
+    'Nilai Realisasi': item.nilaiRealisasi || 0,
+    'Status Paket': item.statusPaket || '',
+    'Waktu Pemilihan': item.waktuPemilihan || '',
+    'Warning': item.warning || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Warning');
+  const safeName = WARNING_MODAL_STATE.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+  XLSX.writeFile(wb, `${safeName || 'warning'}_${Date.now()}.xlsx`);
+}
+
+
+async function exportAllWarningRowsToXlsx() {
+  await ensureXlsxLibrary();
+  const rows = ((DASHBOARD_STATE.data && DASHBOARD_STATE.data.allprogRows) || []).map((item) => ({
+    'Satuan Kerja': item.satker || '',
+    'Cara Pengadaan': item.caraPengadaan || '',
+    'Jenis Pengadaan': item.jenisPengadaan || '',
+    'Kode RUP': item.kodeRup || '',
+    'Metode Pengadaan': item.metodePengadaan || '',
+    'Sumber Transaksi': item.sumberTransaksi || '',
+    'Nama Paket': item.namaPaket || '',
+    'Nilai Pagu': item.nilaiPagu || 0,
+    'Nilai Realisasi': item.nilaiRealisasi || 0,
+    'Status Paket': item.statusPaket || '',
+    'Waktu Pemilihan': item.waktuPemilihan || '',
+    'Warning': item.warning || ''
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Semua Paket');
+  XLSX.writeFile(wb, `semua_paket_warning_${Date.now()}.xlsx`);
+}
+
+
+function openWarningModal(type) {
+  ensureWarningModalStyle();
+  const rows = filterWarningRowsByType((DASHBOARD_STATE.data && DASHBOARD_STATE.data.allprogRows) || [], type);
+  WARNING_MODAL_STATE.rows = rows;
+  WARNING_MODAL_STATE.filteredRows = rows;
+  WARNING_MODAL_STATE.type = type;
+  WARNING_MODAL_STATE.title = getWarningTypeTitle(type);
+  WARNING_MODAL_STATE.page = 1;
+  closeWarningModal();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'warningModalOverlay';
+  overlay.className = 'warning-modal-overlay';
+  overlay.innerHTML = `
+    <div class="warning-modal-card" role="dialog" aria-modal="true">
+      <div class="warning-modal-header">
+        <div>
+          <div class="warning-modal-kicker">Detail Paket Warning</div>
+          <h3 id="warningModalTitle">${escapeHtml(WARNING_MODAL_STATE.title)}</h3>
+        </div>
+        <button type="button" class="warning-modal-close" id="warningModalClose">×</button>
+      </div>
+      <div class="warning-modal-toolbar">
+        <div class="warning-modal-caption">Data mengikuti satuan kerja yang sedang dipilih di dashboard ITKP.</div>
+        <button type="button" class="warning-modal-button" id="warningModalExport">Export Status Ini</button>
+        <button type="button" class="warning-modal-button warning-modal-button--all" id="warningModalExportAll">Export Semua Paket</button>
+      </div>
+      <div class="warning-modal-body" id="warningModalBody"></div>
+      <div class="warning-modal-footer">
+        <button type="button" class="warning-modal-button" id="warningModalPrev">Prev</button>
+        <span id="warningModalPageInfo">Page 1 / 1</span>
+        <button type="button" class="warning-modal-button" id="warningModalNext">Next</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  renderWarningModalPage();
+
+  document.getElementById('warningModalClose')?.addEventListener('click', closeWarningModal);
+  document.getElementById('warningModalPrev')?.addEventListener('click', () => {
+    WARNING_MODAL_STATE.page -= 1;
+    renderWarningModalPage();
+  });
+  document.getElementById('warningModalNext')?.addEventListener('click', () => {
+    WARNING_MODAL_STATE.page += 1;
+    renderWarningModalPage();
+  });
+  document.getElementById('warningModalExport')?.addEventListener('click', () => {
+    exportWarningRowsToXlsx().catch((error) => alert(error.message || 'Gagal export XLSX'));
+  });
+  document.getElementById('warningModalExportAll')?.addEventListener('click', () => {
+    exportAllWarningRowsToXlsx().catch((error) => alert(error.message || 'Gagal export XLSX'));
+  });
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closeWarningModal();
+  });
+}
 
 function analyzeDashboardData(raw) {
   const itkpAllRows = raw.itkp || [];
   const subOpdAllRows = raw.itkpSubOpd || [];
   const planningRows = raw.perencanaan || [];
   const realRows = raw.realisasi || [];
+  const allprogAllRows = raw.allprog || [];
 
   const getSatker = (row) => getField(row, ['Satuan Kerja', 'Nama Satuan Kerja', 'nama_satker']);
   const getMetode = (row) => getField(row, ['Metode Pengadaan', 'mtd_pemilihan', 'Sumber Transaksi']);
@@ -1118,10 +1482,6 @@ function analyzeDashboardData(raw) {
   DASHBOARD_STATE.selectedItkpSatker = selectedProfile.name;
 
   const selectedIsCity = isCityAggregateName(selectedProfile.name);
-  const normalizeSatkerName = (value) => String(value || '')
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, ' ');
 
   const selectedSatkerKey = normalizeSatkerName(selectedProfile.name);
   const isSelectedSatkerRow = (row) => {
@@ -1154,13 +1514,15 @@ function analyzeDashboardData(raw) {
   const topItkp = [...scoreRows].sort((a, b) => b.score - a.score).slice(0, 8);
   const lowItkp = [...scoreRows].sort((a, b) => a.score - b.score).slice(0, 8);
 
-  const warningSummary = buildDashboardWarningSummary(scopedPlanningRows, scopedRealRows, getField);
+  const scopedAllprogRows = mapAllprogRows(allprogAllRows, selectedProfile.name, selectedIsCity);
+  const warningSummary = buildAllprogWarningSummary(scopedAllprogRows);
 
   return {
     itkpRows: itkpOpdRows,
     itkpSubOpdRows: subOpdRows,
     planningRows,
     realRows,
+    allprogRaw: allprogAllRows,
     totalOpd: itkpOpdRows.length,
     totalSubOpd: subOpdRows.length,
     scopeName: selectedProfile.name,
@@ -1186,7 +1548,8 @@ function analyzeDashboardData(raw) {
     bySatkerReal,
     topItkp,
     lowItkp,
-    warningSummary
+    warningSummary,
+    allprogRows: scopedAllprogRows
   };
 }
 
@@ -1198,14 +1561,15 @@ async function loadDashboardData(force = false) {
   DASHBOARD_STATE.error = null;
 
   try {
-    const [itkp, itkpSubOpd, perencanaan, realisasi] = await Promise.all([
+    const [itkp, itkpSubOpd, perencanaan, realisasi, allprog] = await Promise.all([
       fetchSheetRows(DASHBOARD_SHEETS.itkp),
       fetchSheetRows(DASHBOARD_SHEETS.itkpSubOpd),
       fetchSheetRows(DASHBOARD_SHEETS.perencanaan),
-      fetchSheetRows(DASHBOARD_SHEETS.realisasi)
+      fetchSheetRows(DASHBOARD_SHEETS.realisasi),
+      fetchSheetRows(DASHBOARD_SHEETS.allprog)
     ]);
 
-    DASHBOARD_STATE.data = analyzeDashboardData({ itkp, itkpSubOpd, perencanaan, realisasi });
+    DASHBOARD_STATE.data = analyzeDashboardData({ itkp, itkpSubOpd, perencanaan, realisasi, allprog });
     DASHBOARD_STATE.loadedAt = new Date();
     return DASHBOARD_STATE.data;
   } catch (error) {
@@ -1303,7 +1667,6 @@ async function renderDashboard(force = false) {
     }
   }
 }
-
 
 function renderDashboardReady(data) {
   const lastUpdate = DASHBOARD_STATE.loadedAt
@@ -1480,7 +1843,6 @@ function renderDashboardReady(data) {
   `;
 }
 
-
 function bindDashboardEvents() {
   const refresh = document.getElementById('refreshDashboardButton');
 
@@ -1502,7 +1864,8 @@ function bindDashboardEvents() {
           : DASHBOARD_STATE.data.itkpRows,
         itkpSubOpd: DASHBOARD_STATE.data.itkpSubOpdRows,
         perencanaan: DASHBOARD_STATE.data.planningRows,
-        realisasi: DASHBOARD_STATE.data.realRows
+        realisasi: DASHBOARD_STATE.data.realRows,
+        allprog: DASHBOARD_STATE.data.allprogRaw
       });
       renderDashboardReady(DASHBOARD_STATE.data);
       bindDashboardEvents();
@@ -1609,6 +1972,12 @@ function bindDashboardEvents() {
     item.addEventListener('focus', () => setActiveDistribution(item.dataset));
   });
 
+  contentArea.querySelectorAll('[data-warning-type]').forEach((item) => {
+    item.addEventListener('click', () => {
+      openWarningModal(item.dataset.warningType || '');
+    });
+  });
+
   contentArea.querySelectorAll('[data-quick], [data-route], [data-external]').forEach((item) => {
     item.addEventListener('click', () => {
       const externalUrl = item.dataset.external;
@@ -1618,7 +1987,10 @@ function bindDashboardEvents() {
       }
 
       const route = item.dataset.quick || item.dataset.route;
-      if (route) { persistDashboardContext(); loadPage(route); }
+      if (route) {
+        persistDashboardContext();
+        loadPage(route);
+      }
     });
   });
 }
@@ -1649,7 +2021,6 @@ function renderSmallMetric(label, value, desc, percent = 0) {
     </div>
   `;
 }
-
 
 function getMethodPalette(index) {
   const palette = [
@@ -1723,12 +2094,21 @@ function renderInfoStat(label, value, desc, tone = '', meta = '') {
 
 function renderQuickSummaryCard(data, scopeLabel, scopeDesc) {
   const warning = data.warningSummary || {
+    totalPaket: (data.allprogRows || []).length,
+    selesai: 0,
     sedangBerjalan: 0,
-    selesaiProsesPemilihan: 0,
+    belumBerjalan: 0,
     melewatiWaktuPemilihan: 0,
-    melebihiTargetPemilihan: 0,
-    melebihiPaguRealisasi: 0
+    melebihiTargetPemilihan: 0
   };
+
+  const renderWarningCard = (type, label, value, desc, tone) => `
+    <button type="button" class="summary-stat summary-stat--clickable ${tone ? `summary-stat--${tone}` : ''}" data-warning-type="${type}">
+      <span class="summary-stat-label">${escapeHtml(label)}</span>
+      <b>${escapeHtml(formatNumber(value))}</b>
+      <small>${escapeHtml(desc)}</small>
+    </button>
+  `;
 
   return `
     <div class="card">
@@ -1736,22 +2116,21 @@ function renderQuickSummaryCard(data, scopeLabel, scopeDesc) {
         <div>
           <span class="section-kicker">Paket Warning · ${escapeHtml(scopeLabel)}</span>
           <h3>Paket Warning</h3>
-          <p class="section-subnote">${escapeHtml(scopeDesc)}.</p>
+          <p class="section-subnote">Klik salah satu status untuk melihat daftar paketnya.</p>
         </div>
-        <span class="soft-pill soft-pill--${getToneByPercent(data.realisasiPersen)}">Serapan ${formatPercent(data.realisasiPersen)}</span>
+        <span class="soft-pill">${formatNumber(warning.totalPaket)} paket</span>
       </div>
 
       <div class="summary-stat-grid summary-stat-grid--warning">
-        ${renderInfoStat('Paket Sedang Berjalan', formatNumber(warning.sedangBerjalan), 'Paket realisasi masih berjalan/proses', warning.sedangBerjalan > 0 ? 'warning' : '')}
-        ${renderInfoStat('Paket Selesai Proses Pemilihan', formatNumber(warning.selesaiProsesPemilihan), 'Sudah selesai pemilihan, BAST belum terisi', warning.selesaiProsesPemilihan > 0 ? 'warning' : '')}
-        ${renderInfoStat('Paket Melewati Waktu Pemilihan', formatNumber(warning.melewatiWaktuPemilihan), 'Belum ada realisasi tapi jadwal sudah terlewati', warning.melewatiWaktuPemilihan > 0 ? 'danger' : '')}
-        ${renderInfoStat('Paket Melebihi Target Pemilihan', formatNumber(warning.melebihiTargetPemilihan), 'Realisasi lebih cepat dari jadwal; cek kembali kualitas perencanaannya', warning.melebihiTargetPemilihan > 0 ? 'warning' : '')}
-        ${renderInfoStat('Paket Melebihi Pagu Realisasi', formatNumber(warning.melebihiPaguRealisasi), 'Nilai realisasi sudah melampaui pagu perencanaan', warning.melebihiPaguRealisasi > 0 ? 'danger' : '')}
+        ${renderWarningCard('selesai', 'Selesai', warning.selesai, 'Paket sudah selesai/prosesnya sudah tuntas.', warning.selesai > 0 ? 'success' : '')}
+        ${renderWarningCard('sedangBerjalan', 'Sedang Berjalan', warning.sedangBerjalan, 'Paket sudah ada proses/realisasi dan masih berjalan.', warning.sedangBerjalan > 0 ? 'info' : '')}
+        ${renderWarningCard('belumBerjalan', 'Belum Berjalan', warning.belumBerjalan, 'Paket belum ada proses/realisasi yang tercatat.', 'muted')}
+        ${renderWarningCard('melewatiWaktuPemilihan', 'Melewati Waktu Pemilihan', warning.melewatiWaktuPemilihan, 'Jadwal pemilihan sudah lewat, tapi paket belum selesai/bergerak sesuai data.', warning.melewatiWaktuPemilihan > 0 ? 'danger' : '')}
+        ${renderWarningCard('melebihiTargetPemilihan', 'Melebihi Target Pemilihan', warning.melebihiTargetPemilihan, 'Realisasi/proses muncul lebih cepat dari jadwal pemilihan yang direncanakan.', warning.melebihiTargetPemilihan > 0 ? 'warning' : '')}
       </div>
     </div>
   `;
 }
-
 
 function renderDistributionCard(data, scopeLabel) {
   const methodRows = buildMethodComparisonRows(data).filter((item) => item.paguValue > 0).slice(0, 6);
@@ -1851,7 +2230,7 @@ function renderDistributionCard(data, scopeLabel) {
             <div class="distribution-donut-center">
               <span>Total Pagu</span>
               <b>${escapeHtml(formatCompactMetric(data.totalPagu))}</b>
-              
+              <small>Klik metode di kanan</small>
             </div>
           </div>
         </div>
@@ -1875,7 +2254,6 @@ function renderDistributionCard(data, scopeLabel) {
     </div>
   `;
 }
-
 
 function renderMethodComparisonCard(data, scopeLabel) {
   const rows = buildMethodComparisonRows(data)
@@ -1947,9 +2325,6 @@ function renderMethodComparisonCard(data, scopeLabel) {
   `;
 }
 
-
-
-
 function renderDimension(item) {
   const percent = item.max > 0 ? Math.min(100, (toNumber(item.value) / item.max) * 100) : 0;
   const route = item.route || '';
@@ -1974,7 +2349,7 @@ function renderDimension(item) {
         </div>
         ${detailHtml ? `<div class="dim-detail">${detailHtml}</div>` : ''}
       </div>
-      <div class="dim-value">${toNumber(item.value).toLocaleString('id-ID', { maximumFractionDigits: 2 })}/${item.max}</div>
+      <div class="dim-value">${Math.round(toNumber(item.value)).toLocaleString('id-ID')}/${item.max}</div>
     </button>
   `;
 }
@@ -2470,7 +2845,6 @@ async function loadPage(key) {
     }
   }
 }
-
 
 function showSecretLogin() {
   if (!secretLoginOverlay) return;
