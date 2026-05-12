@@ -76,8 +76,9 @@ const APP_ROUTES = {
 
   'monitoring-konsolidasi': {
     title: 'Monitoring Paket Konsolidasi',
-    subtitle: 'Halaman ini disiapkan untuk monitoring paket konsolidasi.',
-    type: 'placeholder'
+    subtitle: 'Pemantauan data paket konsolidasi ATK.',
+    type: 'iframe',
+    url: 'https://pbjkotabogor.github.io/atk-monitoring/'
   },
 
   'pemenang-pengadaan': {
