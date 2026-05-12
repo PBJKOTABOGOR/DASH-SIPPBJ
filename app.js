@@ -2454,6 +2454,7 @@ function renderIframePage(page) {
   const lowerUrl = String(page.url || '').toLowerCase();
   const isSimNontender = lowerUrl.includes('simppk');
   const isInternalRapor = lowerUrl.includes('script.google.com/macros');
+  const isFullPageIframe = Boolean(page.fullPage);
   const iframeId = isSimNontender ? 'simppkFrame' : (isInternalRapor ? 'internalRaporFrame' : 'genericEmbedFrame');
 
   if (isInternalRapor) {
@@ -2464,6 +2465,22 @@ function renderIframePage(page) {
           <iframe
             id="${iframeId}"
             class="embed-frame embed-frame--internal-full"
+            src="${page.url}"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            scrolling="yes">
+          </iframe>
+        </div>
+      </section>
+    `;
+  } else if (isFullPageIframe) {
+    contentArea.classList.add('iframe-fullpage-mode');
+    contentArea.innerHTML = `
+      <section class="embed-card embed-card--fullpage">
+        <div class="embed-frame-wrap embed-frame-wrap--fullpage">
+          <iframe
+            id="${iframeId}"
+            class="embed-frame embed-frame--fullpage"
             src="${page.url}"
             loading="lazy"
             referrerpolicy="no-referrer-when-downgrade"
@@ -2818,6 +2835,7 @@ async function loadPage(key) {
       cleanupDynamicModule();
       contentArea.classList.remove('module-mode');
       contentArea.classList.remove('iframe-internal-rapor-mode');
+      contentArea.classList.remove('iframe-fullpage-mode');
     } else {
       contentArea.classList.add('module-mode');
     }
