@@ -79,8 +79,7 @@ const APP_ROUTES = {
   subtitle: '',
   type: 'iframe',
   url: 'https://pbjkotabogor.github.io/atk-monitoring/',
-  fullPage: true,
-  hideHeader: true
+  fullPage: true
 },
 
   'pemenang-pengadaan': {
@@ -2478,6 +2477,59 @@ function renderIframePage(page) {
     </section>
   `;
 
+  const iframe = contentArea.querySelector('iframe');
+  const wrap = contentArea.querySelector('.embed-frame-wrap');
+  if (iframe && isFullPage) {
+    const resizeIframeToContent = () => {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc) return;
+        const body = doc.body;
+        const html = doc.documentElement;
+        if (!body || !html) return;
+
+        body.style.overflow = 'hidden';
+        html.style.overflow = 'hidden';
+
+        const height = Math.max(
+          body.scrollHeight || 0,
+          body.offsetHeight || 0,
+          html.clientHeight || 0,
+          html.scrollHeight || 0,
+          html.offsetHeight || 0
+        );
+
+        if (height > 0) {
+          iframe.style.height = `${height}px`;
+          if (wrap) wrap.style.height = `${height}px`;
+        }
+      } catch (error) {
+        iframe.style.height = '1600px';
+        if (wrap) wrap.style.height = '1600px';
+      }
+    };
+
+    iframe.addEventListener('load', () => {
+      resizeIframeToContent();
+      window.setTimeout(resizeIframeToContent, 150);
+      window.setTimeout(resizeIframeToContent, 500);
+      window.setTimeout(resizeIframeToContent, 1200);
+
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        const ro = window.ResizeObserver ? new ResizeObserver(() => resizeIframeToContent()) : null;
+        if (ro && doc && doc.body) {
+          ro.observe(doc.body);
+          iframe.__traxResizeObserver = ro;
+        }
+      } catch (error) {
+        // ignore cross-origin or observer issues
+      }
+    });
+
+    window.setTimeout(resizeIframeToContent, 50);
+  }
+
   initScrollAnimation();
 }
 
@@ -2757,10 +2809,10 @@ async function loadPage(key) {
       activeModuleToken++;
       cleanupDynamicModule();
       contentArea.classList.remove('module-mode');
-  contentArea.classList.remove('iframe-fullpage-mode');
       contentArea.classList.remove('iframe-internal-rapor-mode');
     } else {
-      contentArea.classList.add('module-mode');
+      contentArea.classList.remove('iframe-fullpage-mode');
+  contentArea.classList.add('module-mode');
     }
 
     if (page.type === 'iframe') {
