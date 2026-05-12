@@ -3871,11 +3871,18 @@ textarea{
    ========================================================= */
 
 .content-area.iframe-fullpage-mode{
+  display:flex;
+  flex-direction:column;
+  min-height:calc(100vh - 12px);
+  height:calc(100vh - 12px);
   padding:0 0 0 2px !important;
-  overflow:hidden;
+  overflow:visible;
 }
 
 .embed-card--fullpage{
+  display:flex;
+  flex:1 1 auto;
+  min-height:0;
   padding:0 !important;
   margin:0 !important;
   overflow:hidden;
@@ -3888,8 +3895,9 @@ textarea{
 .embed-frame-wrap--fullpage{
   width:100%;
   max-width:100%;
-  height:calc(100vh - 20px);
-  min-height:calc(100vh - 20px);
+  flex:1 1 auto;
+  min-height:0;
+  height:100%;
   overflow:hidden;
   border-radius:28px;
   border:1px solid #dbe5f0;
@@ -3908,8 +3916,10 @@ textarea{
 
 @media (max-width:900px){
   .content-area.iframe-fullpage-mode{
+    min-height:calc(100vh - 96px);
+    height:calc(100vh - 96px);
     padding:8px !important;
-    overflow:auto;
+    overflow:visible;
   }
 
   .embed-card--fullpage{
@@ -3917,8 +3927,6 @@ textarea{
   }
 
   .embed-frame-wrap--fullpage{
-    height:calc(100vh - 96px);
-    min-height:calc(100vh - 96px);
     border-radius:20px;
   }
 }
