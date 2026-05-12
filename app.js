@@ -79,7 +79,8 @@ const APP_ROUTES = {
   subtitle: '',
   type: 'iframe',
   url: 'https://pbjkotabogor.github.io/atk-monitoring/',
-  fullPage: true
+  fullPage: true,
+  hideHeader: true
 },
 
   'pemenang-pengadaan': {
@@ -347,6 +348,7 @@ function cacheBust(url) {
 }
 
 function showModuleLoading(title = 'Memuat modul...') {
+  contentArea.classList.remove('iframe-fullpage-mode');
   contentArea.innerHTML = `
     <section class="card">
       <h3>${escapeHtml(title)}</h3>
@@ -2451,111 +2453,32 @@ function renderQuickCard(icon, bg, title, text, route, externalUrl = '') {
 }
 
 function renderIframePage(page) {
-  const lowerUrl = String(page.url || '').toLowerCase();
-  const isSimNontender = lowerUrl.includes('simppk');
-  const isInternalRapor = lowerUrl.includes('script.google.com/macros');
-  const isFullPageIframe = Boolean(page.fullPage);
-  const iframeId = isSimNontender ? 'simppkFrame' : (isInternalRapor ? 'internalRaporFrame' : 'genericEmbedFrame');
+  const isFullPage = !!(page && page.fullPage);
+  const useHideHeader = !!(page && (page.hideHeader || page.fullPage));
 
-  if (isInternalRapor) {
-    contentArea.classList.add('iframe-internal-rapor-mode');
-    contentArea.innerHTML = `
-      <section class="embed-card embed-card--internal-full">
-        <div class="embed-frame-wrap embed-frame-wrap--internal-full">
-          <iframe
-            id="${iframeId}"
-            class="embed-frame embed-frame--internal-full"
-            src="${page.url}"
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-            scrolling="yes">
-          </iframe>
-        </div>
-      </section>
-    `;
-  } else if (isFullPageIframe) {
-    contentArea.classList.add('iframe-fullpage-mode');
-    contentArea.innerHTML = `
-      <section class="embed-card embed-card--fullpage">
-        <div class="embed-frame-wrap embed-frame-wrap--fullpage">
-          <iframe
-            id="${iframeId}"
-            class="embed-frame embed-frame--fullpage"
-            src="${page.url}"
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-            scrolling="yes">
-          </iframe>
-        </div>
-      </section>
-    `;
-  } else {
-    contentArea.innerHTML = `
-      <section class="embed-card ${isSimNontender ? 'embed-card--simppk' : ''}">
-        <h3>${escapeHtml(page.title)}</h3>
-        <div class="page-note">Halaman dimuat dari project/modul yang sudah ada.</div>
+  contentArea.classList.remove('module-mode');
+  contentArea.classList.remove('iframe-fullpage-mode');
+  contentArea.classList.toggle('iframe-fullpage-mode', isFullPage);
 
-        <div class="embed-frame-wrap ${isSimNontender ? 'embed-frame-wrap--simppk' : ''}">
-          <iframe
-            id="${iframeId}"
-            class="embed-frame ${isSimNontender ? 'embed-frame--simppk' : ''}"
-            src="${page.url}"
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-            scrolling="${isSimNontender ? 'no' : 'yes'}">
-          </iframe>
-        </div>
-      </section>
-    `;
-  }
+  contentArea.innerHTML = `
+    <section class="${isFullPage ? 'embed-card embed-card--fullpage' : 'embed-card'}">
+      ${useHideHeader ? '' : `
+        <h3>${escapeHtml(page.title || '')}</h3>
+        ${page.subtitle ? `<p class="page-note">${escapeHtml(page.subtitle)}</p>` : ''}
+      `}
+      <div class="${isFullPage ? 'embed-frame-wrap embed-frame-wrap--fullpage' : 'embed-frame-wrap'}">
+        <iframe
+          class="${isFullPage ? 'embed-frame embed-frame--fullpage' : 'embed-frame'}"
+          src="${escapeHtml(page.url || '')}"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </section>
+  `;
 
-  if (isSimNontender) {
-    const iframe = document.getElementById('simppkFrame');
-
-    const resizeIframe = () => {
-      try {
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-
-        if (!doc) {
-          return;
-        }
-
-        const body = doc.body;
-        const html = doc.documentElement;
-
-        const height = Math.max(
-          body ? body.scrollHeight : 0,
-          body ? body.offsetHeight : 0,
-          html ? html.clientHeight : 0,
-          html ? html.scrollHeight : 0,
-          html ? html.offsetHeight : 0,
-          820
-        );
-
-        iframe.style.height = `${height + 40}px`;
-      } catch (error) {
-        iframe.style.height = 'calc(100vh - 170px)';
-        iframe.setAttribute('scrolling', 'yes');
-      }
-    };
-
-    iframe.addEventListener('load', () => {
-      resizeIframe();
-
-      setTimeout(resizeIframe, 300);
-      setTimeout(resizeIframe, 1000);
-      setTimeout(resizeIframe, 2000);
-    });
-  }
-
-  if (isInternalRapor) {
-    const iframe = document.getElementById('internalRaporFrame');
-    if (iframe) {
-      iframe.addEventListener('load', () => {
-        iframe.classList.add('is-loaded');
-      });
-    }
-  }
+  initScrollAnimation();
 }
 
 function renderPlaceholderPage(pageKey, page) {
@@ -2834,8 +2757,8 @@ async function loadPage(key) {
       activeModuleToken++;
       cleanupDynamicModule();
       contentArea.classList.remove('module-mode');
+  contentArea.classList.remove('iframe-fullpage-mode');
       contentArea.classList.remove('iframe-internal-rapor-mode');
-      contentArea.classList.remove('iframe-fullpage-mode');
     } else {
       contentArea.classList.add('module-mode');
     }
