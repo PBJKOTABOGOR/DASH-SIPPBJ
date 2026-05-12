@@ -3865,44 +3865,33 @@ textarea{
 }
 
 
-/* =========================================================
-   IFRAME FIX - MONITORING KONSOLIDASI FULL PAGE
-   Khusus menu monitoring-konsolidasi saja
-   ========================================================= */
 
+/* khusus menu monitoring-konsolidasi full iframe */
 .content-area.iframe-fullpage-mode{
-  display:flex;
-  flex-direction:column;
-  min-height:calc(100vh - 12px);
-  height:calc(100vh - 12px);
-  padding:0 0 0 2px !important;
-  overflow:visible;
+  padding:0;
+  height:calc(100vh - 8px);
+  min-height:calc(100vh - 8px);
+  overflow:hidden;
 }
 
 .embed-card--fullpage{
-  display:flex;
-  flex:1 1 auto;
-  min-height:0;
-  padding:0 !important;
-  margin:0 !important;
-  overflow:hidden;
-  background:transparent;
-  border:none;
-  box-shadow:none;
+  padding:0;
+  margin-bottom:0;
   border-radius:28px;
+  overflow:hidden;
+  height:calc(100vh - 8px);
+  min-height:calc(100vh - 8px);
+  display:flex;
+  flex-direction:column;
 }
 
 .embed-frame-wrap--fullpage{
-  width:100%;
-  max-width:100%;
+  border:none;
+  border-radius:inherit;
+  overflow:hidden;
   flex:1 1 auto;
   min-height:0;
   height:100%;
-  overflow:hidden;
-  border-radius:28px;
-  border:1px solid #dbe5f0;
-  background:#fff;
-  box-shadow:var(--shadow-lg);
 }
 
 .embed-frame--fullpage{
@@ -3916,17 +3905,12 @@ textarea{
 
 @media (max-width:900px){
   .content-area.iframe-fullpage-mode{
-    min-height:calc(100vh - 96px);
-    height:calc(100vh - 96px);
-    padding:8px !important;
-    overflow:visible;
+    height:calc(100vh - 24px);
+    min-height:calc(100vh - 24px);
   }
 
   .embed-card--fullpage{
-    border-radius:20px;
-  }
-
-  .embed-frame-wrap--fullpage{
-    border-radius:20px;
+    height:calc(100vh - 24px);
+    min-height:calc(100vh - 24px);
   }
 }
