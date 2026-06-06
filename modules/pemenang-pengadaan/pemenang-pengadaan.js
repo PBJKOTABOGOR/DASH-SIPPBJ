@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const CFG={spreadsheetId:'1DYsqMtvwhPn-IEA3te9fFukD_iMMDRqUNPamktuPz2U',userSheet:{gid:'1707469433',title:'USERID'},providerSheet:{title:'PORTAL_PENYEDIA'},activeSheet:{title:'PORTAL_AKTIF'},ecatSheet:{title:'PORTAL_EKATALOG'},sessionKey:'pemenang_pengadaan_login_session_final_v10',allowed:[5,10],defaultPageSize:5};
+const CFG={spreadsheetId:'1kqj1dEu3chs6GabXsIFmESS33JlzU_Yge7p_EPmYI3c',userSheet:{gid:'1599419870',title:'USERID'},providerSheet:{title:'PORTAL_PENYEDIA'},activeSheet:{title:'PORTAL_AKTIF'},ecatSheet:{title:'PORTAL_EKATALOG'},sessionKey:'pemenang_pengadaan_login_session_final_v10',allowed:[5,10],defaultPageSize:5};
 const st={session:null,activeTab:'dashboard',providerMode:'spse',activeMode:'search',pageSize:Number(localStorage.getItem('pp_page_size')||5)||5,providerRowsRaw:[],activeRowsRaw:[],ecatRowsRaw:[],providerResults:[],activeResults:[],ecatResults:[],providerPage:1,activePage:1,ecatPage:1,providerQuery:'',activeQuery:'',ecatQuery:'',providerYear:'',activeYear:'',activeJenis:'',activePhase:'',activeRange:'',ecatYear:'',sortProviderBy:'nama',sortActiveBy:'deadline',sortEcatBy:'nama',loadingData:false,dataLoaded:false};
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
 function nk(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
