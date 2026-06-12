@@ -10,7 +10,8 @@
       pelaku: 'PELAKU',
       itkp: 'ITKP',
       analisis: 'ANALISIS_MANUAL',
-      aiReport: 'AI_REPORT'
+      aiReport: 'AI_REPORT',
+      cekOpd: 'CEK_OPD'
     }
   };
 
@@ -25,6 +26,7 @@
   let host = null;
   let destroyed = false;
   let allRows = [];
+  let masterOpdRows = [];
   let filteredRows = [];
   let currentPage = 1;
   let aiVoiceText = '';
@@ -53,6 +55,8 @@
     .rp-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
     .rp-report-wrap{width:100%;max-width:none;margin:0;}
     .rp-report-page{background:#fff;border-radius:18px;margin-bottom:24px;overflow:hidden;box-shadow:0 4px 18px rgba(15,23,42,.08);page-break-after:always}.rp-report-page:last-child{page-break-after:auto}.rp-page-head{background:linear-gradient(135deg,#0f4c81,#1f6aa5);color:#fff;padding:28px 32px}.rp-page-head h1,.rp-page-head h2{margin:0}.rp-cover{min-height:420px;display:flex;flex-direction:column;justify-content:center;text-align:center}.rp-main-title{font-size:40px;font-weight:800;line-height:1.2;margin-bottom:18px;text-transform:uppercase}.rp-sub-title{font-size:26px;font-weight:700;line-height:1.4;text-transform:uppercase}.rp-period{margin-top:22px;font-size:22px;font-weight:700;text-transform:uppercase}.rp-page-body{padding:24px 28px 28px}.rp-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}.rp-meta-box,.rp-summary-box,.rp-link-box,.rp-note-box{background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:14px 16px}.rp-meta-label,.rp-summary-box .label{font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px}.rp-meta-value{font-size:18px;font-weight:700;word-break:break-word}.rp-note-line{font-size:14px;color:#475569;margin-top:10px}.rp-report-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}.rp-summary-box .value{font-size:18px;font-weight:800;color:#0f172a}.center{text-align:center}.right{text-align:right}.bold{font-weight:700}.rp-img-box{background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:14px;min-height:120px}.rp-img-box img{display:block;max-width:100%;max-height:520px;object-fit:contain;margin:0 auto;border-radius:10px;background:#fff}.rp-link-box,.rp-note-box{word-break:break-word;white-space:pre-wrap;line-height:1.7}.rp-bullets{margin:0;padding-left:20px;line-height:1.8;font-size:15px}.rp-muted{color:#64748b;font-size:13px}.rp-narasi-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.rp-head-toggle-btn{border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.18);color:#fff;backdrop-filter:blur(4px);width:auto}.rp-voice-panel{background:#f8fbff;border:1px solid #dbeafe;border-radius:14px;padding:14px;margin-top:14px}.rp-voice-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;color:#0f172a;margin-bottom:10px}.rp-voice-progress{width:100%;height:10px;background:#dbe4ee;border-radius:999px;overflow:hidden}.rp-voice-progress-fill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#0f4c81,#2f7cc2);transition:width .12s linear}.rp-hidden{display:none!important}
+
+    .rp-belum-wrap{margin-top:16px}.rp-mini-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 14px}.rp-mini-card{border:1px solid #dbe5f0;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:18px;padding:14px;box-shadow:0 6px 18px rgba(15,23,42,.05)}.rp-mini-label{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:#64748b;margin-bottom:8px}.rp-mini-value{font-size:28px;font-weight:950;color:#102544;line-height:1}.rp-mini-card.danger .rp-mini-value{color:#b91c1c}.rp-mini-card.success .rp-mini-value{color:#0f766e}.rp-table-wrap--small table{min-width:760px}.rp-belum-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 12px}.rp-belum-actions button{width:auto}.rp-muted-box{padding:14px 16px;border:1px dashed #cbd5e1;border-radius:16px;background:#f8fafc;color:#64748b;font-weight:700;line-height:1.6}
     @media(max-width:1100px){.rp-summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.rp-grid-5{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:900px){.rp-hero{padding:24px 20px}.rp-hero h1{font-size:34px}.rp-summary-strip,.rp-grid-5,.rp-grid-2,.rp-meta-grid,.rp-report-summary{grid-template-columns:1fr}.rp-inline-actions{flex-direction:column}.rp-inline-actions button{width:100%}.rp-main-title{font-size:30px}.rp-sub-title{font-size:21px}.rp-period{font-size:18px}}
   `;
@@ -143,6 +147,69 @@
     };
   }
 
+
+  function mapCekOpdRow(row) {
+    return {
+      kode_opd: String(row.kode_opd || row.kode || row.kd_opd || '').trim(),
+      nama_opd: String(row.nama_opd || row.nama_satker || row.satuan_kerja || row.opd || '').trim()
+    };
+  }
+
+  function normalizeOpdKey(value) {
+    return String(value || '')
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, ' ')
+      .replace(/\s*-\s*/g, '-');
+  }
+
+  function getBelumInputResult(payload) {
+    const tahun = String(payload && payload.tahun || '').trim();
+    const bulan = String(payload && payload.bulan || '').trim();
+
+    const aktifOpdRows = (masterOpdRows || [])
+      .filter((row) => normalizeOpdKey(row.kode_opd || row.nama_opd));
+
+    if (!tahun || !bulan) {
+      return {
+        tahun,
+        bulan,
+        total: aktifOpdRows.length,
+        sudah: 0,
+        belum: 0,
+        rows: [],
+        message: 'Pilih tahun dan bulan dulu untuk cek satuan kerja yang belum input.'
+      };
+    }
+
+    const sudahInputSet = new Set(
+      (allRows || [])
+        .filter((row) => String(row.tahun || '').trim() === tahun && String(row.bulan || '').trim() === bulan)
+        .map((row) => normalizeOpdKey(row.kode_opd || row.nama_opd))
+        .filter(Boolean)
+    );
+
+    const belumRows = aktifOpdRows.filter((row) => {
+      const key = normalizeOpdKey(row.kode_opd || row.nama_opd);
+      return key && !sudahInputSet.has(key);
+    });
+
+    return {
+      tahun,
+      bulan,
+      total: aktifOpdRows.length,
+      sudah: Math.max(0, aktifOpdRows.length - belumRows.length),
+      belum: belumRows.length,
+      rows: belumRows.map((row, index) => ({
+        no: index + 1,
+        kode_opd: row.kode_opd || '',
+        nama_opd: row.nama_opd || '',
+        status: 'Belum Input'
+      })),
+      message: ''
+    };
+  }
+
   function fillSelect(selector, items) {
     const el = $(selector);
     if (!el) return;
@@ -177,6 +244,74 @@
       keyword: String($('#filter_keyword')?.value || '').trim().toLowerCase(),
       page_size: $('#filter_page_size')?.value || '10'
     };
+  }
+
+
+  function renderBelumInputPanel() {
+    const wrap = $('#belumInputPanel');
+    if (!wrap) return;
+
+    const payload = getFilterPayload();
+    const result = getBelumInputResult(payload);
+    const bulanLabel = MONTH_MAP[String(result.bulan)] || result.bulan || '-';
+
+    if (result.message) {
+      wrap.innerHTML = `
+        <div class="rp-muted-box">${esc(result.message)}<br>Data master diambil dari sheet CEK_OPD.</div>
+      `;
+      return;
+    }
+
+    wrap.innerHTML = `
+      <div class="rp-mini-summary">
+        <div class="rp-mini-card"><div class="rp-mini-label">OPD Wajib Input</div><div class="rp-mini-value">${esc(String(result.total))}</div></div>
+        <div class="rp-mini-card success"><div class="rp-mini-label">Sudah Input</div><div class="rp-mini-value">${esc(String(result.sudah))}</div></div>
+        <div class="rp-mini-card danger"><div class="rp-mini-label">Belum Input</div><div class="rp-mini-value">${esc(String(result.belum))}</div></div>
+      </div>
+      <div class="rp-belum-actions">
+        <button type="button" class="secondary" id="copyBelumInputButton">Copy WhatsApp</button>
+      </div>
+      <div class="rp-sub"><b>Satuan Kerja Belum Input</b> periode ${esc(bulanLabel)} ${esc(result.tahun)}. Perbandingan: CEK_OPD dikurangi INDEX_RAPOT pada tahun dan bulan terpilih.</div>
+      <div class="rp-table-wrap rp-table-wrap--small">
+        <table>
+          <thead><tr><th style="width:70px;">No</th><th>Kode OPD</th><th>Nama OPD</th><th>Status</th></tr></thead>
+          <tbody>
+            ${result.rows.length ? result.rows.map((row) => `
+              <tr>
+                <td>${esc(row.no)}</td>
+                <td>${esc(row.kode_opd || '-')}</td>
+                <td>${esc(row.nama_opd || '-')}</td>
+                <td>${esc(row.status)}</td>
+              </tr>
+            `).join('') : '<tr><td colspan="4">Semua satuan kerja sudah input pada periode ini.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    $('#copyBelumInputButton')?.addEventListener('click', () => copyBelumInputText(result));
+  }
+
+  function copyBelumInputText(result) {
+    const bulanLabel = MONTH_MAP[String(result.bulan)] || result.bulan || '-';
+    const lines = [
+      `Satuan Kerja Belum Input Rapor PBJ`,
+      `Periode: ${bulanLabel} ${result.tahun}`,
+      `Total OPD wajib input: ${result.total}`,
+      `Sudah input: ${result.sudah}`,
+      `Belum input: ${result.belum}`,
+      '',
+      ...(result.rows || []).map((row) => `${row.no}. ${row.kode_opd || '-'} - ${row.nama_opd || '-'}`)
+    ];
+    const text = lines.join('\n');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => setText('#dashboardStatus', 'Daftar OPD belum input berhasil disalin.'))
+        .catch(() => setText('#dashboardStatus', text));
+    } else {
+      setText('#dashboardStatus', text);
+    }
   }
 
   function renderRows(rows) {
@@ -282,6 +417,7 @@
     });
     setSummary(filteredRows);
     updateTableOnly();
+    renderBelumInputPanel();
   }
 
   function resetDashboard() {
@@ -325,6 +461,11 @@
           <div id="dashboardStatus" class="rp-status"></div>
         </div>
         <div class="rp-card">
+          <h2>Satuan Kerja Belum Input</h2>
+          <div class="rp-sub">Pilih tahun dan bulan di filter, lalu sistem membandingkan sheet CEK_OPD dengan INDEX_RAPOT.</div>
+          <div id="belumInputPanel" class="rp-belum-wrap"><div class="rp-muted-box">Pilih tahun dan bulan dulu untuk cek satuan kerja yang belum input.</div></div>
+        </div>
+        <div class="rp-card">
           <h2>Daftar Rapor</h2><div class="rp-sub">Klik Lihat untuk membuka halaman report per rapor. Tombol aktif hanya jika status QC sudah OK.</div>
           <div class="rp-table-wrap"><table><thead><tr><th>ID Rapor</th><th>Periode</th><th>Nama OPD</th><th>Input By</th><th>Status QC</th><th>Updated</th><th>Aksi</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="7">Belum ada data.</td></tr></tbody></table></div>
           <div class="rp-pagination-wrap"><div id="paginationInfo" class="rp-pagination-info">0 data tampil</div><div id="pagination" class="rp-pagination"></div></div>
@@ -337,9 +478,14 @@
   async function loadDashboardData() {
     setText('#dashboardStatus', 'Memuat data dashboard...');
     try {
-      const rows = (await fetchSheet(CONFIG.SHEETS.index)).map(mapCsvRow).filter((row) => row.id_rapot);
+      const [indexRows, cekOpdRows] = await Promise.all([
+        fetchSheet(CONFIG.SHEETS.index),
+        fetchSheet(CONFIG.SHEETS.cekOpd)
+      ]);
+      const rows = indexRows.map(mapCsvRow).filter((row) => row.id_rapot);
       if (destroyed) return;
       allRows = rows;
+      masterOpdRows = cekOpdRows.map(mapCekOpdRow).filter((row) => row.kode_opd || row.nama_opd);
       buildFilterOptions(allRows);
       runDashboard();
     } catch (err) {
