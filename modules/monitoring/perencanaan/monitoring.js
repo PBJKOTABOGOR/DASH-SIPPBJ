@@ -363,11 +363,33 @@
       return summary;
     }
 
+    function getKodeRupInfo(value) {
+      const kodeAsli = String(value || '').trim();
+      const parts = kodeAsli
+        .split(/[;,|/]+/)
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      const kodeAktif = parts.length ? parts[parts.length - 1] : '';
+      const kodeLama = parts.length > 1 ? parts.slice(0, -1) : [];
+
+      return {
+        kode_asli: kodeAsli,
+        kode_aktif: kodeAktif,
+        kode_lama: kodeLama,
+        ada_perubahan: kodeLama.length > 0,
+        label: kodeLama.length > 0
+          ? `${kodeLama.join(', ')} → ${kodeAktif}`
+          : kodeAktif
+      };
+    }
+
     function groupRealisasi(realRows) {
       const grouped = {};
 
       realRows.forEach(r => {
-        const kode = String(r.kode_rup || '').trim();
+        const kodeInfo = getKodeRupInfo(r.kode_rup);
+        const kode = kodeInfo.kode_aktif;
         if (!kode) return;
 
         if (!grouped[kode]) {
@@ -375,7 +397,9 @@
             recall_paket: 0,
             total_realisasi: 0,
             rows: [],
-            first_order: null
+            first_order: null,
+            has_perubahan_kode: false,
+            perubahan_kode_list: []
           };
         }
 
@@ -392,6 +416,13 @@
         grouped[kode].recall_paket += 1;
         grouped[kode].total_realisasi += nilai;
 
+        if (kodeInfo.ada_perubahan) {
+          grouped[kode].has_perubahan_kode = true;
+          if (!grouped[kode].perubahan_kode_list.includes(kodeInfo.label)) {
+            grouped[kode].perubahan_kode_list.push(kodeInfo.label);
+          }
+        }
+
         if (waktuOrder > 0) {
           if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
             grouped[kode].first_order = waktuOrder;
@@ -400,6 +431,11 @@
 
         grouped[kode].rows.push({
           kode_paket: String(r.kode_paket || '').trim(),
+          kode_rup_asli: kodeInfo.kode_asli,
+          kode_rup_aktif: kodeInfo.kode_aktif,
+          kode_rup_lama: kodeInfo.kode_lama.join(';'),
+          perubahan_kode_label: kodeInfo.label,
+          ada_perubahan_kode: kodeInfo.ada_perubahan,
           nama_paket: String(r.nama_paket || '').trim(),
           nama_penyedia: String(r.nama_penyedia || '').trim(),
           satuan_kerja: String(r.nama_satuan_kerja || '').trim(),
@@ -441,7 +477,9 @@
             recall_paket: 0,
             total_realisasi: 0,
             rows: [],
-            first_order: null
+            first_order: null,
+            has_perubahan_kode: false,
+            perubahan_kode_list: []
           };
 
           const recallPaket = Number(real.recall_paket || 0);
@@ -491,6 +529,15 @@
             warning = 'Realisasi sudah 100%, namun masih ada paket on process. Perlu tindak lanjut penyelesaian di sistem.';
           }
 
+          const perubahanKodeList = real.perubahan_kode_list || [];
+          const perubahanKodeText = perubahanKodeList.length
+            ? 'Ada perubahan Kode RUP: ' + perubahanKodeList.join(' | ') + '. Sistem membaca kode terakhir sebagai Kode RUP aktif.'
+            : '';
+
+          if (perubahanKodeText) {
+            warning = warning === 'OK' ? perubahanKodeText : warning + ' ' + perubahanKodeText;
+          }
+
           let ketJadwal = '-';
           if (recallPaket > 0 && real.first_order && waktuPemilihanOrder > 0) {
             if (real.first_order > waktuPemilihanOrder) {
@@ -527,6 +574,9 @@
             warning: warning,
             ket_jadwal: ketJadwal,
             tindak_lanjut: tindakLanjut,
+            ada_perubahan_kode: !!real.has_perubahan_kode,
+            perubahan_kode_list: perubahanKodeList,
+            perubahan_kode_text: perubahanKodeText || '-',
             detail_summary: detailSummary
           };
         });
@@ -803,7 +853,10 @@
       setText('detailPaguVsRealisasi', `${formatMoney(row.pagu)} / ${formatMoney(row.total_realisasi)} (${formatPercent(row.persentase)})`);
       setText('detailRecall', String(row.recall_paket));
       setText('detailSisaPagu', formatMoney(row.sisa_pagu));
-      setText('detailRingkasanPaket', ds.ringkasanPaket || 'Belum ada paket realisasi');
+      const ringkasanKode = row.ada_perubahan_kode
+        ? (ds.ringkasanPaket || 'Belum ada paket realisasi') + ' | Perubahan Kode RUP: ' + (row.perubahan_kode_list || []).join(' | ')
+        : (ds.ringkasanPaket || 'Belum ada paket realisasi');
+      setText('detailRingkasanPaket', ringkasanKode);
       setText('detailWarning', row.warning || 'OK');
       setText('detailTindakLanjut', row.tindak_lanjut || 'Tidak ada catatan tambahan.');
 
@@ -816,7 +869,7 @@
 
       if (!detailRows.length) {
         empty.style.display = 'block';
-        tbody.innerHTML = '<tr><td colspan="9">Belum ada data realisasi.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11">Belum ada data realisasi.</td></tr>';
       } else {
         empty.style.display = 'none';
 
@@ -824,6 +877,8 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${escapeHtml(item.kode_paket)}</td>
+            <td>${escapeHtml(item.kode_rup_asli || '-')}</td>
+            <td>${item.ada_perubahan_kode ? '<span class="warn-bad">Berubah: ' + escapeHtml(item.perubahan_kode_label) + '</span>' : '<span class="warn-ok">Tidak berubah</span>'}</td>
             <td>${escapeHtml(item.nama_paket)}</td>
             <td>${escapeHtml(item.nama_penyedia)}</td>
             <td>${escapeHtml(item.satuan_kerja)}</td>
@@ -869,6 +924,7 @@
         'Persentase Realisasi': Number(row.persentase || 0),
         'Recall Paket': Number(row.recall_paket || 0),
         'Sisa Pagu': Number(row.sisa_pagu || 0),
+        'Perubahan Kode RUP': row.perubahan_kode_text || '-',
         'Status': row.status,
         'Progres': row.progres,
         'Posisi Jadwal': row.posisi_jadwal,
