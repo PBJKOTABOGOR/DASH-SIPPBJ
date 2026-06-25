@@ -559,6 +559,49 @@
       };
     }
 
+
+
+    function getAllKodeRupParts(value) {
+      const text = cleanKodeText(value);
+      return text.match(/\d{5,}/g) || [];
+    }
+
+    function rowContainsKodeRup(row, kodeRup) {
+      const target = cleanKodeRupPart(kodeRup);
+      if (!target) return false;
+
+      const direct = pickKodeRupValue(row);
+      if (getAllKodeRupParts(direct).includes(target)) return true;
+
+      for (const key of Object.keys(row || {})) {
+        const keyNorm = String(key || '').toLowerCase();
+        if (!keyNorm.includes('rup')) continue;
+        const val = cleanKodeText(row[key]);
+        if (getAllKodeRupParts(val).includes(target)) return true;
+      }
+
+      return false;
+    }
+
+    function makeRealRowDetail(r, kodeInfo, nilai) {
+      return {
+        kode_paket: String(r.kode_paket || r.kode_paket_tender || '').trim(),
+        kode_rup_asli: kodeInfo.kode_asli,
+        kode_rup_aktif: kodeInfo.kode_aktif,
+        kode_rup_lama: kodeInfo.kode_lama.join(';'),
+        perubahan_kode_label: kodeInfo.label,
+        ada_perubahan_kode: kodeInfo.ada_perubahan,
+        nama_paket: String(r.nama_paket || '').trim(),
+        nama_penyedia: String(r.nama_penyedia || '').trim(),
+        satuan_kerja: String(r.nama_satuan_kerja || r.satuan_kerja || '').trim(),
+        metode: String(r.metode_pengadaan || r.metode || '').trim(),
+        status_paket: String(r.status_paket || r.status || '').trim(),
+        sumber_transaksi: String(r.sumber_transaksi || r.pengadaan || '').trim(),
+        bast: String(r.bast || '').trim(),
+        nilai: nilai
+      };
+    }
+
     function groupRealisasi(realRows) {
       const grouped = {};
 
@@ -607,22 +650,7 @@
           }
         }
 
-        grouped[kode].rows.push({
-          kode_paket: String(r.kode_paket || '').trim(),
-          kode_rup_asli: kodeInfo.kode_asli,
-          kode_rup_aktif: kodeInfo.kode_aktif,
-          kode_rup_lama: kodeInfo.kode_lama.join(';'),
-          perubahan_kode_label: kodeInfo.label,
-          ada_perubahan_kode: kodeInfo.ada_perubahan,
-          nama_paket: String(r.nama_paket || '').trim(),
-          nama_penyedia: String(r.nama_penyedia || '').trim(),
-          satuan_kerja: String(r.nama_satuan_kerja || r.satuan_kerja || '').trim(),
-          metode: String(r.metode_pengadaan || r.metode || '').trim(),
-          status_paket: String(r.status_paket || r.status || '').trim(),
-          sumber_transaksi: String(r.sumber_transaksi || r.pengadaan || '').trim(),
-          bast: String(r.bast || '').trim(),
-          nilai: nilai
-        });
+        grouped[kode].rows.push(makeRealRowDetail(r, kodeInfo, nilai));
       });
 
       return grouped;
@@ -650,14 +678,70 @@
             0
           );
 
-          const real = groupedRealByKode[kodeRup] || {
-            recall_paket: 0,
-            total_realisasi: 0,
-            rows: [],
-            first_order: null,
-            has_perubahan_kode: false,
-            perubahan_kode_list: []
-          };
+          let real = groupedRealByKode[kodeRup];
+
+          // FALLBACK KHUSUS RIWAYAT PERUBAHAN KODE RUP
+          // Contoh: realisasi berisi "63112551;66824520", perencanaan berisi "66824520".
+          // Jika mapping utama belum menangkap, sistem tetap cari baris realisasi yang mengandung kode perencanaan.
+          if (!real) {
+            const matchedRealRows = realRows.filter(rr => rowContainsKodeRup(rr, kodeRup));
+            if (matchedRealRows.length) {
+              real = {
+                recall_paket: 0,
+                total_realisasi: 0,
+                rows: [],
+                first_order: null,
+                has_perubahan_kode: false,
+                perubahan_kode_list: []
+              };
+
+              matchedRealRows.forEach(rr => {
+                const kodeRawFallback = pickKodeRupValue(rr);
+                const kodeInfoFallback = getKodeRupInfo(kodeRawFallback);
+                const nilaiFallback = parseMoney(
+                  rr.nilai_realisasi ||
+                  rr['nilai_(rp)'] ||
+                  rr.total_realisasi ||
+                  rr.total_nilai ||
+                  rr['total_nilai_(rp)'] ||
+                  rr.nilai ||
+                  0
+                );
+                const waktuOrderFallback = getWaktuOrder(rr.waktu_pemilihan || '');
+
+                real.recall_paket += 1;
+                real.total_realisasi += nilaiFallback;
+
+                if (waktuOrderFallback > 0) {
+                  if (!real.first_order || waktuOrderFallback < real.first_order) {
+                    real.first_order = waktuOrderFallback;
+                  }
+                }
+
+                if (kodeInfoFallback.ada_perubahan) {
+                  real.has_perubahan_kode = true;
+                  if (!real.perubahan_kode_list.includes(kodeInfoFallback.label)) {
+                    real.perubahan_kode_list.push(kodeInfoFallback.label);
+                  }
+                }
+
+                real.rows.push(makeRealRowDetail(rr, kodeInfoFallback, nilaiFallback));
+              });
+
+              groupedRealByKode[kodeRup] = real;
+            }
+          }
+
+          if (!real) {
+            real = {
+              recall_paket: 0,
+              total_realisasi: 0,
+              rows: [],
+              first_order: null,
+              has_perubahan_kode: false,
+              perubahan_kode_list: []
+            };
+          }
 
           const recallPaket = Number(real.recall_paket || 0);
           const totalRealisasi = Number(real.total_realisasi || 0);
