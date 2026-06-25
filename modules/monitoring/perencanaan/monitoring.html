@@ -508,11 +508,64 @@
       return summary;
     }
 
+    function cleanKodeText(value) {
+      return String(value || '')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim();
+    }
+
+    function pickKodeRupValue(row) {
+      const preferredKeys = [
+        'kode_rup',
+        'kode_rup_paket',
+        'kode_rup_realisasi',
+        'kode_rup_sirup',
+        'kode_rup_lama_baru',
+        'id_rup',
+        'rup'
+      ];
+
+      for (const key of preferredKeys) {
+        const val = cleanKodeText(row[key]);
+        if (val) return val;
+      }
+
+      for (const key of Object.keys(row || {})) {
+        const k = String(key || '').toLowerCase();
+        if (k.includes('rup')) {
+          const val = cleanKodeText(row[key]);
+          if (val) return val;
+        }
+      }
+
+      return '';
+    }
+
+    function getKodeRupInfo(value) {
+      const kodeAsli = cleanKodeText(value);
+
+      // Untuk kasus history perubahan kode: 63112551;66824520
+      // Sistem membaca angka terakhir sebagai Kode RUP aktif / terbaru.
+      const parts = kodeAsli.match(/\d{5,}/g) || [];
+      const kodeAktif = parts.length ? parts[parts.length - 1] : '';
+      const kodeLama = parts.length > 1 ? parts.slice(0, -1) : [];
+
+      return {
+        kode_asli: kodeAsli,
+        kode_aktif: kodeAktif,
+        kode_lama: kodeLama,
+        ada_perubahan: kodeLama.length > 0,
+        label: kodeLama.length > 0 ? `${kodeLama.join(', ')} → ${kodeAktif}` : kodeAktif
+      };
+    }
+
     function groupRealisasi(realRows) {
       const grouped = {};
 
       realRows.forEach(r => {
-        const kode = String(r.kode_rup || '').trim();
+        const kodeRaw = pickKodeRupValue(r);
+        const kodeInfo = getKodeRupInfo(kodeRaw);
+        const kode = kodeInfo.kode_aktif;
         if (!kode) return;
 
         if (!grouped[kode]) {
@@ -520,15 +573,19 @@
             recall_paket: 0,
             total_realisasi: 0,
             rows: [],
-            first_order: null
+            first_order: null,
+            has_perubahan_kode: false,
+            perubahan_kode_list: []
           };
         }
 
         const nilai = parseMoney(
           r.nilai_realisasi ||
           r['nilai_(rp)'] ||
+          r.total_realisasi ||
           r.total_nilai ||
           r['total_nilai_(rp)'] ||
+          r.nilai ||
           0
         );
 
@@ -536,6 +593,13 @@
 
         grouped[kode].recall_paket += 1;
         grouped[kode].total_realisasi += nilai;
+
+        if (kodeInfo.ada_perubahan) {
+          grouped[kode].has_perubahan_kode = true;
+          if (!grouped[kode].perubahan_kode_list.includes(kodeInfo.label)) {
+            grouped[kode].perubahan_kode_list.push(kodeInfo.label);
+          }
+        }
 
         if (waktuOrder > 0) {
           if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
@@ -545,12 +609,17 @@
 
         grouped[kode].rows.push({
           kode_paket: String(r.kode_paket || '').trim(),
+          kode_rup_asli: kodeInfo.kode_asli,
+          kode_rup_aktif: kodeInfo.kode_aktif,
+          kode_rup_lama: kodeInfo.kode_lama.join(';'),
+          perubahan_kode_label: kodeInfo.label,
+          ada_perubahan_kode: kodeInfo.ada_perubahan,
           nama_paket: String(r.nama_paket || '').trim(),
           nama_penyedia: String(r.nama_penyedia || '').trim(),
-          satuan_kerja: String(r.nama_satuan_kerja || '').trim(),
-          metode: String(r.metode_pengadaan || '').trim(),
-          status_paket: String(r.status_paket || '').trim(),
-          sumber_transaksi: String(r.sumber_transaksi || '').trim(),
+          satuan_kerja: String(r.nama_satuan_kerja || r.satuan_kerja || '').trim(),
+          metode: String(r.metode_pengadaan || r.metode || '').trim(),
+          status_paket: String(r.status_paket || r.status || '').trim(),
+          sumber_transaksi: String(r.sumber_transaksi || r.pengadaan || '').trim(),
           bast: String(r.bast || '').trim(),
           nilai: nilai
         });
@@ -571,13 +640,23 @@
         .filter(r => String(r.kode_rup || '').trim())
         .map(r => {
           const kodeRup = String(r.kode_rup || '').trim();
-          const pagu = parseMoney(r.nilai_pagu || 0);
+          const pagu = parseMoney(
+            r.nilai_pagu ||
+            r.pagu ||
+            r.total_pagu ||
+            r.nilai ||
+            r.pagu_rup ||
+            r['nilai_pagu_(rp)'] ||
+            0
+          );
 
           const real = groupedRealByKode[kodeRup] || {
             recall_paket: 0,
             total_realisasi: 0,
             rows: [],
-            first_order: null
+            first_order: null,
+            has_perubahan_kode: false,
+            perubahan_kode_list: []
           };
 
           const recallPaket = Number(real.recall_paket || 0);
@@ -627,6 +706,10 @@
             warning = 'Realisasi sudah 100%, namun masih ada paket on process. Perlu tindak lanjut penyelesaian di sistem.';
           }
 
+          if (real.has_perubahan_kode && warning === 'OK') {
+            warning = 'Ada riwayat perubahan Kode RUP: ' + real.perubahan_kode_list.join('; ');
+          }
+
           let ketJadwal = '-';
           if (recallPaket > 0 && real.first_order && waktuPemilihanOrder > 0) {
             if (real.first_order > waktuPemilihanOrder) {
@@ -641,6 +724,10 @@
           let tindakLanjut = detailSummary.tindakLanjut || 'Tidak ada catatan tambahan.';
           if (ketJadwal !== '-') {
             tindakLanjut = ketJadwal + '. ' + tindakLanjut;
+          }
+
+          if (real.has_perubahan_kode) {
+            tindakLanjut = 'Terdapat riwayat perubahan Kode RUP (' + real.perubahan_kode_list.join('; ') + '). Sistem membaca kode terakhir sebagai Kode RUP aktif. ' + tindakLanjut;
           }
 
           return {
@@ -663,7 +750,9 @@
             warning: warning,
             ket_jadwal: ketJadwal,
             tindak_lanjut: tindakLanjut,
-            detail_summary: detailSummary
+            detail_summary: detailSummary,
+            has_perubahan_kode: real.has_perubahan_kode || false,
+            perubahan_kode_list: real.perubahan_kode_list || []
           };
         });
     }
@@ -944,13 +1033,19 @@
 
       if (!detailRows.length) {
         empty.style.display = 'block';
-        tbody.innerHTML = '<tr><td colspan="9">Belum ada data realisasi.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11">Belum ada data realisasi.</td></tr>';
       } else {
         empty.style.display = 'none';
         detailRows.forEach(item => {
           const tr = document.createElement('tr');
+          const statusKode = item.ada_perubahan_kode
+            ? 'Berubah: ' + item.perubahan_kode_label
+            : 'Tetap';
+
           tr.innerHTML = `
             <td>${escapeHtml(item.kode_paket)}</td>
+            <td>${escapeHtml(item.kode_rup_asli || '-')}</td>
+            <td>${escapeHtml(statusKode)}</td>
             <td>${escapeHtml(item.nama_paket)}</td>
             <td>${escapeHtml(item.nama_penyedia)}</td>
             <td>${escapeHtml(item.satuan_kerja)}</td>
