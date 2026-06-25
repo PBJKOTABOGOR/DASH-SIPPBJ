@@ -363,12 +363,85 @@
       return summary;
     }
 
+    function cleanKodeRupPart(value) {
+      return String(value || '')
+        .trim()
+        .replace(/\.0+$/g, '')
+        .replace(/[^0-9]/g, '');
+    }
+
+    function getKodeRupRawFromRow(row) {
+      const candidates = [
+        'kode_rup',
+        'kode_rup_realisasi',
+        'kode_rup_sirup',
+        'kode_paket_rup',
+        'kode_rup_paket',
+        'id_rup',
+        'rup',
+        'kode_rup_riwayat',
+        'riwayat_kode_rup'
+      ];
+
+      for (const key of candidates) {
+        if (row && row[key] != null && String(row[key]).trim() !== '') {
+          return String(row[key]).trim();
+        }
+      }
+
+      // Fallback: cari otomatis header yang mengandung kata RUP.
+      // Ini penting kalau nama kolom di Sheet berubah sedikit, misal "Kode Paket RUP".
+      for (const key of Object.keys(row || {})) {
+        const keyNorm = String(key || '').toLowerCase();
+        const val = String(row[key] || '').trim();
+        if (keyNorm.includes('rup') && /\d/.test(val)) {
+          return val;
+        }
+      }
+
+      return '';
+    }
+
+    function cleanKodeText(value) {
+      return String(value || '')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim();
+    }
+
+    function pickKodeRupValue(row) {
+      const preferredKeys = [
+        'kode_rup',
+        'kode_rup_paket',
+        'kode_rup_realisasi',
+        'kode_rup_sirup',
+        'kode_rup_lama_baru',
+        'id_rup',
+        'rup'
+      ];
+
+      for (const key of preferredKeys) {
+        const val = cleanKodeText(row[key]);
+        if (val) return val;
+      }
+
+      const keys = Object.keys(row || {});
+      for (const key of keys) {
+        const k = String(key || '').toLowerCase();
+        if (k.includes('rup')) {
+          const val = cleanKodeText(row[key]);
+          if (val) return val;
+        }
+      }
+
+      return '';
+    }
+
     function getKodeRupInfo(value) {
-      const kodeAsli = String(value || '').trim();
-      const parts = kodeAsli
-        .split(/[;,|/]+/)
-        .map(v => v.trim())
-        .filter(Boolean);
+      const kodeAsli = cleanKodeText(value);
+
+      // Ambil semua kelompok angka. Ini lebih aman untuk kasus:
+      // 63112551;66824520, 63112551 ; 66824520, 63112551/66824520, dst.
+      const parts = kodeAsli.match(/\d{5,}/g) || [];
 
       const kodeAktif = parts.length ? parts[parts.length - 1] : '';
       const kodeLama = parts.length > 1 ? parts.slice(0, -1) : [];
@@ -388,7 +461,8 @@
       const grouped = {};
 
       realRows.forEach(r => {
-        const kodeInfo = getKodeRupInfo(r.kode_rup);
+        const kodeRaw = pickKodeRupValue(r);
+        const kodeInfo = getKodeRupInfo(kodeRaw);
         const kode = kodeInfo.kode_aktif;
         if (!kode) return;
 
@@ -406,8 +480,10 @@
         const nilai = parseMoney(
           r.nilai_realisasi ||
           r['nilai_(rp)'] ||
+          r.total_realisasi ||
           r.total_nilai ||
           r['total_nilai_(rp)'] ||
+          r.nilai ||
           0
         );
 
@@ -438,10 +514,10 @@
           ada_perubahan_kode: kodeInfo.ada_perubahan,
           nama_paket: String(r.nama_paket || '').trim(),
           nama_penyedia: String(r.nama_penyedia || '').trim(),
-          satuan_kerja: String(r.nama_satuan_kerja || '').trim(),
-          metode: String(r.metode_pengadaan || '').trim(),
-          status_paket: String(r.status_paket || '').trim(),
-          sumber_transaksi: String(r.sumber_transaksi || '').trim(),
+          satuan_kerja: String(r.nama_satuan_kerja || r.satuan_kerja || '').trim(),
+          metode: String(r.metode_pengadaan || r.metode || '').trim(),
+          status_paket: String(r.status_paket || r.status || '').trim(),
+          sumber_transaksi: String(r.sumber_transaksi || r.pengadaan || '').trim(),
           bast: String(r.bast || '').trim(),
           nilai: nilai
         });
