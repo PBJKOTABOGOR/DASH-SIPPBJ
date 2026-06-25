@@ -364,46 +364,77 @@
     }
 
 
-    function getKodeRupTokens(value) {
+    function getKodeRupAktifFromText(value) {
       const raw = String(value || '').trim();
-      if (!raw) return [];
+      if (!raw) return '';
 
-      const tokens = raw
-        .split(/[^0-9A-Za-z]+/)
+      const parts = raw
+        .split(';')
         .map(v => v.trim())
         .filter(Boolean);
 
-      return [...new Set(tokens)];
+      return parts.length ? parts[parts.length - 1] : raw;
     }
 
-    function getKodeRupAktif(value) {
-      const tokens = getKodeRupTokens(value);
-      return tokens.length ? tokens[tokens.length - 1] : '';
-    }
+    function getHistoryKodeRupLabel(historyValue, kodeAktif) {
+      const historyRaw = String(historyValue || '').trim();
+      const aktifRaw = String(kodeAktif || '').trim();
 
-    function getKodeRupHistoryLabel(value) {
-      const tokens = getKodeRupTokens(value);
-      if (tokens.length <= 1) return '';
-      return tokens.join(' → ');
+      if (!historyRaw) return '';
+      if (!historyRaw.includes(';')) return '';
+
+      const parts = historyRaw
+        .split(';')
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      if (!parts.length) return '';
+
+      const latest = parts[parts.length - 1] || '';
+      if (aktifRaw && latest !== aktifRaw) parts.push(aktifRaw);
+
+      return [...new Set(parts)].join(' → ');
     }
 
     function groupRealisasi(realRows) {
       const grouped = {};
 
       realRows.forEach(r => {
+        /*
+          Struktur sheet D_REALISASI yang disarankan:
+          - History Kode RUP = kolom riwayat, contoh: 63112551;66824520
+          - Kode RUP         = kolom kode aktif/terbaru, contoh: 66824520
+
+          Kalau kolom Kode RUP masih berisi 63112551;66824520,
+          sistem tetap ambil kode terakhir sebagai kode aktif.
+        */
+        const historyKodeRup = String(
+          r.history_kode_rup ||
+          r.riwayat_kode_rup ||
+          ''
+        ).trim();
+
         const kodeRaw = String(
           r.kode_rup ||
           r.koderup ||
           r.kode_rup_paket ||
-          r['kode_rup'] ||
           ''
         ).trim();
 
-        const kodeList = getKodeRupTokens(kodeRaw);
-        if (!kodeList.length) return;
+        const kode = getKodeRupAktifFromText(kodeRaw || historyKodeRup);
+        if (!kode) return;
 
-        const kodeAktif = getKodeRupAktif(kodeRaw);
-        const historyLabel = getKodeRupHistoryLabel(kodeRaw);
+        const historyLabel = getHistoryKodeRupLabel(historyKodeRup || kodeRaw, kode);
+
+        if (!grouped[kode]) {
+          grouped[kode] = {
+            recall_paket: 0,
+            total_realisasi: 0,
+            rows: [],
+            first_order: null,
+            history_count: 0
+          };
+        }
 
         const nilai = parseMoney(
           r.nilai_realisasi ||
@@ -415,11 +446,22 @@
 
         const waktuOrder = getWaktuOrder(r.waktu_pemilihan || '');
 
-        const rowDetail = {
+        grouped[kode].recall_paket += 1;
+        grouped[kode].total_realisasi += nilai;
+
+        if (historyLabel) grouped[kode].history_count += 1;
+
+        if (waktuOrder > 0) {
+          if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
+            grouped[kode].first_order = waktuOrder;
+          }
+        }
+
+        grouped[kode].rows.push({
           kode_paket: String(r.kode_paket || '').trim(),
-          kode_rup_raw: kodeRaw,
-          kode_rup_aktif: kodeAktif,
-          kode_rup_history: historyLabel,
+          history_kode_rup: historyKodeRup,
+          kode_rup_aktif: kode,
+          history_label: historyLabel,
           nama_paket: String(r.nama_paket || '').trim(),
           nama_penyedia: String(r.nama_penyedia || '').trim(),
           satuan_kerja: String(r.nama_satuan_kerja || '').trim(),
@@ -428,31 +470,6 @@
           sumber_transaksi: String(r.sumber_transaksi || '').trim(),
           bast: String(r.bast || '').trim(),
           nilai: nilai
-        };
-
-        kodeList.forEach(kode => {
-          if (!grouped[kode]) {
-            grouped[kode] = {
-              recall_paket: 0,
-              total_realisasi: 0,
-              rows: [],
-              first_order: null,
-              history_count: 0
-            };
-          }
-
-          grouped[kode].recall_paket += 1;
-          grouped[kode].total_realisasi += nilai;
-
-          if (historyLabel) grouped[kode].history_count += 1;
-
-          if (waktuOrder > 0) {
-            if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
-              grouped[kode].first_order = waktuOrder;
-            }
-          }
-
-          grouped[kode].rows.push(rowDetail);
         });
       });
 
@@ -874,7 +891,7 @@
           tr.innerHTML = `
             <td>
               ${escapeHtml(item.kode_paket)}
-              ${item.kode_rup_history ? `<div style="font-size:12px;font-weight:800;color:#1d4ed8;margin-top:4px;">RUP: ${escapeHtml(item.kode_rup_history)}</div>` : ''}
+              ${item.history_label ? `<div style="font-size:12px;font-weight:800;color:#1d4ed8;margin-top:4px;">RUP: ${escapeHtml(item.history_label)}</div>` : ''}
             </td>
             <td>${escapeHtml(item.nama_paket)}</td>
             <td>${escapeHtml(item.nama_penyedia)}</td>
