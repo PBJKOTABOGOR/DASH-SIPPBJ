@@ -114,6 +114,24 @@
       });
     }
 
+
+    function showMonitoringLoader(text) {
+      const loader = qs('monitoringLoader') || document.getElementById('monitoringLoader');
+      if (!loader) return;
+
+      const subtitle = loader.querySelector('.loader-subtitle');
+      if (subtitle && text) subtitle.innerText = text;
+
+      loader.classList.add('show');
+    }
+
+    function hideMonitoringLoader() {
+      const loader = qs('monitoringLoader') || document.getElementById('monitoringLoader');
+      if (!loader) return;
+
+      loader.classList.remove('show');
+    }
+
     function setText(id, val) {
       const el = qs(id);
       if (el) el.innerText = val || '';
@@ -363,86 +381,19 @@
       return summary;
     }
 
-
-    function getKodeRupAktifFromText(value) {
-      const raw = String(value || '').trim();
-      if (!raw) return '';
-
-      const parts = raw
-        .split(';')
-        .map(v => v.trim())
-        .filter(Boolean);
-
-      return parts.length ? parts[parts.length - 1] : raw;
-    }
-
-    function getHistoryKodeRupLabel(historyValue, kodeAktif) {
-      const historyRaw = String(historyValue || '').trim();
-      const aktifRaw = String(kodeAktif || '').trim();
-
-      if (!historyRaw) return '';
-      if (!historyRaw.includes(';')) return '';
-
-      const parts = historyRaw
-        .split(';')
-        .map(v => v.trim())
-        .filter(Boolean);
-
-      if (!parts.length) return '';
-
-      const latest = parts[parts.length - 1] || '';
-      if (aktifRaw && latest !== aktifRaw) parts.push(aktifRaw);
-
-      return [...new Set(parts)].join(' → ');
-    }
-
-
-    function getDetailHistoryText(rows) {
-      const histories = (rows || [])
-        .map(item => String(item.history_label || item.history_kode_rup || item.kode_rup_raw || '').trim())
-        .filter(v => v && v.includes(';'));
-
-      const unique = [...new Set(histories)];
-      return unique.length ? unique.join(' | ') : '';
-    }
-
     function groupRealisasi(realRows) {
       const grouped = {};
 
       realRows.forEach(r => {
-        /*
-          Struktur sheet D_REALISASI yang disarankan:
-          - History Kode RUP = kolom riwayat, contoh: 63112551;66824520
-          - Kode RUP         = kolom kode aktif/terbaru, contoh: 66824520
-
-          Kalau kolom Kode RUP masih berisi 63112551;66824520,
-          sistem tetap ambil kode terakhir sebagai kode aktif.
-        */
-        const historyKodeRup = String(
-          r.history_kode_rup ||
-          r.riwayat_kode_rup ||
-          ''
-        ).trim();
-
-        const kodeRaw = String(
-          r.kode_rup ||
-          r.koderup ||
-          r.kode_rup_paket ||
-          ''
-        ).trim();
-
-        const kode = getKodeRupAktifFromText(kodeRaw || historyKodeRup);
+        const kode = String(r.kode_rup || '').trim();
         if (!kode) return;
-
-        const historyLabel = getHistoryKodeRupLabel(historyKodeRup || kodeRaw, kode);
 
         if (!grouped[kode]) {
           grouped[kode] = {
             recall_paket: 0,
             total_realisasi: 0,
             rows: [],
-            first_order: null,
-            history_count: 0
+            first_order: null
           };
         }
 
@@ -459,8 +410,6 @@
         grouped[kode].recall_paket += 1;
         grouped[kode].total_realisasi += nilai;
 
-        if (historyLabel) grouped[kode].history_count += 1;
-
         if (waktuOrder > 0) {
           if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
             grouped[kode].first_order = waktuOrder;
@@ -469,9 +418,6 @@
 
         grouped[kode].rows.push({
           kode_paket: String(r.kode_paket || '').trim(),
-          history_kode_rup: historyKodeRup,
-          kode_rup_aktif: kode,
-          history_label: historyLabel,
           nama_paket: String(r.nama_paket || '').trim(),
           nama_penyedia: String(r.nama_penyedia || '').trim(),
           satuan_kerja: String(r.nama_satuan_kerja || '').trim(),
@@ -556,10 +502,6 @@
           let warning = 'OK';
           if (recallPaket === 0 && posisiJadwal === 'Melewati') {
             warning = 'Belum ada realisasi dan sudah melewati waktu pemilihan.';
-          }
-
-          if (recallPaket > 0 && Number(real.history_count || 0) > 0 && warning === 'OK') {
-            warning = 'Kode RUP realisasi memiliki riwayat perubahan kode.';
           }
 
           const isEPurchasing = String(r.metode_pengadaan || '').toLowerCase().includes('e-purchasing');
@@ -858,16 +800,41 @@
       runMonitoring();
     }
 
+
+    function getReadableHistoryKodeRup(rows, currentKodeRup) {
+      const current = String(currentKodeRup || '').trim();
+
+      const histories = (rows || []).map(item => {
+        const label = String(item.history_label || '').trim();
+        if (label) return label;
+
+        const hist = String(item.history_kode_rup || item.kode_rup_raw || '').trim();
+        if (hist && hist.includes(';')) {
+          return hist.split(';').map(v => v.trim()).filter(Boolean).join(' → ');
+        }
+
+        if (hist && current && hist !== current) {
+          return hist + ' → ' + current;
+        }
+
+        return '';
+      }).filter(Boolean);
+
+      const unique = [...new Set(histories)];
+      return unique.length ? unique.join(' | ') : '-';
+    }
+
     function openDetailModal(kodeRup) {
       const row = allRows.find(r => String(r.kode_rup) === String(kodeRup));
       if (!row) return;
 
       const detailRows = (groupedRealByKode[kodeRup] && groupedRealByKode[kodeRup].rows) ? groupedRealByKode[kodeRup].rows : [];
       const ds = row.detail_summary || {};
-      const historyText = getDetailHistoryText(detailRows);
+      const historyVisible = getReadableHistoryKodeRup(detailRows, row.kode_rup);
 
       setText('detailTitle', 'Detail Kode RUP ' + row.kode_rup);
       setText('detailKodeRup', row.kode_rup);
+      setText('detailHistoryKodeRup', historyVisible);
       setText('detailNamaPaket', row.nama_paket);
       setText('detailSatker', row.satuan_kerja);
       setText('detailPengadaan', row.pengadaan);
@@ -884,7 +851,7 @@
       setText('detailWarning', row.warning || 'OK');
       setText(
         'detailTindakLanjut',
-        (historyText ? 'Riwayat perubahan Kode RUP: ' + historyText.replace(/;/g, ' → ') + '\n' : '') +
+        (historyVisible && historyVisible !== '-' ? 'Riwayat perubahan Kode RUP: ' + historyVisible + '\n' : '') +
         (row.tindak_lanjut || 'Tidak ada catatan tambahan.')
       );
 
@@ -906,8 +873,8 @@
           tr.innerHTML = `
             <td>
               ${escapeHtml(item.kode_paket)}
-              ${item.history_label ? `<div style="font-size:12px;font-weight:800;color:#1d4ed8;margin-top:4px;">History RUP: ${escapeHtml(item.history_label)}</div>` : ''}
-              ${(!item.history_label && item.history_kode_rup && String(item.history_kode_rup).includes(';')) ? `<div style="font-size:12px;font-weight:800;color:#1d4ed8;margin-top:4px;">History RUP: ${escapeHtml(String(item.history_kode_rup).replace(/;/g, ' → '))}</div>` : ''}
+              ${item.history_label ? `<div class="history-rup-line">History RUP: ${escapeHtml(item.history_label)}</div>` : ''}
+              ${(!item.history_label && item.history_kode_rup && String(item.history_kode_rup).includes(';')) ? `<div class="history-rup-line">History RUP: ${escapeHtml(String(item.history_kode_rup).replace(/;/g, ' → '))}</div>` : ''}
             </td>
             <td>${escapeHtml(item.nama_paket)}</td>
             <td>${escapeHtml(item.nama_penyedia)}</td>
@@ -1018,6 +985,7 @@
 
     async function loadMonitoringData() {
       try {
+        showMonitoringLoader('Mengambil data dari Google Sheet...');
         setText('monitoringStatus', 'Memuat data dari Google Sheet...');
 
         const [perencanaanRows, realisasiRows] = await Promise.all([
@@ -1034,8 +1002,10 @@
         setText('sortWaktuArrow', sortWaktuAsc ? '↑' : '↓');
 
         runMonitoring();
+        hideMonitoringLoader();
       } catch (err) {
         console.error(err);
+        hideMonitoringLoader();
         setText('monitoringStatus', 'Gagal memuat data monitoring: ' + (err.message || String(err)));
       }
     }
@@ -1062,6 +1032,11 @@
       .then(() => {
         if (!moduleDestroyed) {
           loadMonitoringData();
+
+    // Fallback agar loader tidak nyangkut kalau koneksi/CDN Google Sheet lambat.
+    setTimeout(() => {
+      hideMonitoringLoader();
+    }, 25000);
         }
       })
       .catch((err) => {
