@@ -5,7 +5,7 @@
     SHEET_ID: '1ccDgtXNATxSYMZuDgd3polvRiTFNiFnjIGMP7b9qmrU',
     SHEETS: {
       perencanaan: 'D_PERENCANAAN',
-      realisasi: 'D_REALISASI'
+      realisasi: 'D_REALISASI_MAP'
     }
   };
 
@@ -17,6 +17,7 @@
     let currentPage = 1;
     let sortWaktuAsc = true;
     let groupedRealByKode = {};
+    let semicolonHistoryLookup = {};
     let moduleDestroyed = false;
 
     const cleanupListeners = [];
@@ -113,6 +114,31 @@
           }
         });
       });
+    }
+
+
+    async function fetchRealisasiSheet() {
+      /*
+        Prioritas baca D_REALISASI_MAP.
+        Sheet ini adalah hasil normalisasi:
+        - 1 Kode RUP = 1 baris realisasi.
+        - Khusus Pengadaan Langsung gabungan, 1 paket realisasi akan dipecah ke semua Kode RUP di History Kode RUP.
+
+        Jika D_REALISASI_MAP belum dibuat, sistem fallback ke D_REALISASI.
+      */
+      try {
+        const mapRows = await fetchSheet(CONFIG.SHEETS.realisasiMap);
+        const normalized = normalizeRows(mapRows);
+        const validRows = normalized.filter(r => String(r.kode_rup || '').trim());
+
+        if (validRows.length > 0) {
+          return mapRows;
+        }
+      } catch (err) {
+        console.warn('D_REALISASI_MAP belum tersedia, fallback ke D_REALISASI.', err);
+      }
+
+      return fetchSheet(CONFIG.SHEETS.realisasi);
     }
 
 
@@ -444,7 +470,8 @@
 
         const hist = String(item.history_kode_rup || item.kode_rup_raw || '').trim();
         if (hist && /[;|,]/.test(hist)) {
-          return hist.split(/[;|,]+/).map(v => v.trim()).filter(Boolean).join(' → ');
+          const separator = item.is_gabungan_rup ? ' + ' : ' → ';
+          return hist.split(/[;|,]+/).map(v => v.trim()).filter(Boolean).join(separator);
         }
 
         if (hist && current && hist !== current) {
@@ -478,18 +505,87 @@
       return '';
     }
 
+
+    function normalizeKodeValue(value) {
+      return String(value == null ? '' : value).trim().replace(/\.0$/, '');
+    }
+
+    function splitHistoryKode(value) {
+      return String(value || '')
+        .split(/[;|,]+/)
+        .map(v => normalizeKodeValue(v))
+        .filter(Boolean);
+    }
+
+    function buildSemicolonHistoryLookup(realRows) {
+      const lookup = {};
+
+      (realRows || []).forEach(r => {
+        const historyRaw = String(r.history_kode_rup || r.riwayat_kode_rup || '').trim();
+        if (!historyRaw || !/[;|,]/.test(historyRaw)) return;
+
+        const parts = splitHistoryKode(historyRaw);
+        if (parts.length <= 1) return;
+
+        const metode = String(r.metode_pengadaan || '').toLowerCase();
+        const jenisMapping = String(r.jenis_mapping || '').toLowerCase();
+        const separator = (metode.includes('pengadaan langsung') || jenisMapping.includes('gabungan')) ? ' + ' : ' → ';
+        const label = [...new Set(parts)].join(separator);
+
+        parts.forEach(kode => {
+          if (!lookup[kode]) lookup[kode] = label;
+        });
+      });
+
+      return lookup;
+    }
+
+    function getSemicolonHistoryForKode(kodeRup, realRows, semicolonLookup) {
+      const kode = normalizeKodeValue(kodeRup);
+
+      // Pertama: ambil dari baris realisasi yang sudah match kode tersebut.
+      const matched = (realRows || []).find(item => {
+        const h = String(item.history_kode_rup || '').trim();
+        return h && /[;|,]/.test(h);
+      });
+
+      if (matched) {
+        const parts = splitHistoryKode(matched.history_kode_rup);
+        if (parts.length > 1) {
+          const isGabungan = String(matched.jenis_mapping || '').toLowerCase().includes('gabungan') ||
+            String(matched.metode || '').toLowerCase().includes('pengadaan langsung');
+          return [...new Set(parts)].join(isGabungan ? ' + ' : ' → ');
+        }
+      }
+
+      // Kedua: cari dari seluruh D_REALISASI_MAP, kalau kode ini ada di dalam History Kode RUP.
+      return semicolonLookup[kode] || '-';
+    }
+
     function groupRealisasi(realRows) {
       const grouped = {};
 
       realRows.forEach(r => {
         /*
-          Ambil history secara fleksibel.
-          Aman untuk header:
-          - History Kode RUP
-          - Riwayat Kode RUP
-          - History Kode Rup
-          - atau variasi yang mengandung history/riwayat + rup
+          ATURAN:
+          1) Pengadaan Langsung + History Kode RUP berisi titik koma (;)
+             = PENGGABUNGAN beberapa Kode RUP menjadi 1 paket realisasi.
+             Semua kode dalam History Kode RUP akan dianggap punya realisasi.
+
+          2) Selain Pengadaan Langsung
+             = titik koma dianggap RIWAYAT PERUBAHAN KODE.
+             Realisasi hanya masuk ke Kode RUP aktif/terbaru.
+
+          CATATAN NILAI:
+          Untuk gabungan RUP, nilai kontrak paket realisasi TIDAK dibebankan penuh ke tiap RUP,
+          karena akan membuat % realisasi tiap RUP jadi melebihi pagu.
+          Di tabel monitoring, nilai gabungan akan disesuaikan maksimal sebesar pagu masing-masing RUP.
+          Nilai kontrak penuh tetap tampil di Detail.
         */
+
+        const metodePengadaan = String(r.metode_pengadaan || '').trim();
+        const metodeLower = metodePengadaan.toLowerCase();
+
         const historyKodeRup = String(
           getLooseRowValue(
             r,
@@ -504,11 +600,6 @@
           ''
         ).trim();
 
-        /*
-          Kolom Kode RUP dipakai sebagai kode aktif/terbaru.
-          Kalau kolom ini ternyata masih berisi gabungan 63112551;66824520,
-          sistem otomatis ambil kode terakhir.
-        */
         const kodeRaw = String(
           getLooseRowValue(
             r,
@@ -518,22 +609,34 @@
           ''
         ).trim();
 
-        const kode = getKodeRupAktifFromText(kodeRaw || historyKodeRup);
-        if (!kode) return;
+        const historyParts = String(historyKodeRup || '')
+          .split(/[;|,]+/)
+          .map(v => v.trim())
+          .filter(Boolean);
 
-        let historyLabel = getHistoryKodeRupLabel(historyKodeRup || kodeRaw, kode);
-        if (!historyLabel) {
-          historyLabel = getHistoryByScanningRow(r, kode);
+        const isPengadaanLangsung = metodeLower.includes('pengadaan langsung');
+        const isGabunganRup = isPengadaanLangsung && historyParts.length > 1;
+
+        let kodeList = [];
+
+        if (isGabunganRup) {
+          kodeList = [...new Set(historyParts)];
+        } else {
+          const kodeAktif = getKodeRupAktifFromText(kodeRaw || historyKodeRup);
+          if (kodeAktif) kodeList = [kodeAktif];
         }
 
-        if (!grouped[kode]) {
-          grouped[kode] = {
-            recall_paket: 0,
-            total_realisasi: 0,
-            rows: [],
-            first_order: null,
-            history_count: 0
-          };
+        if (!kodeList.length) return;
+
+        let historyLabel = '';
+
+        if (isGabunganRup) {
+          historyLabel = historyParts.join(' + ');
+        } else {
+          historyLabel = getHistoryKodeRupLabel(historyKodeRup || kodeRaw, kodeList[0]);
+          if (!historyLabel) {
+            historyLabel = getHistoryByScanningRow(r, kodeList[0]);
+          }
         }
 
         const nilai = parseMoney(
@@ -546,31 +649,53 @@
 
         const waktuOrder = getWaktuOrder(r.waktu_pemilihan || '');
 
-        grouped[kode].recall_paket += 1;
-        grouped[kode].total_realisasi += nilai;
-
-        if (historyLabel) grouped[kode].history_count += 1;
-
-        if (waktuOrder > 0) {
-          if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
-            grouped[kode].first_order = waktuOrder;
-          }
-        }
-
-        grouped[kode].rows.push({
+        const rowDetail = {
           kode_paket: String(r.kode_paket || '').trim(),
           history_kode_rup: historyKodeRup,
           kode_rup_raw: kodeRaw,
-          kode_rup_aktif: kode,
+          kode_rup_aktif: kodeList[kodeList.length - 1] || '',
           history_label: historyLabel,
+          is_gabungan_rup: isGabunganRup,
+          jumlah_kode_gabungan: isGabunganRup ? kodeList.length : 0,
+          jenis_mapping: isGabunganRup ? 'Penggabungan beberapa Kode RUP' : (historyLabel ? 'Perubahan Kode RUP' : ''),
           nama_paket: String(r.nama_paket || '').trim(),
           nama_penyedia: String(r.nama_penyedia || '').trim(),
           satuan_kerja: String(r.nama_satuan_kerja || '').trim(),
-          metode: String(r.metode_pengadaan || '').trim(),
+          metode: metodePengadaan,
           status_paket: String(r.status_paket || '').trim(),
           sumber_transaksi: String(r.sumber_transaksi || '').trim(),
           bast: String(r.bast || '').trim(),
-          nilai: nilai
+          nilai: nilai,
+          nilai_full: nilai
+        };
+
+        kodeList.forEach(kode => {
+          if (!grouped[kode]) {
+            grouped[kode] = {
+              recall_paket: 0,
+              total_realisasi: 0,
+              total_realisasi_full: 0,
+              rows: [],
+              first_order: null,
+              history_count: 0,
+              gabungan_count: 0
+            };
+          }
+
+          grouped[kode].recall_paket += 1;
+          grouped[kode].total_realisasi += nilai;
+          grouped[kode].total_realisasi_full += nilai;
+
+          if (historyLabel && !isGabunganRup) grouped[kode].history_count += 1;
+          if (isGabunganRup) grouped[kode].gabungan_count += 1;
+
+          if (waktuOrder > 0) {
+            if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
+              grouped[kode].first_order = waktuOrder;
+            }
+          }
+
+          grouped[kode].rows.push(rowDetail);
         });
       });
 
@@ -581,6 +706,7 @@
       const planRows = normalizeRows(perencanaanRows);
       const realRows = normalizeRows(realisasiRows);
 
+      semicolonHistoryLookup = buildSemicolonHistoryLookup(realRows);
       groupedRealByKode = groupRealisasi(realRows);
 
       const currentOrder = getCurrentMonthOrder();
@@ -608,7 +734,19 @@
           };
 
           const recallPaket = Number(real.recall_paket || 0);
-          const totalRealisasi = Number(real.total_realisasi || 0);
+          const totalRealisasiFull = Number(real.total_realisasi_full || real.total_realisasi || 0);
+
+          /*
+            Jika realisasi berasal dari gabungan beberapa Kode RUP Pengadaan Langsung,
+            jangan tampilkan nilai paket gabungan penuh pada setiap RUP.
+            Untuk monitoring per kode RUP, cukup dianggap terealisasi sebesar pagu RUP tersebut.
+            Nilai paket gabungan penuh tetap tampil di Detail.
+          */
+          let totalRealisasi = Number(real.total_realisasi || 0);
+          if (Number(real.gabungan_count || 0) > 0 && pagu > 0) {
+            totalRealisasi = Math.min(totalRealisasi, pagu);
+          }
+
           const persentase = pagu > 0 ? (totalRealisasi / pagu) * 100 : 0;
           const sisaPagu = pagu - totalRealisasi;
 
@@ -616,6 +754,7 @@
           const waktuPemilihanOrder = getWaktuOrder(waktuPemilihanLabel);
 
           const detailSummary = analyzePackageStatuses(real.rows || [], r.metode_pengadaan || '');
+          const historyDisplay = getSemicolonHistoryForKode(kodeRup, real.rows || [], semicolonHistoryLookup);
 
           let status = 'Belum Berjalan';
           if (recallPaket > 0) {
@@ -690,6 +829,7 @@
             warning: warning,
             ket_jadwal: ketJadwal,
             tindak_lanjut: tindakLanjut,
+            history_display: historyDisplay,
             detail_summary: detailSummary
           };
         });
@@ -969,6 +1109,35 @@
       return unique.length ? unique.join(' | ') : '-';
     }
 
+
+    function normalizeHistoryText(value, separator) {
+      const raw = String(value || '').trim();
+      if (!raw || raw === '-') return '-';
+
+      const parts = raw
+        .split(/[;|,]+/)
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      if (parts.length <= 1) return raw;
+
+      return [...new Set(parts)].join(separator || ' + ');
+    }
+
+    function getHistoryFromMatchedRows(rows) {
+      const found = (rows || []).find(item => {
+        const h = String(item.history_kode_rup || '').trim();
+        return h && h !== '-';
+      });
+
+      if (!found) return '-';
+
+      const isGabungan = String(found.jenis_mapping || '').toLowerCase().includes('gabungan') ||
+        String(found.metode || '').toLowerCase().includes('pengadaan langsung');
+
+      return normalizeHistoryText(found.history_kode_rup, isGabungan ? ' + ' : ' → ');
+    }
+
     function openDetailModal(kodeRup) {
       const row = allRows.find(r => String(r.kode_rup) === String(kodeRup));
       if (!row) return;
@@ -979,7 +1148,7 @@
 
       setText('detailTitle', 'Detail Kode RUP ' + row.kode_rup);
       setText('detailKodeRup', row.kode_rup);
-      setText('detailHistoryKodeRup', historyVisible);
+      setText('detailHistoryKodeRup', row.history_display || '-');
       setText('detailNamaPaket', row.nama_paket);
       setText('detailSatker', row.satuan_kerja);
       setText('detailPengadaan', row.pengadaan);
@@ -996,7 +1165,7 @@
       setText('detailWarning', row.warning || 'OK');
       setText(
         'detailTindakLanjut',
-        (historyVisible && historyVisible !== '-' ? 'Riwayat perubahan Kode RUP: ' + historyVisible + '\\n' : '') +
+        (row.history_display && row.history_display !== '-' ? 'Gabungan / History Kode RUP: ' + row.history_display + '\n' : '') +
         (row.tindak_lanjut || 'Tidak ada catatan tambahan.')
       );
 
@@ -1018,7 +1187,7 @@
           tr.innerHTML = `
             <td>
               ${escapeHtml(item.kode_paket)}
-              ${item.history_label ? `<div class="history-rup-line">History RUP: ${escapeHtml(item.history_label)}</div>` : ''}
+              ${item.history_label ? `<div class="history-rup-line">${item.is_gabungan_rup ? 'Gabungan RUP' : 'History RUP'}: ${escapeHtml(item.history_label)}</div>` : ''}
               ${(!item.history_label && item.history_kode_rup && String(item.history_kode_rup).includes(';')) ? `<div class="history-rup-line">History RUP: ${escapeHtml(String(item.history_kode_rup).replace(/;/g, ' → '))}</div>` : ''}
             </td>
             <td>${escapeHtml(item.nama_paket)}</td>
@@ -1028,7 +1197,10 @@
             <td>${escapeHtml(item.status_paket)}</td>
             <td>${escapeHtml(item.sumber_transaksi)}</td>
             <td>${escapeHtml(item.bast || '-')}</td>
-            <td class="right">${formatMoney(item.nilai)}</td>
+            <td class="right">
+              ${formatMoney(item.nilai)}
+              ${item.is_gabungan_rup ? `<div class="history-rup-line">Nilai paket gabungan</div>` : ''}
+            </td>
           `;
           tbody.appendChild(tr);
         });
@@ -1135,7 +1307,7 @@
 
         const [perencanaanRows, realisasiRows] = await Promise.all([
           fetchSheet(CONFIG.SHEETS.perencanaan),
-          fetchSheet(CONFIG.SHEETS.realisasi)
+          fetchRealisasiSheet()
         ]);
 
         if (moduleDestroyed) return;
