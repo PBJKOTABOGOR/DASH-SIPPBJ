@@ -606,3 +606,66 @@
 .monitoring-module .hero{
   margin-top:0;
 }
+
+
+    /* Loader gaya simpel seperti modul SiRUP */
+    .monitoring-loader{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(241,247,255,.58);
+      backdrop-filter:blur(9px);
+      -webkit-backdrop-filter:blur(9px);
+      z-index:99999;
+    }
+
+    .monitoring-loader.show{
+      display:flex;
+    }
+
+    .sirup-loader-card{
+      width:min(340px, calc(100vw - 42px));
+      background:#ffffff;
+      border:1px solid #e6eef8;
+      border-radius:22px;
+      padding:28px 24px 26px;
+      text-align:center;
+      box-shadow:0 24px 70px rgba(15,23,42,.16);
+      animation:sirupLoaderPop .25s ease both;
+    }
+
+    .sirup-spinner{
+      width:44px;
+      height:44px;
+      margin:0 auto 16px;
+      border-radius:50%;
+      border:4px solid #dbeafe;
+      border-top-color:#1d4ed8;
+      border-right-color:#2f9a8f;
+      animation:sirupSpin .9s linear infinite;
+    }
+
+    .sirup-loader-title{
+      font-size:16px;
+      font-weight:950;
+      color:#0f2a4a;
+      margin-bottom:8px;
+    }
+
+    .sirup-loader-subtitle{
+      font-size:12px;
+      font-weight:750;
+      color:#64748b;
+      line-height:1.45;
+    }
+
+    @keyframes sirupSpin{
+      to{transform:rotate(360deg)}
+    }
+
+    @keyframes sirupLoaderPop{
+      from{opacity:0; transform:translateY(8px) scale(.97)}
+      to{opacity:1; transform:translateY(0) scale(1)}
+    }
