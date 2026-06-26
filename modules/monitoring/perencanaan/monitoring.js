@@ -90,7 +90,8 @@
     }
 
     function csvUrlBySheetName(sheetId, sheetName) {
-      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+      const cacheBust = Date.now();
+      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&cache_bust=${cacheBust}`;
     }
 
     function fetchSheet(sheetName) {
@@ -381,19 +382,157 @@
       return summary;
     }
 
+
+    function getLooseRowValue(row, exactKeys, mustContainWords) {
+      if (!row) return '';
+
+      for (const key of exactKeys || []) {
+        if (row[key] != null && String(row[key]).trim() !== '') {
+          return row[key];
+        }
+      }
+
+      const keys = Object.keys(row || {});
+      for (const key of keys) {
+        const cleanKey = String(key || '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const ok = (mustContainWords || []).every(word => cleanKey.includes(word));
+        if (ok && row[key] != null && String(row[key]).trim() !== '') {
+          return row[key];
+        }
+      }
+
+      return '';
+    }
+
+    function getKodeRupAktifFromText(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+
+      const parts = raw
+        .split(/[;|,]+/)
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      return parts.length ? parts[parts.length - 1] : raw;
+    }
+
+    function getHistoryKodeRupLabel(historyValue, kodeAktif) {
+      const historyRaw = String(historyValue || '').trim();
+      const aktifRaw = String(kodeAktif || '').trim();
+
+      if (!historyRaw) return '';
+
+      const parts = historyRaw
+        .split(/[;|,]+/)
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      if (parts.length <= 1) return '';
+
+      const latest = parts[parts.length - 1] || '';
+      if (aktifRaw && latest !== aktifRaw) parts.push(aktifRaw);
+
+      return [...new Set(parts)].join(' → ');
+    }
+
+    function getReadableHistoryKodeRup(rows, currentKodeRup) {
+      const current = String(currentKodeRup || '').trim();
+
+      const histories = (rows || []).map(item => {
+        const label = String(item.history_label || '').trim();
+        if (label) return label;
+
+        const hist = String(item.history_kode_rup || item.kode_rup_raw || '').trim();
+        if (hist && /[;|,]/.test(hist)) {
+          return hist.split(/[;|,]+/).map(v => v.trim()).filter(Boolean).join(' → ');
+        }
+
+        if (hist && current && hist !== current) {
+          return hist + ' → ' + current;
+        }
+
+        return '';
+      }).filter(Boolean);
+
+      const unique = [...new Set(histories)];
+      return unique.length ? unique.join(' | ') : '-';
+    }
+
+
+    function getHistoryByScanningRow(row, activeKode) {
+      const active = String(activeKode || '').trim();
+      const values = Object.values(row || {});
+
+      for (const val of values) {
+        const text = String(val || '').trim();
+        if (!text) continue;
+
+        if (/[;|,]/.test(text)) {
+          const parts = text.split(/[;|,]+/).map(v => v.trim()).filter(Boolean);
+          if (parts.length > 1 && (!active || parts.includes(active))) {
+            return parts.join(' → ');
+          }
+        }
+      }
+
+      return '';
+    }
+
     function groupRealisasi(realRows) {
       const grouped = {};
 
       realRows.forEach(r => {
-        const kode = String(r.kode_rup || '').trim();
+        /*
+          Ambil history secara fleksibel.
+          Aman untuk header:
+          - History Kode RUP
+          - Riwayat Kode RUP
+          - History Kode Rup
+          - atau variasi yang mengandung history/riwayat + rup
+        */
+        const historyKodeRup = String(
+          getLooseRowValue(
+            r,
+            ['history_kode_rup', 'riwayat_kode_rup', 'history_koderup', 'riwayat_koderup'],
+            ['history', 'rup']
+          ) ||
+          getLooseRowValue(
+            r,
+            [],
+            ['riwayat', 'rup']
+          ) ||
+          ''
+        ).trim();
+
+        /*
+          Kolom Kode RUP dipakai sebagai kode aktif/terbaru.
+          Kalau kolom ini ternyata masih berisi gabungan 63112551;66824520,
+          sistem otomatis ambil kode terakhir.
+        */
+        const kodeRaw = String(
+          getLooseRowValue(
+            r,
+            ['kode_rup', 'koderup', 'kode_rup_paket'],
+            ['kode', 'rup']
+          ) ||
+          ''
+        ).trim();
+
+        const kode = getKodeRupAktifFromText(kodeRaw || historyKodeRup);
         if (!kode) return;
+
+        let historyLabel = getHistoryKodeRupLabel(historyKodeRup || kodeRaw, kode);
+        if (!historyLabel) {
+          historyLabel = getHistoryByScanningRow(r, kode);
+        }
 
         if (!grouped[kode]) {
           grouped[kode] = {
             recall_paket: 0,
             total_realisasi: 0,
             rows: [],
-            first_order: null
+            first_order: null,
+            history_count: 0
           };
         }
 
@@ -410,6 +549,8 @@
         grouped[kode].recall_paket += 1;
         grouped[kode].total_realisasi += nilai;
 
+        if (historyLabel) grouped[kode].history_count += 1;
+
         if (waktuOrder > 0) {
           if (!grouped[kode].first_order || waktuOrder < grouped[kode].first_order) {
             grouped[kode].first_order = waktuOrder;
@@ -418,6 +559,10 @@
 
         grouped[kode].rows.push({
           kode_paket: String(r.kode_paket || '').trim(),
+          history_kode_rup: historyKodeRup,
+          kode_rup_raw: kodeRaw,
+          kode_rup_aktif: kode,
+          history_label: historyLabel,
           nama_paket: String(r.nama_paket || '').trim(),
           nama_penyedia: String(r.nama_penyedia || '').trim(),
           satuan_kerja: String(r.nama_satuan_kerja || '').trim(),
@@ -851,7 +996,7 @@
       setText('detailWarning', row.warning || 'OK');
       setText(
         'detailTindakLanjut',
-        (historyVisible && historyVisible !== '-' ? 'Riwayat perubahan Kode RUP: ' + historyVisible + '\n' : '') +
+        (historyVisible && historyVisible !== '-' ? 'Riwayat perubahan Kode RUP: ' + historyVisible + '\\n' : '') +
         (row.tindak_lanjut || 'Tidak ada catatan tambahan.')
       );
 
@@ -1036,7 +1181,7 @@
     // Fallback agar loader tidak nyangkut kalau koneksi/CDN Google Sheet lambat.
     setTimeout(() => {
       hideMonitoringLoader();
-    }, 25000);
+    }, 12000);
         }
       })
       .catch((err) => {
