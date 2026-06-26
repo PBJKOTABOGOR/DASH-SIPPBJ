@@ -396,6 +396,16 @@
       return [...new Set(parts)].join(' → ');
     }
 
+
+    function getDetailHistoryText(rows) {
+      const histories = (rows || [])
+        .map(item => String(item.history_label || item.history_kode_rup || item.kode_rup_raw || '').trim())
+        .filter(v => v && v.includes(';'));
+
+      const unique = [...new Set(histories)];
+      return unique.length ? unique.join(' | ') : '';
+    }
+
     function groupRealisasi(realRows) {
       const grouped = {};
 
@@ -854,6 +864,7 @@
 
       const detailRows = (groupedRealByKode[kodeRup] && groupedRealByKode[kodeRup].rows) ? groupedRealByKode[kodeRup].rows : [];
       const ds = row.detail_summary || {};
+      const historyText = getDetailHistoryText(detailRows);
 
       setText('detailTitle', 'Detail Kode RUP ' + row.kode_rup);
       setText('detailKodeRup', row.kode_rup);
@@ -871,7 +882,11 @@
       setText('detailSisaPagu', formatMoney(row.sisa_pagu));
       setText('detailRingkasanPaket', ds.ringkasanPaket || 'Belum ada paket realisasi');
       setText('detailWarning', row.warning || 'OK');
-      setText('detailTindakLanjut', row.tindak_lanjut || 'Tidak ada catatan tambahan.');
+      setText(
+        'detailTindakLanjut',
+        (historyText ? 'Riwayat perubahan Kode RUP: ' + historyText.replace(/;/g, ' → ') + '\n' : '') +
+        (row.tindak_lanjut || 'Tidak ada catatan tambahan.')
+      );
 
       const tbody = qs('detailBody');
       const empty = qs('detailEmpty');
@@ -891,7 +906,8 @@
           tr.innerHTML = `
             <td>
               ${escapeHtml(item.kode_paket)}
-              ${item.history_label ? `<div style="font-size:12px;font-weight:800;color:#1d4ed8;margin-top:4px;">RUP: ${escapeHtml(item.history_label)}</div>` : ''}
+              ${item.history_label ? `<div style="font-size:12px;font-weight:800;color:#1d4ed8;margin-top:4px;">History RUP: ${escapeHtml(item.history_label)}</div>` : ''}
+              ${(!item.history_label && item.history_kode_rup && String(item.history_kode_rup).includes(';')) ? `<div style="font-size:12px;font-weight:800;color:#1d4ed8;margin-top:4px;">History RUP: ${escapeHtml(String(item.history_kode_rup).replace(/;/g, ' → '))}</div>` : ''}
             </td>
             <td>${escapeHtml(item.nama_paket)}</td>
             <td>${escapeHtml(item.nama_penyedia)}</td>
