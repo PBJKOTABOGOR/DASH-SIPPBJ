@@ -2129,7 +2129,7 @@ function renderQuickSummaryCard(data, scopeLabel, scopeDesc) {
       <div class="summary-stat-grid summary-stat-grid--warning">
         ${renderWarningCard('selesai', 'Selesai', warning.selesai, 'Paket sudah selesai/prosesnya sudah tuntas.', warning.selesai > 0 ? 'success' : '')}
         ${renderWarningCard('sedangBerjalan', 'Sedang Berjalan', warning.sedangBerjalan, 'Paket sudah ada proses/realisasi dan masih berjalan.', warning.sedangBerjalan > 0 ? 'info' : '')}
-        ${renderWarningCard('belumBerjalan', 'Belum Berjalan', warning.belumBerjalan, 'Paket belum ada proses/realisasi yang tercatat.', 'muted')}
+        ${renderWarningCard('belumBerjalan', 'Belum Berjalan', warning.belumBerjalan, 'Paket belum memasuki waktu pemilihan.', 'muted')}
         ${renderWarningCard('melewatiWaktuPemilihan', 'Melewati Waktu Pemilihan', warning.melewatiWaktuPemilihan, 'Jadwal pemilihan sudah lewat, tapi paket belum selesai/bergerak sesuai data.', warning.melewatiWaktuPemilihan > 0 ? 'danger' : '')}
         ${renderWarningCard('melebihiTargetPemilihan', 'Melebihi Target Pemilihan', warning.melebihiTargetPemilihan, 'Realisasi/proses muncul lebih cepat dari jadwal pemilihan yang direncanakan.', warning.melebihiTargetPemilihan > 0 ? 'warning' : '')}
       </div>
