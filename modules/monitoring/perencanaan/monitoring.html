@@ -1,4 +1,17 @@
 <div class="monitoring-module">
+  <div id="monitoringLoader" class="monitoring-loader show">
+    <div class="loader-card">
+      <div class="loader-logo">
+        <span>S</span>
+      </div>
+      <div class="loader-title">Memuat Monitoring</div>
+      <div class="loader-subtitle">Mengambil data dari Google Sheet...</div>
+      <div class="loader-bar">
+        <div class="loader-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="wrap">
     <div class="hero">
       <h1>Monitoring Perencanaan</h1>
@@ -165,6 +178,11 @@
             <div class="meta-label">Kode RUP</div>
             <div class="meta-value" id="detailKodeRup">-</div>
           </div>
+
+          <div class="meta-box history-rup-box">
+            <div class="meta-label">History Kode RUP</div>
+            <div class="meta-value compact history-rup-text" id="detailHistoryKodeRup">-</div>
+          </div>
           <div class="meta-box">
             <div class="meta-label">Nama Paket</div>
             <div class="meta-value compact" id="detailNamaPaket">-</div>
@@ -291,6 +309,24 @@
           }
         });
       });
+    }
+
+
+    function showMonitoringLoader(text) {
+      const loader = qs('monitoringLoader') || document.getElementById('monitoringLoader');
+      if (!loader) return;
+
+      const subtitle = loader.querySelector('.loader-subtitle');
+      if (subtitle && text) subtitle.innerText = text;
+
+      loader.classList.add('show');
+    }
+
+    function hideMonitoringLoader() {
+      const loader = qs('monitoringLoader') || document.getElementById('monitoringLoader');
+      if (!loader) return;
+
+      loader.classList.remove('show');
     }
 
     function setText(id, val) {
@@ -985,16 +1021,42 @@
       runMonitoring();
     }
 
+
+    function getReadableHistoryKodeRup(rows, currentKodeRup) {
+      const current = String(currentKodeRup || '').trim();
+
+      const histories = (rows || []).map(item => {
+        const label = String(item.history_label || '').trim();
+        if (label) return label;
+
+        const hist = String(item.history_kode_rup || item.kode_rup_raw || '').trim();
+        if (hist && hist.includes(';')) {
+          return hist.split(';').map(v => v.trim()).filter(Boolean).join(' → ');
+        }
+
+        if (hist && current && hist !== current) {
+          return hist + ' → ' + current;
+        }
+
+        return '';
+      }).filter(Boolean);
+
+      const unique = [...new Set(histories)];
+      return unique.length ? unique.join(' | ') : '-';
+    }
+
     function openDetailModal(kodeRup) {
       const row = allRows.find(r => String(r.kode_rup) === String(kodeRup));
       if (!row) return;
 
       const detailRows = (groupedRealByKode[kodeRup] && groupedRealByKode[kodeRup].rows) ? groupedRealByKode[kodeRup].rows : [];
       const ds = row.detail_summary || {};
+      const historyVisible = getReadableHistoryKodeRup(detailRows, row.kode_rup);
       const historyText = getDetailHistoryText(detailRows);
 
       setText('detailTitle', 'Detail Kode RUP ' + row.kode_rup);
       setText('detailKodeRup', row.kode_rup);
+      setText('detailHistoryKodeRup', historyVisible);
       setText('detailNamaPaket', row.nama_paket);
       setText('detailSatker', row.satuan_kerja);
       setText('detailPengadaan', row.pengadaan);
@@ -1011,7 +1073,7 @@
       setText('detailWarning', row.warning || 'OK');
       setText(
         'detailTindakLanjut',
-        (historyText ? 'Riwayat perubahan Kode RUP: ' + historyText.replace(/;/g, ' → ') + '\n' : '') +
+        (historyVisible && historyVisible !== '-' ? 'Riwayat perubahan Kode RUP: ' + historyVisible + '\n' : '') +
         (row.tindak_lanjut || 'Tidak ada catatan tambahan.')
       );
 
@@ -1167,6 +1229,7 @@
 
     async function loadMonitoringData() {
       try {
+        showMonitoringLoader('Mengambil data dari Google Sheet...');
         setText('monitoringStatus', 'Memuat data dari Google Sheet...');
 
         const [perencanaanRows, realisasiRows] = await Promise.all([
@@ -1179,12 +1242,19 @@
         setText('sortWaktuLabel', sortWaktuAsc ? 'Terlama → Terbaru' : 'Terbaru → Terlama');
         setText('sortWaktuArrow', sortWaktuAsc ? '↑' : '↓');
         runMonitoring();
+        hideMonitoringLoader();
       } catch (err) {
         console.error(err);
+        hideMonitoringLoader();
         setText('monitoringStatus', 'Gagal memuat data monitoring: ' + (err.message || String(err)));
       }
     }
 
     loadMonitoringData();
+
+    // Fallback agar loader tidak nyangkut kalau koneksi/CDN Google Sheet lambat.
+    setTimeout(() => {
+      hideMonitoringLoader();
+    }, 25000);
   </script>
 </div>
