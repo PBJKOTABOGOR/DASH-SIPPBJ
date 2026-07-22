@@ -425,11 +425,24 @@
     return `<div class="rp-link-box"><a href="${esc(val)}" target="_blank" rel="noopener noreferrer">Buka file ${esc(label)}</a></div>`;
   }
   function renderLinkOnly(url, label) { const val = String(url || '').trim(); return val ? `<div class="rp-link-box"><a href="${esc(val)}" target="_blank" rel="noopener noreferrer">Buka file ${esc(label)}</a></div>` : '<div class="rp-muted">Tidak ada file.</div>'; }
+  function linkifyText(text) {
+    const raw = String(text || '');
+    const parts = raw.split(/(https?:\/\/[^\s<>"']+)/g);
+    return parts.map((part) => {
+      if (/^https?:\/\//i.test(part)) {
+        const cleanUrl = part.replace(/[.,;:)]+$/g, '');
+        const tail = part.slice(cleanUrl.length);
+        return `<a href="${esc(cleanUrl)}" target="_blank" rel="noopener noreferrer">${esc(cleanUrl)}</a>${esc(tail)}`;
+      }
+      return esc(part);
+    }).join('');
+  }
+
   function renderBullets(text) {
     const val = String(text || '').trim(); if (!val || val === '-') return '<div class="rp-note-box rp-muted">Tidak ada analisis manual.</div>';
     const lines = val.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-    if (lines.length <= 1) return `<div class="rp-note-box">${esc(val)}</div>`;
-    return `<div class="rp-note-box"><ul class="rp-bullets">${lines.map((line) => `<li>${esc(line.replace(/^[-•]\s*/, ''))}</li>`).join('')}</ul></div>`;
+    if (lines.length <= 1) return `<div class="rp-note-box">${linkifyText(val)}</div>`;
+    return `<div class="rp-note-box"><ul class="rp-bullets">${lines.map((line) => `<li>${linkifyText(line.replace(/^[-•]\s*/, ''))}</li>`).join('')}</ul></div>`;
   }
 
   function renderReportShell(id) {
