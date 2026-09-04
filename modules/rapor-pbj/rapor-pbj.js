@@ -395,7 +395,8 @@
       width:100%;
       max-width:none;
       margin:0;
-      padding:12px 14px 34px;
+      padding:6px 8px 24px;
+      scroll-snap-type:y proximity;
       background:
         radial-gradient(circle at 10% 0%,rgba(210,168,77,.07),transparent 22%),
         linear-gradient(180deg,#f5f1e9,#ece7de);
@@ -409,16 +410,23 @@
         repeating-linear-gradient(180deg,transparent 0 31px,rgba(60,87,108,.045) 31px 32px),
         var(--paper);
       border-radius:4px 14px 14px 4px;
-      margin:0 auto 28px;
-      width:min(100%,1380px);
+      margin:0 auto 18px;
+      width:min(100%,1520px);
       overflow:visible;
       border:1px solid #d8d1c5;
       box-shadow:0 22px 50px rgba(46,55,63,.13),-9px 8px 0 #e7e0d4;
       page-break-after:always;
       animation:rpPaperIn .48s cubic-bezier(.22,.8,.2,1) both;
       transform-origin:50% 0;
+      scroll-snap-align:start;
+      scroll-margin-top:70px;
+      transition:transform .34s cubic-bezier(.22,.8,.2,1), box-shadow .34s ease, filter .34s ease;
+      cursor:pointer;
     }
     .rp-report-page:last-child{page-break-after:auto}
+    .rp-report-page:nth-child(odd){transform:perspective(1900px) rotateY(-.65deg)}
+    .rp-report-page:nth-child(even){transform:perspective(1900px) rotateY(.65deg)}
+    .rp-report-page.active{transform:perspective(1900px) rotateY(0deg) translateY(-2px);box-shadow:0 28px 62px rgba(46,55,63,.16),-12px 10px 0 #e7e0d4;filter:saturate(1.02)}
     .rp-report-page::before{
       content:"";
       position:absolute;
@@ -464,14 +472,14 @@
       position:relative;
       background:transparent;
       color:#15375c;
-      padding:28px 74px 18px 76px;
+      padding:20px 62px 14px 68px;
       border-bottom:1px solid #d9d4ca;
     }
     .rp-page-head::after{
       content:"";
       position:absolute;
-      left:76px;
-      right:28px;
+      left:68px;
+      right:24px;
       bottom:-1px;
       height:2px;
       background:linear-gradient(90deg,var(--blue),var(--teal),transparent 80%);
@@ -495,24 +503,35 @@
       font-weight:900;
       letter-spacing:.18em;
     }
+    .rp-page-head::before{
+      content:"";
+      position:absolute;
+      right:18px;
+      top:0;
+      width:32px;
+      height:42px;
+      background:linear-gradient(180deg,#f4ead5,#e6d5b6);
+      clip-path:polygon(0 0,100% 0,100% 100%,50% 77%,0 100%);
+      box-shadow:0 8px 14px rgba(73,64,40,.12);
+    }
 
     /* Cover */
     .rp-cover{
-      min-height:420px;
+      min-height:250px;
       display:flex;
       flex-direction:column;
-      justify-content:center;
+      justify-content:flex-start;
       text-align:left;
-      padding:54px 96px 54px 92px;
+      padding:40px 64px 28px 74px;
       background:
         linear-gradient(90deg,#1e5b96 0 18px,transparent 18px),
         linear-gradient(180deg,rgba(63,154,149,.07),transparent 50%);
       border-bottom:none;
     }
     .rp-cover::after{
-      left:92px;
-      right:92px;
-      bottom:42px;
+      left:74px;
+      right:60px;
+      bottom:20px;
       height:1px;
       background:#c8d4dc;
     }
@@ -532,7 +551,7 @@
     }
     .rp-main-title{
       font-family:Georgia,"Times New Roman",serif;
-      font-size:47px;
+      font-size:44px;
       font-weight:700;
       line-height:1.04;
       margin-bottom:16px;
@@ -550,7 +569,7 @@
       max-width:980px;
     }
     .rp-period{
-      margin-top:24px;
+      margin-top:16px;
       font-size:12px;
       font-weight:900;
       letter-spacing:.13em;
@@ -558,7 +577,7 @@
       text-transform:uppercase
     }
 
-    .rp-page-body{padding:25px 30px 30px 76px}
+    .rp-page-body{padding:18px 22px 22px 68px}
     .rp-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
     .rp-meta-box,.rp-summary-box,.rp-link-box,.rp-note-box{
       background:rgba(255,254,250,.92);
@@ -608,7 +627,7 @@
       background:#f4efe5;
       border:1px solid #d9d1c5;
       border-radius:5px;
-      padding:22px;
+      padding:16px;
       min-height:120px;
       box-shadow:0 10px 20px rgba(41,50,57,.08);
       transform:rotate(-.08deg)
@@ -629,7 +648,7 @@
     .rp-img-box img{
       display:block;
       max-width:100%;
-      max-height:560px;
+      max-height:660px;
       object-fit:contain;
       margin:0 auto;
       border-radius:2px;
@@ -673,11 +692,11 @@
       .rp-inline-actions button{width:100%}
       .rp-report-wrap{padding:7px}
       .rp-report-page{border-radius:3px 10px 10px 3px;box-shadow:0 12px 26px rgba(46,55,63,.10)}
-      .rp-page-head{padding:24px 58px 16px 48px}
-      .rp-page-head::after{left:48px}
-      .rp-page-body{padding:22px 18px 26px 48px}
-      .rp-cover{padding:48px 42px 52px 52px}
-      .rp-main-title{font-size:34px}
+      .rp-page-head{padding:20px 44px 14px 42px}
+      .rp-page-head::after{left:42px}
+      .rp-page-body{padding:16px 14px 22px 42px}
+      .rp-cover{padding:34px 28px 24px 46px;min-height:220px}
+      .rp-main-title{font-size:31px}
       .rp-sub-title{font-size:18px}
       .rp-report-page::before{left:15px}
     }
@@ -1110,6 +1129,7 @@
     $('#narasi_toggle_btn')?.addEventListener('click', toggleNarasiSection);
     $('#playNarasiButton')?.addEventListener('click', playNarasiAI);
     $('#stopNarasiButton')?.addEventListener('click', stopNarasiAI);
+    initBookReadingEffects();
   }
 
   function renderMonitoringSection() {
@@ -1188,7 +1208,7 @@
     setHtml('#img_itkp', renderImageOrLink(itkp.file_screenshot || itkp.file_screenshot_itkp || itkp.file_url || '', 'ITKP'));
     setHtml('#analisis_manual', renderBullets(analisis.kesimpulan_progres || '-'));
     const narasiAi = String(aiReport.narasi_ai || '').trim(); const narasiAiVoice = String(aiReport.narasi_ai_voice || '').trim();
-    setText('#narasi_ai_box', narasiAi || 'Belum ada Analisa AI.'); aiVoiceText = narasiAiVoice || narasiAi || ''; setText('#voice_status_box', aiVoiceText ? 'Klik Play untuk membacakan analisa.' : 'Analisa AI belum tersedia untuk dibacakan.'); resetVoiceProgress(0); prepareVoices();
+    setText('#narasi_ai_box', narasiAi || 'Belum ada Analisa AI.'); aiVoiceText = narasiAiVoice || narasiAi || ''; setText('#voice_status_box', aiVoiceText ? 'Klik Play untuk membacakan analisa.' : 'Analisa AI belum tersedia untuk dibacakan.'); resetVoiceProgress(0); prepareVoices(); initBookReadingEffects();
   }
 
   function formatVoiceTime(ms) { const s = Math.max(0, Math.floor(Number(ms||0)/1000)); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
@@ -1204,6 +1224,30 @@
   function playNarasiAI(){ if(!('speechSynthesis' in window)){ setText('#voice_status_box','Browser ini tidak mendukung suara AI bawaan.'); return; } const text=String(aiVoiceText || $('#narasi_ai_box')?.innerText || '').trim(); if(!text || text==='Belum ada Analisa AI.'){ setText('#voice_status_box','Analisa AI belum tersedia untuk dibacakan.'); return; } const rate=1.08; window.speechSynthesis.cancel(); currentUtterance=new SpeechSynthesisUtterance(text); currentUtterance.lang='id-ID'; currentUtterance.rate=rate; currentUtterance.pitch=1; currentUtterance.volume=1; const voice=getPreferredVoice(); if(voice) currentUtterance.voice=voice; const estimated=estimateSpeechDurationMs(text,rate); currentUtterance.onstart=()=>{ startVoiceProgress(estimated); setText('#voice_status_box','Sedang membacakan Analisa AI...'); }; currentUtterance.onend=()=>{ currentUtterance=null; completeVoiceProgress(); setText('#voice_status_box','Selesai membacakan Analisa AI.'); }; currentUtterance.onerror=(e)=>{ currentUtterance=null; stopVoiceProgress(); setText('#voice_status_box','Gagal memutar suara AI: '+(e&&e.error?e.error:'unknown error')); }; setTimeout(()=>window.speechSynthesis.speak(currentUtterance),150); }
   function stopNarasiAI(){ if(!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); currentUtterance=null; stopVoiceProgress(); setText('#voice_status_box','Suara dihentikan.'); }
   function toggleNarasiSection(){ const body=$('#narasi_ai_body'); const btn=$('#narasi_toggle_btn'); if(!body||!btn) return; const hidden=body.classList.contains('rp-hidden'); body.classList.toggle('rp-hidden',!hidden); btn.innerText=hidden?'Minimize':'Tampilkan'; }
+
+  function initBookReadingEffects() {
+    const pages = $all('.rp-report-page');
+    if (!pages.length) return;
+    pages.forEach((page, index) => {
+      page.dataset.pageNo = String(index + 1);
+      page.addEventListener('click', () => {
+        page.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+    const activate = (page) => {
+      pages.forEach((p) => p.classList.toggle('active', p === page));
+    };
+    activate(pages[0]);
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) activate(visible[0].target);
+      }, { root: null, threshold: [0.35, 0.55, 0.75] });
+      pages.forEach((page) => observer.observe(page));
+    }
+  }
 
   window.__moduleInit = function ({ container }) {
     destroyed = false;
