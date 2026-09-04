@@ -77,43 +77,28 @@
       width:100%;
       max-width:none;
       margin:0;
-      padding:8px 10px 28px;
+      padding:8px 10px 34px;
       border-radius:22px;
       background:
         radial-gradient(circle at 18% 0%,rgba(210,168,77,.08),transparent 22%),
         linear-gradient(180deg,#f4f0e7 0%,#ebe5db 100%);
       perspective:2200px;
-      overflow:hidden;
     }
     .rp-reader-stage{
       position:relative;
-      width:min(100%,1480px);
+      width:min(100%,1520px);
       margin:0 auto;
-      min-height:640px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
-      padding:8px 18px 22px;
+      display:block;
+      padding:8px 16px 24px;
     }
-    .rp-book-shadow{
-      position:absolute;
-      left:7%;
-      right:7%;
-      bottom:2px;
-      height:42px;
-      border-radius:50%;
-      background:rgba(53,48,42,.18);
-      filter:blur(24px);
-      transform:scaleY(.52);
-      pointer-events:none;
-    }
+    .rp-book-shadow{display:none}
     .rp-report-page{
       counter-increment:folio;
-      display:none;
+      display:block;
       position:relative;
       width:100%;
-      min-height:600px;
-      margin:0;
+      min-height:0;
+      margin:0 auto 22px;
       overflow:hidden;
       border:1px solid #d7d0c3;
       border-radius:5px 15px 15px 5px;
@@ -122,16 +107,37 @@
         repeating-linear-gradient(180deg,transparent 0 31px,rgba(55,76,91,.045) 31px 32px),
         var(--paper);
       box-shadow:
-        0 26px 60px rgba(43,48,53,.17),
-        -10px 7px 0 #e4ddd1,
-        -17px 13px 0 #d8d0c3;
-      transform-origin:left center;
+        0 18px 42px rgba(43,48,53,.12),
+        -8px 6px 0 #e4ddd1,
+        -13px 10px 0 #d8d0c3;
+      transform-origin:50% 0%;
       backface-visibility:hidden;
-      will-change:transform,opacity,filter;
+      will-change:transform,opacity,filter,box-shadow;
       page-break-after:always;
+      scroll-margin-top:76px;
+      transition:
+        opacity .66s cubic-bezier(.16,.84,.28,1),
+        transform .66s cubic-bezier(.16,.84,.28,1),
+        filter .66s ease,
+        box-shadow .42s ease;
     }
-    .rp-report-page.rp-page-active{display:block}
-    .rp-report-page:last-child{page-break-after:auto}
+    .rp-report-page:last-child{page-break-after:auto;margin-bottom:4px}
+    .rp-report-page.rp-page-reveal{
+      opacity:.22;
+      transform:translateY(46px) perspective(1800px) rotateX(4.2deg) scale(.988);
+      filter:blur(.25px) saturate(.92);
+    }
+    .rp-report-page.rp-page-inview{
+      opacity:1;
+      transform:translateY(0) perspective(1800px) rotateX(0deg) scale(1);
+      filter:none;
+    }
+    .rp-report-page.rp-page-current{
+      box-shadow:
+        0 25px 58px rgba(43,48,53,.16),
+        -10px 8px 0 #e4ddd1,
+        -16px 13px 0 #d8d0c3;
+    }
     .rp-report-page::before{
       content:"";
       position:absolute;
@@ -167,43 +173,29 @@
       letter-spacing:.12em;
       box-shadow:-7px 8px 15px rgba(30,91,150,.17);
       z-index:10;
+      transition:transform .28s ease, box-shadow .28s ease;
     }
-    .rp-report-page.rp-turn-next{
-      display:block;
-      animation:rpTurnNext .72s cubic-bezier(.16,.84,.28,1) both;
-      z-index:20;
+    .rp-report-page.rp-page-current::after{
+      transform:translateX(-4px);
+      box-shadow:-10px 9px 18px rgba(30,91,150,.22);
     }
-    .rp-report-page.rp-turn-prev{
-      display:block;
-      animation:rpTurnPrev .72s cubic-bezier(.16,.84,.28,1) both;
-      z-index:20;
+    .rp-report-page .rp-page-head::before{
+      content:"";
+      position:absolute;
+      right:18px;
+      bottom:-1px;
+      width:34px;
+      height:34px;
+      pointer-events:none;
+      opacity:0;
+      background:linear-gradient(135deg,transparent 0 48%,#e4dac9 49% 67%,#fff8ea 68% 100%);
+      filter:drop-shadow(-3px -2px 4px rgba(65,56,45,.10));
+      transform:translate(10px,10px) scale(.7);
+      transition:opacity .36s ease,transform .36s ease;
     }
-    .rp-report-page.rp-enter-next{
-      display:block;
-      animation:rpEnterNext .72s cubic-bezier(.16,.84,.28,1) both;
-      z-index:10;
-    }
-    .rp-report-page.rp-enter-prev{
-      display:block;
-      animation:rpEnterPrev .72s cubic-bezier(.16,.84,.28,1) both;
-      z-index:10;
-    }
-    @keyframes rpTurnNext{
-      0%{transform:rotateY(0deg) translateX(0);opacity:1;filter:brightness(1)}
-      42%{filter:brightness(.92)}
-      100%{transform:rotateY(-72deg) translateX(-4%);opacity:0;filter:brightness(.83)}
-    }
-    @keyframes rpEnterNext{
-      0%{transform:translateX(3%) rotateY(8deg) scale(.992);opacity:.45;filter:brightness(.96)}
-      100%{transform:translateX(0) rotateY(0) scale(1);opacity:1;filter:brightness(1)}
-    }
-    @keyframes rpTurnPrev{
-      0%{transform:rotateY(0deg) translateX(0);opacity:1;filter:brightness(1)}
-      100%{transform:rotateY(64deg) translateX(4%);opacity:0;filter:brightness(.84)}
-    }
-    @keyframes rpEnterPrev{
-      0%{transform:translateX(-3%) rotateY(-8deg) scale(.992);opacity:.45;filter:brightness(.96)}
-      100%{transform:translateX(0) rotateY(0) scale(1);opacity:1;filter:brightness(1)}
+    .rp-report-page.rp-page-current .rp-page-head::before{
+      opacity:.9;
+      transform:translate(0,0) scale(1);
     }
     .rp-page-head{
       position:relative;
@@ -355,50 +347,15 @@
     .rp-voice-progress-fill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--book-blue),#3f9a95);transition:width .12s linear}
     .rp-hidden{display:none!important}
 
-    .rp-reader-nav{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      margin-left:auto;
-    }
-    .rp-reader-nav button{
-      width:auto;
-      min-width:38px;
-      height:36px;
-      padding:0 12px;
-      border-radius:10px;
-      box-shadow:none;
-    }
-    .rp-page-counter{
-      min-width:92px;
-      text-align:center;
-      font-size:12px;
-      font-weight:900;
-      color:#415b74;
-      letter-spacing:.04em;
-    }
-    .rp-book-corner-hint{
-      position:absolute;
-      right:8px;
-      bottom:8px;
-      width:46px;
-      height:46px;
-      cursor:pointer;
-      z-index:30;
-      background:linear-gradient(135deg,transparent 0 48%,#e5dccd 49% 67%,#fff8eb 68% 100%);
-      filter:drop-shadow(-3px -3px 5px rgba(64,55,45,.12));
-      transition:transform .25s ease;
-    }
-    .rp-book-corner-hint:hover{transform:translate(-3px,-3px) scale(1.08)}
     @media(max-width:1100px){.rp-summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.rp-grid-5{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:900px){.rp-hero{padding:24px 20px}.rp-hero h1{font-size:34px}.rp-summary-strip,.rp-grid-5,.rp-grid-2,.rp-meta-grid,.rp-report-summary{grid-template-columns:1fr}.rp-inline-actions{flex-direction:column}.rp-inline-actions button{width:100%}.rp-main-title{font-size:31px}.rp-sub-title{font-size:18px}.rp-period{font-size:11px}.rp-report-wrap{padding:5px}.rp-reader-stage{min-height:520px;padding:4px}.rp-report-page{min-height:500px}.rp-page-head{padding:18px 50px 13px 45px}.rp-page-head::after{left:45px}.rp-page-body{padding:15px 13px 20px 45px}.rp-cover{min-height:230px;padding:32px 38px 24px 50px}.rp-report-page::before{left:15px}.rp-reader-nav{width:100%;justify-content:flex-end;margin-left:0}}
+    @media(max-width:900px){.rp-hero{padding:24px 20px}.rp-hero h1{font-size:34px}.rp-summary-strip,.rp-grid-5,.rp-grid-2,.rp-meta-grid,.rp-report-summary{grid-template-columns:1fr}.rp-inline-actions{flex-direction:column}.rp-inline-actions button{width:100%}.rp-main-title{font-size:31px}.rp-sub-title{font-size:18px}.rp-period{font-size:11px}.rp-report-wrap{padding:5px}.rp-reader-stage{padding:4px}.rp-report-page{margin-bottom:16px}.rp-page-head{padding:18px 50px 13px 45px}.rp-page-head::after{left:45px}.rp-page-body{padding:15px 13px 20px 45px}.rp-cover{min-height:230px;padding:32px 38px 24px 50px}.rp-report-page::before{left:15px}}
 
     @media print{
       .rp-toolbar{display:none!important}
       .rp-report-wrap{padding:0;background:#fff;overflow:visible}
       .rp-reader-stage{display:block;width:100%;min-height:0;padding:0}
-      .rp-book-shadow,.rp-book-corner-hint{display:none!important}
-      .rp-report-page,.rp-report-page.rp-page-active{display:block!important;width:100%;min-height:0;margin:0;box-shadow:none;border:none;border-radius:0;transform:none!important;animation:none!important;break-after:page;background:#fff}
+      .rp-book-shadow{display:none!important}
+      .rp-report-page{display:block!important;width:100%;min-height:0;margin:0;opacity:1!important;filter:none!important;box-shadow:none;border:none;border-radius:0;transform:none!important;animation:none!important;break-after:page;background:#fff}
       .rp-report-page::before,.rp-report-page::after,.rp-img-box::before,.rp-img-box::after{display:none!important}
       .rp-page-head{padding-left:28px}.rp-page-body{padding-left:28px}
     }
@@ -795,7 +752,7 @@
   function renderReportShell(id) {
     shadow.innerHTML = `<style>${STYLE}</style>
       <div class="rp-report-wrap">
-        <div class="rp-toolbar"><button class="rp-btn secondary" id="backToDashboardButton" type="button">← Kembali ke Dashboard</button><button class="rp-btn" id="printReportButton" type="button">Print / Save PDF</button><div class="rp-reader-nav"><button class="secondary" id="prevReportPage" type="button">←</button><div class="rp-page-counter" id="reportPageCounter">Halaman 1 / 1</div><button id="nextReportPage" type="button">→</button></div></div>
+        <div class="rp-toolbar"><button class="rp-btn secondary" id="backToDashboardButton" type="button">← Kembali ke Dashboard</button><button class="rp-btn" id="printReportButton" type="button">Print / Save PDF</button></div>
         <div id="status" class="rp-status rp-card">Memuat laporan...</div>
         <div id="content" class="rp-hidden"><div class="rp-reader-stage"><div class="rp-book-shadow"></div>
           <div class="rp-report-page"><div class="rp-page-head rp-cover"><div class="rp-cover-label">SIPPBJ · Dokumen Rapor Pengadaan</div><div class="rp-main-title">Rapor PBJ OPD</div><div class="rp-sub-title" id="cover_nama_opd">-</div><div class="rp-period" id="cover_periode">PERIODE -</div></div><div class="rp-page-body"><div class="rp-meta-grid"><div class="rp-meta-box"><div class="rp-meta-label">ID Rapor</div><div class="rp-meta-value" id="v_id_rapot">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Status QC</div><div class="rp-meta-value" id="v_status_qc">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Kode OPD</div><div class="rp-meta-value" id="v_kode_opd">-</div></div><div class="rp-meta-box"><div class="rp-meta-label">Nama OPD</div><div class="rp-meta-value" id="v_nama_opd">-</div></div></div><div class="rp-note-line" id="metaHeader">-</div></div></div>
@@ -807,18 +764,14 @@
           <div class="rp-report-page"><div class="rp-page-head"><h2>ITKP OPD INDIKATOR PEMANFAATAN SISTEM PENGADAAN</h2></div><div class="rp-page-body"><div id="img_itkp">-</div></div></div>
           <div class="rp-report-page"><div class="rp-page-head"><h2>KESIMPULAN DAN SARAN</h2></div><div class="rp-page-body"><div id="analisis_manual">-</div></div></div>
           <div class="rp-report-page" id="narasi_ai_section"><div class="rp-page-head rp-narasi-head"><h2>Analisa AI</h2><button class="rp-head-toggle-btn" type="button" id="narasi_toggle_btn">Tampilkan</button></div><div class="rp-page-body rp-hidden" id="narasi_ai_body"><div id="narasi_ai_box" class="rp-note-box">Belum ada Analisa AI.</div><div style="height:14px;"></div><div id="voice_status_box" class="rp-link-box">Klik Play untuk membacakan analisa.</div><div class="rp-voice-panel"><div class="rp-voice-meta"><div id="voice_current_label">00:00</div><div id="voice_total_label">00:00</div></div><div class="rp-voice-progress"><div id="voice_progress_fill" class="rp-voice-progress-fill"></div></div></div><div class="rp-inline-actions"><button id="playNarasiButton" type="button">Play</button><button class="secondary" id="stopNarasiButton" type="button">Stop</button></div></div></div>
-          <div class="rp-book-corner-hint" id="bookCornerHint" title="Halaman berikutnya"></div></div></div>
+          </div></div>
       </div>`;
     $('#backToDashboardButton')?.addEventListener('click', () => { stopNarasiAI(); renderDashboardShell(); loadDashboardData(); });
     $('#printReportButton')?.addEventListener('click', () => window.print());
     $('#narasi_toggle_btn')?.addEventListener('click', toggleNarasiSection);
     $('#playNarasiButton')?.addEventListener('click', playNarasiAI);
     $('#stopNarasiButton')?.addEventListener('click', stopNarasiAI);
-    $('#prevReportPage')?.addEventListener('click', prevReportPage);
-    $('#nextReportPage')?.addEventListener('click', nextReportPage);
-    $('#bookCornerHint')?.addEventListener('click', nextReportPage);
-    reportPageIndex = 0;
-    setupReportBook();
+    setupReportScrollEffects();
   }
 
   function renderMonitoringSection() {
@@ -897,61 +850,66 @@
     setHtml('#img_itkp', renderImageOrLink(itkp.file_screenshot || itkp.file_screenshot_itkp || itkp.file_url || '', 'ITKP'));
     setHtml('#analisis_manual', renderBullets(analisis.kesimpulan_progres || '-'));
     const narasiAi = String(aiReport.narasi_ai || '').trim(); const narasiAiVoice = String(aiReport.narasi_ai_voice || '').trim();
-    setText('#narasi_ai_box', narasiAi || 'Belum ada Analisa AI.'); aiVoiceText = narasiAiVoice || narasiAi || ''; setText('#voice_status_box', aiVoiceText ? 'Klik Play untuk membacakan analisa.' : 'Analisa AI belum tersedia untuk dibacakan.'); resetVoiceProgress(0); prepareVoices(); setupReportBook();
+    setText('#narasi_ai_box', narasiAi || 'Belum ada Analisa AI.'); aiVoiceText = narasiAiVoice || narasiAi || ''; setText('#voice_status_box', aiVoiceText ? 'Klik Play untuk membacakan analisa.' : 'Analisa AI belum tersedia untuk dibacakan.'); resetVoiceProgress(0); prepareVoices(); setupReportScrollEffects();
   }
 
-  let reportPageIndex = 0;
-  let reportPageBusy = false;
+  let reportScrollObserver = null;
 
-  function setupReportBook() {
+  function setupReportScrollEffects() {
     const pages = $all('.rp-report-page');
     if (!pages.length) return;
-    reportPageIndex = Math.min(reportPageIndex, pages.length - 1);
+
+    if (reportScrollObserver) {
+      reportScrollObserver.disconnect();
+      reportScrollObserver = null;
+    }
+
     pages.forEach((page, i) => {
       page.dataset.folio = String(i + 1).padStart(2, '0');
-      page.classList.remove('rp-page-active','rp-turn-next','rp-turn-prev','rp-enter-next','rp-enter-prev');
-      if (i === reportPageIndex) page.classList.add('rp-page-active');
       const head = page.querySelector('.rp-page-head h2');
       if (head) head.dataset.section = String(i + 1);
+      page.classList.remove('rp-page-current','rp-page-inview');
+      page.classList.add('rp-page-reveal');
     });
-    updateReportPageControls();
-  }
 
-  function updateReportPageControls() {
-    const pages = $all('.rp-report-page');
-    const counter = $('#reportPageCounter');
-    const prev = $('#prevReportPage');
-    const next = $('#nextReportPage');
-    if (counter) counter.textContent = `Halaman ${reportPageIndex + 1} / ${pages.length || 1}`;
-    if (prev) prev.disabled = reportPageBusy || reportPageIndex <= 0;
-    if (next) next.disabled = reportPageBusy || reportPageIndex >= pages.length - 1;
-    const corner = $('#bookCornerHint');
-    if (corner) corner.style.display = reportPageIndex < pages.length - 1 ? 'block' : 'none';
-  }
+    // The cover should be readable immediately when a report opens.
+    requestAnimationFrame(() => {
+      if (pages[0]) {
+        pages[0].classList.remove('rp-page-reveal');
+        pages[0].classList.add('rp-page-inview','rp-page-current');
+      }
+    });
 
-  function goReportPage(nextIndex, direction) {
-    const pages = $all('.rp-report-page');
-    if (reportPageBusy || !pages.length || nextIndex < 0 || nextIndex >= pages.length || nextIndex === reportPageIndex) return;
-    reportPageBusy = true;
-    const oldPage = pages[reportPageIndex];
-    const newPage = pages[nextIndex];
-    const forward = direction === 'next';
-    newPage.classList.add(forward ? 'rp-enter-next' : 'rp-enter-prev');
-    oldPage.classList.add(forward ? 'rp-turn-next' : 'rp-turn-prev');
-    updateReportPageControls();
-    setTimeout(() => {
-      pages.forEach((p) => p.classList.remove('rp-page-active','rp-turn-next','rp-turn-prev','rp-enter-next','rp-enter-prev'));
-      reportPageIndex = nextIndex;
-      newPage.classList.add('rp-page-active');
-      reportPageBusy = false;
-      updateReportPageControls();
-      const stage = $('.rp-reader-stage');
-      if (stage) stage.scrollIntoView({behavior:'smooth', block:'start'});
-    }, 700);
-  }
+    if (!('IntersectionObserver' in window)) {
+      pages.forEach((page) => {
+        page.classList.remove('rp-page-reveal');
+        page.classList.add('rp-page-inview');
+      });
+      return;
+    }
 
-  function nextReportPage() { goReportPage(reportPageIndex + 1, 'next'); }
-  function prevReportPage() { goReportPage(reportPageIndex - 1, 'prev'); }
+    reportScrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.remove('rp-page-reveal');
+          entry.target.classList.add('rp-page-inview');
+        }
+      });
+
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a,b) => b.intersectionRatio - a.intersectionRatio);
+      if (visible[0]) {
+        pages.forEach((page) => page.classList.toggle('rp-page-current', page === visible[0].target));
+      }
+    }, {
+      root: null,
+      rootMargin: '-12% 0px -20% 0px',
+      threshold: [0.12,0.28,0.5,0.72]
+    });
+
+    pages.forEach((page) => reportScrollObserver.observe(page));
+  }
 
   function formatVoiceTime(ms) { const s = Math.max(0, Math.floor(Number(ms||0)/1000)); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
   function setVoiceProgress(elapsedMs,totalMs){ const total=Math.max(0,Number(totalMs||0)); const elapsed=Math.min(Math.max(0,Number(elapsedMs||0)), total || Number(elapsedMs||0)); const pct=total>0?Math.min(100,(elapsed/total)*100):0; const fill=$('#voice_progress_fill'); if(fill) fill.style.width=pct+'%'; setText('#voice_current_label',formatVoiceTime(elapsed)); setText('#voice_total_label',formatVoiceTime(total)); }
@@ -967,24 +925,17 @@
   function stopNarasiAI(){ if(!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); currentUtterance=null; stopVoiceProgress(); setText('#voice_status_box','Suara dihentikan.'); }
   function toggleNarasiSection(){ const body=$('#narasi_ai_body'); const btn=$('#narasi_toggle_btn'); if(!body||!btn) return; const hidden=body.classList.contains('rp-hidden'); body.classList.toggle('rp-hidden',!hidden); btn.innerText=hidden?'Minimize':'Tampilkan'; }
 
-  function handleReportBookKeydown(e) {
-    if (!shadow || !$('#content') || $('#content').classList.contains('rp-hidden')) return;
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); nextReportPage(); }
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prevReportPage(); }
-  }
-
   window.__moduleInit = function ({ container }) {
     destroyed = false;
     host = container.querySelector('#raporPbjModuleRoot') || container;
     shadow = host.shadowRoot || host.attachShadow({ mode: 'open' });
-    document.addEventListener('keydown', handleReportBookKeydown);
     renderDashboardShell();
     loadDashboardData();
     return function destroy() {
       destroyed = true;
       stopNarasiAI();
       clearVoiceProgressTimer();
-      document.removeEventListener('keydown', handleReportBookKeydown);
+      if (reportScrollObserver) { reportScrollObserver.disconnect(); reportScrollObserver = null; }
       if (shadow) shadow.innerHTML = '';
     };
   };
