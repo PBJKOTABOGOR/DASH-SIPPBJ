@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIPPBJ - Dashboard PBJ Kota Bogor</title>
+  <link rel="icon" type="image/png" href="assets/favicon-pbj.png">
+  <link rel="apple-touch-icon" href="assets/favicon-pbj.png">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-block">
+        <div class="brand-left secret-trigger" id="secretTrigger" title="Akses internal">
+           <div class="brand-logo brand-logo-img">
+  <img src="assets/logo-sippbj.png" alt="SIPPBJ">
+</div>
+
+          <div class="brand-text">
+            <h1>SIPPBJ</h1>
+            <p>Dashboard Monitoring</p>
+          </div>
+        </div>
+
+        <button
+          class="sidebar-toggle-button"
+          id="sidebarToggleButton"
+          type="button"
+          aria-label="Buka atau tutup sidebar"
+        >
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">MENU UTAMA</div>
+
+        <button class="nav-link active" type="button" data-page="dashboard">
+          <span class="nav-left">
+            <span class="nav-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg></span>
+            <span class="nav-text">Dashboard</span>
+          </span>
+        </button>
+
+
+        <div class="nav-group" data-group="itkp74">
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="itkp74">
+            <span class="nav-left">
+              <span class="nav-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7M3 20h18"/></svg></span>
+              <span class="nav-text">ITKP KEPKA 74 2026</span>
+            </span>
+            <span class="nav-caret"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></span>
+          </button>
+          <div class="submenu">
+            <button class="submenu-link" type="button" data-page="itkp74-ringkasan">Ringkasan & Strategi</button>
+            <button class="submenu-link" type="button" data-page="itkp74-pengumuman">Pengumuman RUP</button>
+            <button class="submenu-link" type="button" data-page="itkp74-penyedia">RUP Penyedia</button>
+            <button class="submenu-link" type="button" data-page="itkp74-rup-tp">RUP e-Tendering + e-Purchasing</button>
+            <button class="submenu-link" type="button" data-page="itkp74-realisasi-tp">Realisasi e-Tendering + e-Purchasing</button>
+            <button class="submenu-link" type="button" data-page="itkp74-pl">PL Transaksional</button>
+            <button class="submenu-link" type="button" data-page="itkp74-penunjukan">Penunjukan Transaksional</button>
+            <button class="submenu-link" type="button" data-page="itkp74-digitalisasi">Digitalisasi PBJ</button>
+            <button class="submenu-link" type="button" data-page="itkp74-kontrol">Kontrol Data</button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-group="itkp">
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="itkp">
+            <span class="nav-left">
+              <span class="nav-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7M3 20h18"/></svg></span>
+              <span class="nav-text">ITKP KEPKA 4 2021</span>
+            </span>
+            <span class="nav-caret"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></span>
+          </button>
+
+          <div class="submenu">
+            <button class="submenu-link" type="button" data-page="monitoring-sirup">SiRUP</button>
+            <button class="submenu-link" type="button" data-page="monitoring-ekatalog">eKatalog</button>
+            <button class="submenu-link" type="button" data-page="monitoring-etendering">eTendering</button>
+            <button class="submenu-link" type="button" data-page="monitoring-ekontrak">eKontrak</button>
+            <button class="submenu-link" type="button" data-page="monitoring-nontender">Non eTendering / Non ePurchasing</button>
+          </div>
+        </div>
+
+        <button class="nav-link" type="button" data-page="rapor-pbj">
+          <span class="nav-left">
+            <span class="nav-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M9 9h6M9 13h6M9 17h4"/></svg></span>
+            <span class="nav-text">Rapor PBJ</span>
+          </span>
+        </button>
+
+        <div class="nav-group" data-group="realisasi">
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="realisasi">
+            <span class="nav-left">
+              <span class="nav-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.2 7.5-4.2M12 12v9"/></svg></span>
+              <span class="nav-text">Realisasi Paket</span>
+            </span>
+            <span class="nav-caret"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></span>
+          </button>
+
+          <div class="submenu">
+            <button class="submenu-link" type="button" data-page="monitoring-perencanaan">Monitoring Realisasi</button>
+            <button class="submenu-link" type="button" data-page="monitoring-konsolidasi">Konsolidasi</button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-group="simulasi">
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="simulasi">
+            <span class="nav-left">
+              <span class="nav-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5l-5.5 9.2A2.5 2.5 0 0 0 6.7 21h10.6a2.5 2.5 0 0 0 2.2-3.8L14 8V3"/><path d="M7.5 15h9"/></svg></span>
+              <span class="nav-text">Simulasi</span>
+            </span>
+            <span class="nav-caret"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></span>
+          </button>
+
+          <div class="submenu">
+            <button class="submenu-link" type="button" data-page="simulasi-timeline">Timeline Pengadaan</button>
+            <button class="submenu-link" type="button" data-page="simulasi-nontender">Pencatatan Non Tender</button>
+            <button class="submenu-link" type="button" data-page="simulasi-procurement-stacker">Mini Game</button>
+          </div>
+        </div>
+
+        <button class="nav-link" type="button" data-page="pemenang-pengadaan">
+  <span class="nav-left">
+    <span class="nav-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1a4 4 0 0 0 4 4M16 6h3v1a4 4 0 0 1-4 4M12 12v5M9 21h6M10 17h4"/></svg></span>
+    <span class="nav-text">Pemenang Pengadaan</span>
+  </span>
+</button>
+
+        <div class="nav-group nav-group-internal" id="internalNavGroup" data-group="internal" hidden>
+          <button class="nav-link nav-toggle" type="button" data-toggle-group="internal">
+            <span class="nav-left">
+              <span class="nav-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span>
+              <span class="nav-text">Panel Internal</span>
+            </span>
+            <span class="nav-caret"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></span>
+          </button>
+
+          <div class="submenu">
+            <button class="submenu-link submenu-link-internal" type="button" data-page="rapor-pbj-input-internal">Input Rapor PBJ</button>
+            <button class="submenu-link submenu-link-internal" type="button" data-page="rapor-pbj-qc-internal">QC Rapor PBJ</button>
+          </div>
+        </div>
+      </nav>
+
+      <a
+        class="sidebar-help-link"
+        href="https://wa.me/628151667956?text=Halo%20admin%20UKPBJ%20Kota%20Bogor%2C%20saya%20ingin%20bertanya%20terkait%20penggunaan%20portal."
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <div class="sidebar-help">
+          <h3>Butuh Bantuan?</h3>
+          <p>Hubungi admin/helpdesk untuk informasi penggunaan portal SIPPBJ.</p>
+          <div class="help-button">Hubungi Helpdesk</div>
+        </div>
+      </a>
+    </aside>
+
+    <main class="content-area" id="contentArea"></main>
+  </div>
+  
+
+  <div class="secret-login-overlay" id="secretLoginOverlay" aria-hidden="true">
+    <div class="secret-login-modal">
+      <div class="secret-login-kicker">AKSES INTERNAL</div>
+      <h3>Panel Rapor PBJ</h3>
+      <p>Menu internal hanya untuk pegawai/operator yang sudah diberi akses.</p>
+
+      <form id="secretLoginForm" class="secret-login-form">
+        <label>Username</label>
+        <input type="text" id="secretUsername" autocomplete="username" placeholder="Masukkan username">
+
+        <label>Password</label>
+        <input type="password" id="secretPassword" autocomplete="current-password" placeholder="Masukkan password">
+
+        <div class="secret-login-actions">
+          <button type="submit" class="secret-login-submit">Masuk</button>
+          <button type="button" class="secret-login-cancel" id="secretLoginCancel">Batal</button>
+        </div>
+      </form>
+
+      <div class="secret-login-error" id="secretLoginError"></div>
+    </div>
+  </div>
+
+  <div class="secret-login-toast" id="secretLoginToast">Mode internal aktif</div>
+  
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

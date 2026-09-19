@@ -1,0 +1,42 @@
+SETUP DATA ITKP KEPKA 74 - V4
+
+1. Sheet kdpensw
+Header A1:F1:
+Kode RUP | Satuan Kerja | Program | Kegiatan | Sub Kegiatan | Nama Paket
+
+Isi A2 dengan rumus:
+=QUERY(IMPORTRANGE("1CkzP7B-rwxb6A167Ykv2Y8WwZOZpidLbDgS3x1UF7QI","DETAILPSW!A2:F"),"select Col2,Col1,Col3,Col4,Col5,Col6 where Col2 is not null",0)
+
+Jika muncul #REF!, klik Izinkan akses.
+
+2. Sheet ITKP_MASTER_PAKET
+Jangan sisipkan kolom di tengah karena formula lama sudah berjalan.
+Gunakan kolom kosong di sebelah kanan:
+Q1 = Program
+R1 = Kegiatan
+S1 = Sub Kegiatan
+
+Q2:
+=ARRAYFORMULA(IF(B2:B="","",IFNA(XLOOKUP(TO_TEXT(B2:B),TO_TEXT(kdpensw!A$2:A$12000),kdpensw!C$2:C$12000,""),"")))
+
+R2:
+=ARRAYFORMULA(IF(B2:B="","",IFNA(XLOOKUP(TO_TEXT(B2:B),TO_TEXT(kdpensw!A$2:A$12000),kdpensw!D$2:D$12000,""),"")))
+
+S2:
+=ARRAYFORMULA(IF(B2:B="","",IFNA(XLOOKUP(TO_TEXT(B2:B),TO_TEXT(kdpensw!A$2:A$12000),kdpensw!E$2:E$12000,""),"")))
+
+3. Catatan realisasi Pengadaan Langsung
+Nilai indikator PL Transaksional = Sumber Transaksi "Non Tender".
+Pencatatan Non Tender ditampilkan terpisah dan tidak ditambahkan ke numerator indikator PL Transaksional.
+Contoh BKPSDM:
+- PL Transaksional / Non Tender: Rp311.348.727
+- Pencatatan Non Tender: Rp554.509.226
+- Total nilai PL yang terekam: Rp865.857.953
+
+4. Web V4
+- Tombol Ringkasan berubah menjadi "Lihat Semua Paket".
+- Tiap kartu indikator memiliki tombol "Lihat Paket" sendiri.
+- Detail PL/Penunjukan memisahkan Realisasi Transaksional, Pencatatan Non Tender, dan Total Terekam.
+- Detail memiliki filter Sub Kegiatan.
+- Program/Kegiatan/Sub Kegiatan tampil dalam satu kolom agar tabel tetap mudah dibaca.
+- Export detail XLSX memiliki kolom Program, Kegiatan, dan Sub Kegiatan terpisah.

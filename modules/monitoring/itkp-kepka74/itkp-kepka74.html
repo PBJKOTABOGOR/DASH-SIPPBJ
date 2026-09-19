@@ -1,0 +1,60 @@
+<div class="itkp74-page">
+  <div class="itkp74-loading" id="itkp74Loading" aria-live="polite">
+    <div class="itkp74-loading-line">
+      <span class="itkp74-spinner" aria-hidden="true"></span>
+      <div>
+        <strong id="itkp74LoadingTitle">Memuat data ITKP</strong>
+        <span id="itkp74LoadingText">Mengambil rekap perangkat daerah.</span>
+      </div>
+    </div>
+    <div class="itkp74-progress"><span id="itkp74ProgressBar"></span></div>
+  </div>
+
+  <div class="itkp74-error" id="itkp74Error" hidden></div>
+
+  <section class="itkp74-hero">
+    <div class="itkp74-hero-copy">
+      <div class="itkp74-kicker">KEPKA LKPP 74 TAHUN 2026</div>
+      <h2 id="itkp74PageTitle">Monitoring Pemanfaatan Sistem</h2>
+      <p id="itkp74PageSubtitle">Pantau capaian, target berikutnya, dan paket yang perlu ditindaklanjuti.</p>
+    </div>
+    <div class="itkp74-hero-actions">
+      <button class="itkp74-btn itkp74-btn-soft" type="button" id="itkp74Refresh">Perbarui Data</button>
+      <button class="itkp74-btn itkp74-btn-primary" type="button" id="itkp74Export">Export XLSX</button>
+    </div>
+  </section>
+
+  <section class="itkp74-filter-panel" id="itkp74Toolbar">
+    <div class="itkp74-filter-head">
+      <div>
+        <h3>Filter Data</h3>
+        <p>Saring perangkat daerah berdasarkan capaian atau cari nama perangkat daerah.</p>
+      </div>
+    </div>
+    <div class="itkp74-filter-grid">
+      <label class="itkp74-field itkp74-field-opd">
+        <span>Perangkat Daerah</span>
+        <select id="itkp74OpdFilter">
+          <option value="">Semua Perangkat Daerah</option>
+        </select>
+      </label>
+      <label class="itkp74-field itkp74-field-status">
+        <span>Status Capaian</span>
+        <select id="itkp74StatusFilter">
+          <option value="">Semua Status</option>
+          <option value="MAX">Nilai Maksimal</option>
+          <option value="NEED">Belum Maksimal</option>
+          <option value="ZERO">Nilai 0</option>
+          <option value="NA">N/A</option>
+        </select>
+      </label>
+      <label class="itkp74-field itkp74-field-search">
+        <span>Cari</span>
+        <input id="itkp74Search" type="search" placeholder="Cari nama perangkat daerah">
+      </label>
+      <button class="itkp74-btn itkp74-btn-soft itkp74-reset" type="button" id="itkp74Reset">Reset Filter</button>
+    </div>
+  </section>
+
+  <div id="itkp74Content"></div>
+</div>

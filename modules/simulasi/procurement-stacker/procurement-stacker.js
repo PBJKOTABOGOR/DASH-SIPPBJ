@@ -1,0 +1,6168 @@
+(() => {
+  const AUTO_NEXT_DELAY_MS = 1800;
+  const HINT_PENALTY = 3;
+  const LEADERBOARD_API_URL = 'https://script.google.com/macros/s/AKfycbzE0c_eBIooXcKLmiMGm6o6cqtjfRsfIewmD6Hx5BCdmEYZmljquJiDOA0PJh6e9P_mOg/exec';
+  const PLAYER_STORAGE_KEY = 'procstack_player_profile_v1';
+
+  let containerRef = null;
+  let root = null;
+  let destroyed = false;
+  let toastEl = null;
+  let autoNextTimer = null;
+  let panjiIntroTimers = [];
+  let panjiTalkTimer = null;
+
+  let panjiEl = null;
+  let panjiTextEl = null;
+  let panjiEmoteEl = null;
+  let panjiBubbleEl = null;
+  let panjiHintBtn = null;
+  let panjiMiniBtn = null;
+  let panjiCharacterBtn = null;
+  let panjiCloseBtn = null;
+  let panjiUserMinimized = false;
+  let panjiIntroAlreadyShown = false;
+
+  let leaderboardModalEl = null;
+  let leaderboardRefreshTimer = null;
+  let reviewBubbleEl = null;
+  let reviewBubbleTimer = null;
+  let reviewBubbleLastShownAt = 0;
+
+  let levelTimer = null;
+  let levelTimerStartedAt = 0;
+
+  let tenderRushTimer = null;
+  let tenderRushNextTimer = null;
+  let tenderRushKeyHandler = null;
+
+  let psAudioCtx = null;
+  let psMusicTimer = null;
+  let psMusicOn = false;
+  let psMusicBeatMs = 360;
+  let psMusicBeatFn = null;
+
+
+  let bonusSnakeTimer = null;
+  let bonusSnakeKeyHandler = null;
+  let pipelineIdleTimer = null;
+  let pipelineHintPulseTimer = null;
+  let bonusZumaFrame = null;
+  let bonusZumaResizeHandler = null;
+  let bonusZumaKeyHandler = null;
+
+  function psIcon(name, cls = 'ps-line-icon') {
+    const paths = {
+      clipboard:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M9 9h6M9 13h6M9 17h4"/>',
+      search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+      package:'<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.2 7.5-4.2M12 12v9"/>',
+      settings:'<circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.7-.8-1.8.9-1.9-2.2-2.1-1.8.9-1.9-.8L10.5 2h-3l-.7 2.1-1.9.8L3.1 4 1 6.1 1.9 8 1 9.8l-2 .7v3l2 .7.9 1.8-.9 1.9L3.1 20l1.8-.9 1.9.8.7 2.1h3l.7-2.1 1.9-.8 1.8.9 2.2-2.1-.9-1.9.8-1.8 2-.7Z" transform="translate(2 0) scale(.83)"/>',
+      wrench:'<path d="M14.5 6.5a4 4 0 0 0-5-5l2.2 2.2-2.8 2.8-2.2-2.2a4 4 0 0 0 5 5L20 17.6 17.6 20l-8.3-8.3"/>',
+      cart:'<path d="M3 4h2l2 10h10l2-7H6"/><circle cx="9" cy="19" r="1"/><circle cx="17" cy="19" r="1"/>',
+      building:'<path d="M4 21V8l8-5 8 5v13M8 21v-8h8v8M3 21h18"/>',
+      users:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5v1"/>',
+      file:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+      check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
+      alert:'<path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v4M12 17h.01"/>',
+      ban:'<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>',
+      compass:'<circle cx="12" cy="12" r="9"/><path d="m15 9-2 5-5 2 2-5 5-2Z"/>',
+      handshake:'<path d="M8 12 5 9l-3 3 6 6 4-2 4 2 6-6-3-3-3 3-4-2-4 2Z"/>',
+      flag:'<path d="M5 21V4M5 5h11l-2 4 2 4H5"/>',
+      scale:'<path d="M12 3v18M5 6h14M7 6l-4 7h8L7 6ZM17 6l-4 7h8l-4-7ZM8 21h8"/>',
+      book:'<path d="M4 5a3 3 0 0 1 3-2h5v17H7a3 3 0 0 0-3 2V5ZM20 5a3 3 0 0 0-3-2h-5v17h5a3 3 0 0 1 3 2V5Z"/>',
+      trophy:'<path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1a4 4 0 0 0 4 4M16 6h3v1a4 4 0 0 1-4 4M12 12v5M9 21h6M10 17h4"/>',
+      star:'<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>',
+      smile:'<circle cx="12" cy="12" r="9"/><path d="M8 10h.01M16 10h.01M8 14c1 2 7 2 8 0"/>',
+      frown:'<circle cx="12" cy="12" r="9"/><path d="M8 10h.01M16 10h.01M8 17c1-2 7-2 8 0"/>',
+      help:'<circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.5 2.5 0 1 1 4.1 1.9c-1 .8-1.9 1.2-1.9 2.6M12 17h.01"/>',
+      play:'<circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/>'
+    };
+    return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.file}</svg>`;
+  }
+
+  const CARD_LIBRARY = {
+    rup: {
+      id: 'rup',
+      label: 'Cek RUP',
+      icon: psIcon('clipboard'),
+      note: 'Pastikan paket sudah ada dan sesuai perencanaan.'
+    },
+    identifikasi: {
+      id: 'identifikasi',
+      label: 'Identifikasi Kebutuhan',
+      icon: psIcon('help'),
+      note: 'Validasi kebutuhan, volume, lokasi, dan jadwal.'
+    },
+    konsolidasi: {
+      id: 'konsolidasi',
+      label: 'Konsolidasi',
+      icon: psIcon('users'),
+      note: 'Gabungkan kebutuhan sejenis bila tepat.'
+    },
+    reviewSpek: {
+      id: 'review-spek',
+      label: 'Review Spesifikasi',
+      icon: psIcon('search'),
+      note: 'Cegah spesifikasi mengarah.'
+    },
+    kak: {
+      id: 'kak',
+      label: 'KAK / Spesifikasi',
+      icon: psIcon('file'),
+      note: 'Susun kebutuhan teknis secara jelas dan adil.'
+    },
+    hps: {
+      id: 'hps',
+      label: 'HPS / Referensi Harga',
+      icon: psIcon('file'),
+      note: 'Susun harga perkiraan dengan dasar wajar.'
+    },
+    cekPdn: {
+      id: 'cek-pdn',
+      label: 'Cek PDN / TKDN',
+      icon: psIcon('flag'),
+      note: 'Perhatikan produk dalam negeri dan TKDN/BMP.'
+    },
+    cekUmkk: {
+      id: 'cek-umkk',
+      label: 'Cek UMK/Koperasi',
+      icon: psIcon('building'),
+      note: 'Perhatikan afirmasi usaha mikro, kecil, dan koperasi.'
+    },
+    cekKatalog: {
+      id: 'cek-katalog',
+      label: 'Cek e-Katalog',
+      icon: psIcon('search'),
+      note: 'Pastikan barang/jasa tersedia dan sesuai.'
+    },
+    katalogTidakSesuai: {
+      id: 'katalog-tidak-sesuai',
+      label: 'Katalog Tidak Sesuai',
+      icon: psIcon('ban'),
+      note: 'Produk/penyedia tidak tersedia atau tidak sesuai kebutuhan.'
+    },
+    dokumentasiGagalKatalog: {
+      id: 'dokumentasi-gagal-katalog',
+      label: 'Dokumentasi Hasil Cek',
+      icon: psIcon('clipboard'),
+      note: 'Catat bukti hasil pengecekan katalog sebelum ganti metode.'
+    },
+    evaluasiMetode: {
+      id: 'evaluasi-metode',
+      label: 'Evaluasi Metode',
+      icon: psIcon('compass'),
+      note: 'Evaluasi metode awal bila kondisi pasar tidak sesuai rencana.'
+    },
+    pilihMetode: {
+      id: 'pilih-metode',
+      label: 'Pilih Metode',
+      icon: psIcon('settings'),
+      note: 'Tentukan metode berdasarkan nilai, jenis, dan kondisi paket.'
+    },
+    metodePl: {
+      id: 'metode-pl',
+      label: 'Pengadaan Langsung',
+      icon: psIcon('wrench'),
+      note: 'Digunakan bila nilai dan kondisi paket sesuai.'
+    },
+    metodeEpurchasing: {
+      id: 'metode-epurchasing',
+      label: 'e-Purchasing',
+      icon: psIcon('cart'),
+      note: 'Gunakan katalog bila tersedia dan sesuai.'
+    },
+    miniKompetisi: {
+      id: 'mini-kompetisi',
+      label: 'Mini Kompetisi',
+      icon: psIcon('flag'),
+      note: 'Kompetisikan penyedia katalog bila diwajibkan/tepat.'
+    },
+    tender: {
+      id: 'tender',
+      label: 'Tender',
+      icon: psIcon('building'),
+      note: 'Untuk paket yang membutuhkan proses pemilihan formal.'
+    },
+    seleksi: {
+      id: 'seleksi',
+      label: 'Seleksi',
+      icon: psIcon('scale'),
+      note: 'Umumnya untuk jasa konsultansi.'
+    },
+    swakelola: {
+      id: 'swakelola',
+      label: 'Swakelola',
+      icon: psIcon('users'),
+      note: 'Dipilih bila memenuhi kriteria swakelola.'
+    },
+    timPersiapan: {
+      id: 'tim-persiapan',
+      label: 'Tim Persiapan',
+      icon: psIcon('users'),
+      note: 'Siapkan rencana, KAK, jadwal, dan kebutuhan swakelola.'
+    },
+    timPelaksana: {
+      id: 'tim-pelaksana',
+      label: 'Tim Pelaksana',
+      icon: psIcon('users'),
+      note: 'Laksanakan pekerjaan swakelola.'
+    },
+    timPengawas: {
+      id: 'tim-pengawas',
+      label: 'Tim Pengawas',
+      icon: psIcon('search'),
+      note: 'Awasi mutu, waktu, dan output swakelola.'
+    },
+    klarifikasi: {
+      id: 'klarifikasi',
+      label: 'Klarifikasi / Negosiasi',
+      icon: psIcon('handshake'),
+      note: 'Pastikan harga, spek, dan kemampuan pelaksanaan.'
+    },
+    proses: {
+      id: 'proses',
+      label: 'Proses Pemilihan',
+      icon: psIcon('settings'),
+      note: 'Laksanakan proses sesuai metode.'
+    },
+    kontrak: {
+      id: 'kontrak',
+      label: 'SPK / Kontrak',
+      icon: psIcon('file'),
+      note: 'Ikat hasil proses secara tertulis.'
+    },
+    monitoringKontrak: {
+      id: 'monitoring-kontrak',
+      label: 'Monitoring Kontrak',
+      icon: psIcon('settings'),
+      note: 'Pantau waktu, mutu, volume, dan kewajiban.'
+    },
+    uangMuka: {
+      id: 'uang-muka',
+      label: 'Uang Muka / Jaminan',
+      icon: psIcon('file'),
+      note: 'Kelola uang muka, jaminan, dan syarat kontraktual.'
+    },
+    identifikasiPerubahan: {
+      id: 'identifikasi-perubahan',
+      label: 'Identifikasi Perubahan',
+      icon: psIcon('search'),
+      note: 'Cek perubahan volume, waktu, spesifikasi, atau kondisi lapangan.'
+    },
+    kajiKontrak: {
+      id: 'kaji-kontrak',
+      label: 'Kaji Klausul Kontrak',
+      icon: psIcon('book'),
+      note: 'Pastikan perubahan memungkinkan secara kontraktual.'
+    },
+    justifikasiTeknis: {
+      id: 'justifikasi-teknis',
+      label: 'Justifikasi Teknis',
+      icon: psIcon('file'),
+      note: 'Susun alasan teknis dan administrasi perubahan.'
+    },
+    negosiasiPerubahan: {
+      id: 'negosiasi-perubahan',
+      label: 'Negosiasi Perubahan',
+      icon: psIcon('handshake'),
+      note: 'Bahas dampak harga, waktu, volume, dan mutu.'
+    },
+    adendumKontrak: {
+      id: 'adendum-kontrak',
+      label: 'Adendum Kontrak',
+      icon: psIcon('clipboard'),
+      note: 'Tuangkan perubahan kontrak secara tertulis.'
+    },
+    teguran: {
+      id: 'teguran',
+      label: 'Teguran / Evaluasi',
+      icon: psIcon('alert'),
+      note: 'Dilakukan saat ada keterlambatan atau masalah.'
+    },
+    pemeriksaan: {
+      id: 'pemeriksaan',
+      label: 'Pemeriksaan Hasil',
+      icon: psIcon('search'),
+      note: 'Cek kesesuaian sebelum diterima.'
+    },
+    bast: {
+      id: 'bast',
+      label: 'BAST',
+      icon: psIcon('package'),
+      note: 'Serah terima setelah barang/jasa sesuai.'
+    },
+    pembayaran: {
+      id: 'pembayaran',
+      label: 'Pembayaran',
+      icon: psIcon('file'),
+      note: 'Dilakukan sesuai dokumen pendukung.'
+    },
+    realisasi: {
+      id: 'realisasi',
+      label: 'Catat Realisasi',
+      icon: psIcon('check'),
+      note: 'Pastikan realisasi tercatat.'
+    },
+
+    kontrakAwal: {
+      id: 'kontrak-awal',
+      label: 'Kontrak Dulu',
+      icon: psIcon('alert'),
+      note: 'Jebakan: lompat proses.',
+      type: 'trap'
+    },
+    pecahPaket: {
+      id: 'pecah-paket',
+      label: 'Pecah Paket',
+      icon: psIcon('alert'),
+      note: 'Jebakan: rawan menghindari metode.',
+      type: 'trap'
+    },
+    spekMengarah: {
+      id: 'spek-mengarah',
+      label: 'Spek Mengarah',
+      icon: psIcon('ban'),
+      note: 'Jebakan: persaingan tidak sehat.',
+      type: 'trap'
+    },
+    abaikanKatalog: {
+      id: 'abaikan-katalog',
+      label: 'Abaikan Katalog',
+      icon: psIcon('alert'),
+      note: 'Jebakan: tidak cek kanal tersedia.',
+      type: 'trap'
+    },
+    lanjutEpurchasingPaksa: {
+      id: 'lanjut-epurchasing-paksa',
+      label: 'Paksa e-Purchasing',
+      icon: psIcon('alert'),
+      note: 'Jebakan: tetap memaksa katalog padahal tidak sesuai.',
+      type: 'trap'
+    },
+    gantiMetodeTanpaBukti: {
+      id: 'ganti-metode-tanpa-bukti',
+      label: 'Ganti Metode Tanpa Bukti',
+      icon: psIcon('alert'),
+      note: 'Jebakan: perubahan metode tanpa dokumentasi hasil cek.',
+      type: 'trap'
+    },
+    lewatiRup: {
+      id: 'lewati-rup',
+      label: 'Lewati RUP',
+      icon: psIcon('ban'),
+      note: 'Jebakan: proses tanpa cek perencanaan.',
+      type: 'trap'
+    },
+    bastTanpaCek: {
+      id: 'bast-tanpa-cek',
+      label: 'BAST Tanpa Pemeriksaan',
+      icon: psIcon('package'),
+      note: 'Jebakan: menerima tanpa verifikasi.',
+      type: 'trap'
+    },
+    bayarDulu: {
+      id: 'bayar-dulu',
+      label: 'Bayar Dulu',
+      icon: psIcon('file'),
+      note: 'Jebakan: pembayaran sebelum bukti memadai.',
+      type: 'trap'
+    },
+    tundaDokumen: {
+      id: 'tunda-dokumen',
+      label: 'Tunda Dokumen',
+      icon: psIcon('alert'),
+      note: 'Jebakan: risiko administrasi meningkat.',
+      type: 'trap'
+    },
+    metodeAsalCepat: {
+      id: 'metode-asal-cepat',
+      label: 'Metode Asal Cepat',
+      icon: psIcon('users'),
+      note: 'Jebakan: cepat belum tentu tepat.',
+      type: 'trap'
+    },
+    realisasiLupa: {
+      id: 'realisasi-lupa',
+      label: 'Lupakan Realisasi',
+      icon: psIcon('alert'),
+      note: 'Jebakan: monitoring bolong.',
+      type: 'trap'
+    },
+    adendumTanpaDasar: {
+      id: 'adendum-tanpa-dasar',
+      label: 'Adendum Tanpa Dasar',
+      icon: psIcon('alert'),
+      note: 'Jebakan: perubahan kontrak tanpa kajian/justifikasi.',
+      type: 'trap'
+    },
+    bayarSebelumAdendum: {
+      id: 'bayar-sebelum-adendum',
+      label: 'Bayar Sebelum Adendum',
+      icon: psIcon('file'),
+      note: 'Jebakan: pembayaran sebelum perubahan kontrak tertib.',
+      type: 'trap'
+    },
+    swakelolaTanpaTim: {
+      id: 'swakelola-tanpa-tim',
+      label: 'Swakelola Tanpa Tim',
+      icon: psIcon('ban'),
+      note: 'Jebakan: tim swakelola tidak dibentuk jelas.',
+      type: 'trap'
+    },
+    abaikanPdn: {
+      id: 'abaikan-pdn',
+      label: 'Abaikan PDN',
+      icon: psIcon('ban'),
+      note: 'Jebakan: tidak memperhatikan afirmasi PDN/TKDN.',
+      type: 'trap'
+    }
+  };
+
+  function card(key) {
+    const item = CARD_LIBRARY[key];
+
+    if (!item) return null;
+
+    return {
+      ...item,
+      type: item.type || 'action'
+    };
+  }
+
+  const CHALLENGE_RAW = [
+    {
+      type: 'pipeline',
+      title: 'Soal 1 — Susun Pipeline Dasar Pengadaan',
+      caseTitle: 'Belanja ATK Kantor',
+      desc: 'OPD akan melakukan belanja ATK kantor senilai Rp45 juta. Susun alur pengadaan paling aman dari awal sampai realisasi.',
+      budget: 'Rp45.000.000',
+      difficulty: 'Level 1 - Pemula',
+      ideal: ['rup', 'kak', 'hps', 'metodePl', 'proses', 'kontrak', 'bast', 'realisasi'],
+      traps: ['kontrakAwal', 'lewatiRup', 'bayarDulu'],
+      explanation: 'Alur dasar dimulai dari cek RUP, penyusunan KAK/spesifikasi, HPS, penentuan metode, proses pengadaan, kontrak, BAST, lalu realisasi.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 2 — Ruang Lingkup PBJ',
+      caseTitle: 'Konsep Dasar PBJ',
+      desc: 'Jawab pertanyaan berikut berdasarkan konsep dasar PBJ Pemerintah.',
+      question: 'PBJ Pemerintah dimulai dari tahap apa sampai tahap apa?',
+      options: [
+        'Identifikasi kebutuhan sampai kontrak',
+        'Perencanaan sampai pembayaran',
+        'Identifikasi kebutuhan sampai serah terima hasil pekerjaan',
+        'Penyusunan HPS sampai serah terima'
+      ],
+      answer: 2,
+      hint: 'Fokus pada ruang lingkup PBJ yang paling lengkap, bukan yang berhenti di kontrak.',
+      explanation: 'PBJ Pemerintah adalah proses dari identifikasi kebutuhan sampai dengan serah terima hasil pekerjaan.'
+    },
+    {
+      type: 'tenderRush',
+      title: 'Soal 3 — Tender Rush: Pilih Jalur Metode',
+      caseTitle: 'Arcade Metode Pengadaan',
+      desc: 'Paket akan muncul satu per satu. Masukkan paket ke jalur metode yang paling tepat sebelum waktu habis.',
+      budget: 'Simulasi cepat',
+      difficulty: 'Level 2 - Arcade',
+      timeLimit: 10,
+      packages: [
+        {
+          title: 'Belanja Laptop Pelayanan Publik',
+          type: 'Barang',
+          pagu: 350000000,
+          clue: 'Barang tersedia di e-Katalog dan perlu memperhatikan PDN/TKDN.',
+          correct: 'ekatalog',
+          explanation: 'Laptop yang tersedia dan sesuai di e-Katalog lebih aman diarahkan ke e-Purchasing. Jangan asal masuk Pengadaan Langsung karena nilainya besar dan kanal katalog tersedia.'
+        },
+        {
+          title: 'Belanja ATK Kegiatan Kantor',
+          type: 'Barang',
+          pagu: 45000000,
+          clue: 'Nilai kecil, kebutuhan sederhana, dan tidak kompleks.',
+          correct: 'pengadaanLangsung',
+          explanation: 'Paket kecil dan sederhana dapat menggunakan Pengadaan Langsung sepanjang sesuai batas nilai, tidak dipecah, dan administrasinya tertib.'
+        },
+        {
+          title: 'Rehabilitasi Gedung Pelayanan',
+          type: 'Pekerjaan Konstruksi',
+          pagu: 760000000,
+          clue: 'Pekerjaan konstruksi bernilai besar dan butuh proses formal.',
+          correct: 'tenderSeleksi',
+          explanation: 'Pekerjaan konstruksi bernilai besar tidak tepat dipaksa menjadi Pengadaan Langsung. Gunakan Tender/Seleksi atau mekanisme yang sesuai.'
+        },
+        {
+          title: 'Pelatihan Internal Pegawai oleh Tim OPD',
+          type: 'Jasa Lainnya',
+          pagu: 95000000,
+          clue: 'Kegiatan dilaksanakan sendiri dengan tim persiapan, pelaksana, dan pengawas.',
+          correct: 'swakelola',
+          explanation: 'Jika kegiatan memenuhi kriteria dan dilaksanakan sendiri/bersama pihak yang sesuai, Swakelola bisa dipilih dengan tim dan pertanggungjawaban yang jelas.'
+        },
+        {
+          title: 'Pembayaran Listrik Kantor',
+          type: 'Jasa Lainnya',
+          pagu: 300000000,
+          clue: 'Layanan utilitas rutin/tertentu.',
+          correct: 'dikecualikan',
+          explanation: 'Pembayaran utilitas tertentu dapat masuk kategori dikecualikan, tetapi tetap perlu dasar, bukti, dan pencatatan yang tertib.'
+        }
+      ],
+      explanation: 'Tender Rush melatih refleks membaca jenis paket, pagu, ketersediaan katalog, dan kondisi pelaksanaan sebelum memilih metode.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 4 — Tujuan PBJ',
+      caseTitle: 'Laptop TKDN + BMP 42%',
+      desc: 'PPK membeli laptop melalui katalog elektronik dengan TKDN + BMP 42%.',
+      question: 'Tujuan PBJ yang paling didukung oleh kondisi tersebut adalah?',
+      options: [
+        'Menghasilkan barang sesuai nilai uang',
+        'Meningkatkan penggunaan produk dalam negeri',
+        'Meningkatkan peran konsultan perencana',
+        'Mengurangi jumlah paket pengadaan'
+      ],
+      answer: 1,
+      hint: 'Kata kunci utama ada pada TKDN dan BMP.',
+      explanation: 'TKDN/BMP menunjukkan keberpihakan pada produk dalam negeri.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 5 — Susun Pipeline Konsolidasi',
+      caseTitle: 'Komputer Beberapa Bidang',
+      desc: 'Beberapa bidang mengusulkan komputer dengan kebutuhan sejenis. Total nilai Rp650 juta.',
+      budget: 'Rp650.000.000',
+      difficulty: 'Level 3 - Menengah',
+      ideal: ['rup', 'identifikasi', 'konsolidasi', 'kak', 'hps', 'cekKatalog', 'metodeEpurchasing', 'klarifikasi', 'kontrak', 'bast', 'realisasi'],
+      traps: ['pecahPaket', 'metodePl', 'metodeAsalCepat', 'kontrakAwal'],
+      explanation: 'Kebutuhan sejenis perlu diidentifikasi dan dapat dikonsolidasikan agar tidak terjadi pemecahan paket yang tidak wajar.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 6 — Pemaketan',
+      caseTitle: 'Strategi Pemaketan PBJ',
+      desc: 'Jawab pertanyaan tentang dasar pemaketan barang/jasa.',
+      question: 'Pemaketan barang/jasa dilakukan dengan mempertimbangkan apa?',
+      options: [
+        'Keluaran, volume, ketersediaan, kemampuan pelaku usaha, dan anggaran',
+        'Keinginan bidang, kecepatan proses, dan kemudahan administrasi',
+        'Jumlah penyedia yang dikenal PPK',
+        'Nilai paket agar selalu bisa pengadaan langsung'
+      ],
+      answer: 0,
+      hint: 'Pilih jawaban yang paling objektif dan menyangkut kebutuhan + kondisi pasar.',
+      explanation: 'Pemaketan perlu mempertimbangkan output, volume, ketersediaan, kemampuan pelaku usaha, dan anggaran.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 7 — Susun Pipeline Spek Mengarah',
+      caseTitle: 'Laptop dengan Spek Terlalu Spesifik',
+      desc: 'Spesifikasi awal mengarah ke merek tertentu. Susun langkah korektif sebelum proses.',
+      budget: 'Rp420.000.000',
+      difficulty: 'Level 4 - Menengah',
+      ideal: ['rup', 'reviewSpek', 'kak', 'hps', 'cekPdn', 'cekKatalog', 'metodeEpurchasing', 'klarifikasi', 'kontrak', 'bast', 'realisasi'],
+      traps: ['spekMengarah', 'kontrakAwal', 'abaikanKatalog', 'metodeAsalCepat'],
+      explanation: 'Jika spesifikasi mengarah, lakukan review spek dulu agar kebutuhan teknis lebih fair sebelum lanjut HPS dan metode.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 8 — Spesifikasi Teknis',
+      caseTitle: 'Fungsi Spesifikasi',
+      desc: 'Jawab pertanyaan tentang fungsi spesifikasi teknis dalam PBJ.',
+      question: 'Salah satu fungsi spesifikasi teknis adalah?',
+      options: [
+        'Menentukan pemenang sebelum proses',
+        'Memberikan informasi kebutuhan kepada pelaku usaha',
+        'Mengunci merek tertentu agar barang sesuai selera',
+        'Menghindari persaingan agar proses cepat'
+      ],
+      answer: 1,
+      hint: 'Spesifikasi teknis seharusnya menjelaskan kebutuhan, bukan mengunci penyedia.',
+      explanation: 'Spesifikasi teknis harus memberi informasi kebutuhan kepada pelaku usaha.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 9 — Susun Pipeline Jasa Konsultansi',
+      caseTitle: 'Kajian Teknis Perencanaan',
+      desc: 'OPD akan menyusun kajian teknis perencanaan dengan nilai Rp280 juta.',
+      budget: 'Rp280.000.000',
+      difficulty: 'Level 5 - Menengah',
+      ideal: ['rup', 'identifikasi', 'kak', 'hps', 'seleksi', 'proses', 'kontrak', 'monitoringKontrak', 'bast', 'realisasi'],
+      traps: ['metodeEpurchasing', 'metodePl', 'kontrakAwal', 'abaikanKatalog'],
+      explanation: 'Jasa konsultansi menggunakan pendekatan KAK, HPS, seleksi, proses, kontrak, monitoring, BAST, dan realisasi.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 10 — Jenis Pengadaan',
+      caseTitle: 'Kajian Teknis / Studi Kelayakan',
+      desc: 'Jawab pertanyaan tentang jenis pengadaan.',
+      question: 'Penyusunan studi kelayakan/kajian teknis termasuk jenis pengadaan apa?',
+      options: [
+        'Barang',
+        'Pekerjaan konstruksi',
+        'Jasa lainnya',
+        'Jasa konsultansi'
+      ],
+      answer: 3,
+      hint: 'Perhatikan sifat pekerjaannya: kajian/studi berbasis keahlian.',
+      explanation: 'Kajian teknis/studi kelayakan merupakan jasa profesional berbasis keahlian, sehingga termasuk jasa konsultansi.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 11 — Susun Pipeline Konstruksi Ringan',
+      caseTitle: 'Rehabilitasi Ruang Pelayanan',
+      desc: 'Pekerjaan konstruksi ringan dengan nilai Rp760 juta membutuhkan proses formal dan pemeriksaan hasil.',
+      budget: 'Rp760.000.000',
+      difficulty: 'Level 6 - Sulit',
+      ideal: ['rup', 'identifikasi', 'kak', 'hps', 'tender', 'proses', 'kontrak', 'monitoringKontrak', 'pemeriksaan', 'bast', 'realisasi'],
+      traps: ['metodePl', 'kontrakAwal', 'bastTanpaCek', 'bayarDulu'],
+      explanation: 'Pekerjaan konstruksi membutuhkan dokumen teknis, HPS, pemilihan, kontrak, monitoring, pemeriksaan hasil, BAST, dan realisasi.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 12 — Prinsip PBJ',
+      caseTitle: 'Barang Tidak Sesuai',
+      desc: 'Barang/pekerjaan tidak sesuai spesifikasi sehingga tidak dapat digunakan.',
+      question: 'Prinsip PBJ yang tidak terpenuhi adalah?',
+      options: [
+        'Efisien',
+        'Efektif',
+        'Transparan',
+        'Akuntabel'
+      ],
+      answer: 1,
+      hint: 'Kalau hasilnya tidak sesuai kebutuhan, prinsip yang gagal adalah terkait tercapainya tujuan.',
+      explanation: 'Efektif berarti barang/jasa harus sesuai kebutuhan dan tujuan.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 13 — Susun Pipeline Swakelola',
+      caseTitle: 'Pelatihan Internal Pegawai',
+      desc: 'OPD akan melaksanakan kegiatan pelatihan internal pegawai. Susun alur yang sesuai untuk skema swakelola.',
+      budget: 'Rp95.000.000',
+      difficulty: 'Level 7 - Menengah',
+      ideal: ['rup', 'identifikasi', 'kak', 'hps', 'timPersiapan', 'timPelaksana', 'timPengawas', 'swakelola', 'bast', 'realisasi'],
+      traps: ['metodeEpurchasing', 'tender', 'kontrakAwal', 'swakelolaTanpaTim'],
+      explanation: 'Swakelola tetap perlu perencanaan, identifikasi kebutuhan, KAK, anggaran/HPS, tim persiapan/pelaksana/pengawas, pelaksanaan, BAST, dan realisasi.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 14 — Swakelola',
+      caseTitle: 'Kriteria Swakelola',
+      desc: 'Jawab pertanyaan tentang penggunaan swakelola.',
+      question: 'Ruang lingkup pedoman swakelola meliputi apa?',
+      options: [
+        'Perencanaan, persiapan, pelaksanaan, pengawasan, dan serah terima hasil pekerjaan',
+        'Tender, seleksi, katalog, dan kontrak',
+        'Perencanaan, tender, evaluasi harga, dan pembayaran',
+        'KAK, HPS, sanggah, kontrak, dan pembayaran'
+      ],
+      answer: 0,
+      hint: 'Swakelola tidak hanya pelaksanaan; ada persiapan, pengawasan, dan serah terima.',
+      explanation: 'Ruang lingkup swakelola mencakup perencanaan pengadaan melalui swakelola, persiapan, pelaksanaan, pengawasan, dan serah terima hasil pekerjaan.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 15 — Susun Pipeline Penyedia Terlambat',
+      caseTitle: 'Penyedia Terlambat Mengirim Barang',
+      desc: 'Kontrak sudah berjalan, namun penyedia terlambat mengirim barang. Jangan langsung BAST atau bayar.',
+      budget: 'Rp190.000.000',
+      difficulty: 'Level 8 - Sulit',
+      ideal: ['kontrak', 'monitoringKontrak', 'teguran', 'pemeriksaan', 'bast', 'pembayaran', 'realisasi'],
+      traps: ['bastTanpaCek', 'bayarDulu', 'realisasiLupa'],
+      explanation: 'Saat kontrak bermasalah, lakukan monitoring kontrak, teguran/evaluasi, pemeriksaan hasil, BAST jika sesuai, pembayaran, dan realisasi.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 16 — Aspek Hukum Kontrak',
+      caseTitle: 'Sengketa Pelaksanaan Kontrak',
+      desc: 'PPK dan penyedia berselisih dalam pelaksanaan kontrak.',
+      question: 'Perselisihan PPK dan penyedia dalam pelaksanaan kontrak terutama termasuk aspek hukum apa?',
+      options: [
+        'Hukum pidana',
+        'Hukum perdata',
+        'Hukum persaingan usaha',
+        'Hukum tata negara'
+      ],
+      answer: 1,
+      hint: 'Perhatikan hubungan antara PPK dan penyedia dalam kontrak.',
+      explanation: 'Hubungan PPK dan penyedia dalam pelaksanaan kontrak pada dasarnya adalah hubungan perdata.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 17 — Susun Pipeline Ganti Metode dari e-Purchasing',
+      caseTitle: 'e-Purchasing Tidak Bisa Dilanjutkan',
+      desc: 'Paket awalnya direncanakan e-Purchasing, tetapi setelah dicek tidak ada produk/penyedia yang sesuai di katalog. Susun langkah paling aman sebelum mengganti metode.',
+      budget: 'Rp480.000.000',
+      difficulty: 'Level 9 - Sulit',
+      ideal: [
+        'rup',
+        'kak',
+        'hps',
+        'cekPdn',
+        'cekKatalog',
+        'katalogTidakSesuai',
+        'dokumentasiGagalKatalog',
+        'evaluasiMetode',
+        'pilihMetode',
+        'proses',
+        'kontrak',
+        'bast',
+        'realisasi'
+      ],
+      traps: [
+        'lanjutEpurchasingPaksa',
+        'gantiMetodeTanpaBukti',
+        'kontrakAwal',
+        'metodeAsalCepat'
+      ],
+      explanation: 'Jika rencana awal e-Purchasing tidak bisa dilakukan karena tidak ada produk/penyedia sesuai di katalog, PPK perlu mendokumentasikan hasil pengecekan, mengevaluasi metode, lalu memilih metode lain yang sesuai nilai, jenis, dan kondisi paket.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 18 — Perubahan Metode dari e-Purchasing',
+      caseTitle: 'Tidak Ada Penyedia di Katalog',
+      desc: 'Rencana awal paket adalah e-Purchasing, namun hasil cek katalog menunjukkan produk/penyedia tidak sesuai kebutuhan.',
+      question: 'Langkah paling aman sebelum mengganti metode dari e-Purchasing adalah?',
+      options: [
+        'Langsung tunjuk penyedia yang dikenal agar cepat',
+        'Tetap memaksa e-Purchasing walaupun produk tidak sesuai',
+        'Dokumentasikan hasil cek katalog, evaluasi metode, lalu pilih metode yang sesuai',
+        'Pecah paket agar bisa memakai metode yang lebih sederhana'
+      ],
+      answer: 2,
+      hint: 'Jangan lompat ganti metode. Harus ada dasar dan dokumentasinya dulu.',
+      explanation: 'Perubahan metode harus didasarkan pada hasil cek dan dokumentasi yang jelas. Setelah itu baru dilakukan evaluasi dan pemilihan metode yang sesuai.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 19 — Susun Pipeline Adendum Kontrak',
+      caseTitle: 'Perubahan Volume dan Waktu Pelaksanaan',
+      desc: 'Kontrak sedang berjalan. Terdapat kebutuhan perubahan volume dan penyesuaian waktu pelaksanaan. Susun alur adendum kontrak yang tertib.',
+      budget: 'Nilai kontrak berjalan',
+      difficulty: 'Level 10 - Expert',
+      ideal: [
+        'kontrak',
+        'monitoringKontrak',
+        'identifikasiPerubahan',
+        'kajiKontrak',
+        'justifikasiTeknis',
+        'negosiasiPerubahan',
+        'adendumKontrak',
+        'pemeriksaan',
+        'bast',
+        'pembayaran',
+        'realisasi'
+      ],
+      traps: [
+        'adendumTanpaDasar',
+        'bayarSebelumAdendum',
+        'bastTanpaCek',
+        'realisasiLupa'
+      ],
+      explanation: 'Adendum kontrak harus didahului identifikasi perubahan, kajian klausul kontrak, justifikasi teknis/administratif, dan negosiasi dampak perubahan. Setelah adendum tertib, pelaksanaan dapat dilanjutkan sampai pemeriksaan, BAST, pembayaran, dan realisasi.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 20 — Adendum Kontrak',
+      caseTitle: 'Perubahan Kontrak Berjalan',
+      desc: 'Dalam pelaksanaan kontrak ditemukan kebutuhan perubahan volume dan waktu.',
+      question: 'Apa yang paling tepat dilakukan sebelum membuat adendum kontrak?',
+      options: [
+        'Membayar dulu agar penyedia tetap bekerja',
+        'Membuat justifikasi dan memastikan perubahan sesuai ketentuan/klausul kontrak',
+        'Langsung BAST agar pekerjaan cepat selesai',
+        'Membiarkan perubahan terjadi tanpa dokumen'
+      ],
+      answer: 1,
+      hint: 'Adendum butuh dasar, bukan sekadar kesepakatan lisan.',
+      explanation: 'Adendum kontrak membutuhkan dasar yang jelas, termasuk kajian kontrak dan justifikasi perubahan. Perubahan tidak boleh berjalan tanpa dasar dan dokumen yang tertib.'
+    },
+    {
+      type: 'pipeline',
+      title: 'Soal 21 — Katalog Konstruksi dengan Mini Kompetisi',
+      caseTitle: 'Produk Konstruksi di Katalog Elektronik',
+      desc: 'OPD akan membeli produk sektor konstruksi melalui katalog elektronik. Susun alur yang lebih aman dengan memperhatikan kewajiban mini kompetisi.',
+      budget: 'Rp1.200.000.000',
+      difficulty: 'Level 11 - Expert',
+      ideal: [
+        'rup',
+        'identifikasi',
+        'kak',
+        'hps',
+        'cekPdn',
+        'cekKatalog',
+        'miniKompetisi',
+        'klarifikasi',
+        'kontrak',
+        'monitoringKontrak',
+        'pemeriksaan',
+        'bast',
+        'realisasi'
+      ],
+      traps: [
+        'abaikanKatalog',
+        'kontrakAwal',
+        'metodeAsalCepat',
+        'bayarDulu'
+      ],
+      explanation: 'Untuk produk sektor konstruksi di katalog, perlu memperhatikan tata kelola katalog, persaingan sehat, mini kompetisi bila diwajibkan, kontrak, monitoring, pemeriksaan, BAST, dan realisasi.'
+    },
+    {
+      type: 'quiz',
+      title: 'Soal 22 — Afirmasi Belanja',
+      caseTitle: 'Belanja Melalui Katalog',
+      desc: 'Dalam belanja katalog, pemerintah mendorong afirmasi tertentu.',
+      question: 'Afirmasi belanja melalui e-Purchasing terutama diarahkan untuk mendukung apa?',
+      options: [
+        'Produk dalam negeri serta usaha mikro, kecil, dan koperasi',
+        'Penyedia yang paling dekat dengan kantor',
+        'Barang impor karena lebih cepat',
+        'Pemilihan penyedia tanpa kompetisi'
+      ],
+      answer: 0,
+      hint: 'Ingat kata kunci PDN, UMK, dan koperasi.',
+      explanation: 'Afirmasi belanja melalui e-Purchasing diarahkan untuk mendukung produk dalam negeri serta usaha mikro, kecil, dan koperasi.'
+    }
+  ];
+
+
+  function getTenderRushTimeLimitByLevel(levelNo) {
+    if (levelNo <= 3) return 10;
+    if (levelNo <= 6) return 8;
+    if (levelNo <= 9) return 7;
+    if (levelNo <= 12) return 6;
+    return 5;
+  }
+
+  function getTenderRushFailLimitByLevel(levelNo) {
+    if (levelNo <= 3) return 5;
+    if (levelNo <= 6) return 3;
+    if (levelNo <= 9) return 2;
+    return 1;
+  }
+
+  function getCurrentLevelNumber() {
+    return Math.max(1, Number(GAME_STATE.index || 0) + 1);
+  }
+
+  function cloneTenderRushChallenge(template, levelNo, variantIndex) {
+    const variants = [
+      {
+        title: `Level ${levelNo} — Tender Rush: Pilih Jalur Metode`,
+        caseTitle: 'Arcade Metode Pengadaan',
+        difficulty: `Level ${levelNo} - Arcade`,
+        packages: template.packages
+      },
+      {
+        title: `Level ${levelNo} — Tender Rush: Paket Makin Cepat`,
+        caseTitle: 'Arcade Pagu dan Metode',
+        difficulty: `Level ${levelNo} - Arcade+`,
+        packages: [
+          { title: 'Belanja Kendaraan Operasional Katalog', type: 'Barang', pagu: 650000000, clue: 'Barang pabrikan dan tersedia di katalog elektronik.', correct: 'ekatalog', explanation: 'Jika kendaraan tersedia dan sesuai di katalog, e-Purchasing lebih tepat daripada memaksa metode manual.' },
+          { title: 'Konsumsi Rapat Koordinasi Kecil', type: 'Jasa Lainnya', pagu: 12000000, clue: 'Nilai kecil, sederhana, dan tidak kompleks.', correct: 'pengadaanLangsung', explanation: 'Konsumsi bernilai kecil dapat menggunakan Pengadaan Langsung sepanjang sesuai batas nilai dan administrasi tertib.' },
+          { title: 'Jasa Konsultan DED Gedung', type: 'Jasa Konsultansi', pagu: 420000000, clue: 'Membutuhkan keahlian profesional dan evaluasi teknis.', correct: 'tenderSeleksi', explanation: 'Jasa konsultansi dengan nilai dan kompleksitas tertentu lebih tepat melalui Seleksi, bukan Pengadaan Langsung.' },
+          { title: 'Pelatihan Internal oleh Tim OPD', type: 'Jasa Lainnya', pagu: 90000000, clue: 'Dikerjakan sendiri dengan tim pelaksana dan pengawas.', correct: 'swakelola', explanation: 'Kegiatan yang dilaksanakan sendiri dapat menggunakan Swakelola jika tim, rencana, dan pertanggungjawabannya jelas.' },
+          { title: 'Pembayaran Air dan Listrik Kantor', type: 'Jasa Lainnya', pagu: 240000000, clue: 'Layanan utilitas rutin/tertentu.', correct: 'dikecualikan', explanation: 'Utilitas tertentu dapat dikecualikan sesuai dasar ketentuan, tetapi tetap wajib tertib bukti dan pencatatan.' }
+        ]
+      },
+      {
+        title: `Level ${levelNo} — Tender Rush: Risiko Akhir Tahun`,
+        caseTitle: 'Arcade Risiko Metode',
+        difficulty: `Level ${levelNo} - Sulit`,
+        packages: [
+          { title: 'Laptop Pelayanan Publik TKDN Tersedia', type: 'Barang', pagu: 480000000, clue: 'Ada produk katalog dan perlu afirmasi PDN/TKDN.', correct: 'ekatalog', explanation: 'Katalog yang tersedia dan sesuai mendukung e-Purchasing serta afirmasi PDN/TKDN.' },
+          { title: 'Souvenir Kegiatan Sosialisasi', type: 'Barang', pagu: 35000000, clue: 'Nilai kecil, sederhana, tidak dipecah dari kebutuhan besar.', correct: 'pengadaanLangsung', explanation: 'Nilai kecil dan sederhana dapat masuk Pengadaan Langsung jika tidak digunakan untuk memecah paket.' },
+          { title: 'Pemeliharaan Jalan Lingkungan', type: 'Pekerjaan Konstruksi', pagu: 900000000, clue: 'Konstruksi nilai besar, perlu proses formal.', correct: 'tenderSeleksi', explanation: 'Konstruksi bernilai besar tidak cocok dipaksa ke Pengadaan Langsung. Jalur formal lebih aman.' },
+          { title: 'Kajian Data oleh Perguruan Tinggi Negeri', type: 'Jasa Konsultansi', pagu: 250000000, clue: 'Dilaksanakan bersama instansi/perguruan tinggi.', correct: 'swakelola', explanation: 'Kolaborasi dengan instansi/perguruan tinggi dapat masuk Swakelola jika memenuhi ketentuan dan struktur tim jelas.' },
+          { title: 'Layanan Pos/Pengiriman Dokumen Resmi', type: 'Jasa Lainnya', pagu: 70000000, clue: 'Layanan tertentu yang memiliki karakter khusus.', correct: 'dikecualikan', explanation: 'Layanan tertentu bisa dikecualikan, namun dasar dan pencatatan tetap wajib rapi.' }
+        ]
+      }
+    ];
+
+    const selected = variants[variantIndex % variants.length];
+
+    return {
+      ...template,
+      ...selected,
+      type: 'tenderRush',
+      desc: 'Paket akan muncul satu per satu. Masukkan paket ke jalur metode yang paling tepat sebelum waktu habis. Batas salah makin ketat di level tinggi.',
+      budget: 'Simulasi cepat',
+      timeLimit: getTenderRushTimeLimitByLevel(levelNo),
+      explanation: 'Tender Rush melatih refleks membaca jenis paket, pagu, ketersediaan katalog, dan kondisi pelaksanaan sebelum memilih metode.'
+    };
+  }
+
+  function expandChallengeFlow(rawList) {
+    const rushTemplate = rawList.find(item => item.type === 'tenderRush');
+    const baseList = rawList.filter(item => item.type !== 'tenderRush');
+    const rushLevels = new Set([3, 6, 9, 12, 15]);
+    const expanded = [];
+    let baseIndex = 0;
+    let rushIndex = 0;
+    let levelNo = 1;
+
+    while (baseIndex < baseList.length || (rushTemplate && rushLevels.has(levelNo))) {
+      if (rushTemplate && rushLevels.has(levelNo)) {
+        expanded.push(cloneTenderRushChallenge(rushTemplate, levelNo, rushIndex));
+        rushIndex += 1;
+      } else if (baseIndex < baseList.length) {
+        expanded.push(baseList[baseIndex]);
+        baseIndex += 1;
+      }
+
+      levelNo += 1;
+
+      if (levelNo > baseList.length + rushLevels.size + 8) break;
+    }
+
+    return expanded;
+  }
+
+  function buildChallenge(raw) {
+    if (raw.type === 'quiz' || raw.type === 'tenderRush' || raw.type === 'bonusOpenWorld' || raw.type === 'bonusSnake' || raw.type === 'bonusTree') {
+      return raw;
+    }
+
+    const idealCards = raw.ideal.map(key => card(key)).filter(Boolean);
+    const trapCards = (raw.traps || []).map(key => card(key)).filter(Boolean);
+
+    return {
+      ...raw,
+      idealIds: idealCards.map(item => item.id),
+      cards: [...idealCards, ...trapCards]
+    };
+  }
+
+
+  const BONUS_LEVEL_4_OPENWORLD = {
+    type: 'bonusOpenWorld',
+    title: 'Level 4 — Bonus Zuma: Jalur Konsolidasi',
+    caseTitle: 'Pertahankan Jalur Konsolidasi Kota Bogor',
+    desc: 'Bonus level gaya Zuma. Tembak bola warna sejenis untuk menjaga jalur konsolidasi tetap aman dari data berantakan sampai e-Purchasing.',
+    budget: 'Bonus Level 4',
+    difficulty: 'Arcade Puzzle',
+    explanation: 'Bonus ini melatih konsolidasi secara visual: rapikan data kebutuhan, market sounding, KAK/HPS, kontrak payung, lalu kunci e-Purchasing.'
+  };
+
+  const BONUS_LEVEL_8_SNAKE = {
+    type: 'bonusSnake',
+    title: 'Level 8 — Bonus Santuy: PANJI Star Snake',
+    caseTitle: 'Snake Bintang Semangat',
+    desc: 'Bonus refreshing. Gerakkan ular PANJI, ambil bintang, hindari jebakan revisi. Skor bonus tetap masuk nilai akhir.',
+    budget: 'Bonus Level 8',
+    difficulty: 'Mood Booster',
+    explanation: 'Bonus Snake melatih fokus cepat: ambil item baik, hindari jebakan, dan tetap jaga mood sebelum lanjut analisa PBJ.'
+  };
+
+  const BONUS_LEVEL_10_TREE = {
+    type: 'bonusTree',
+    title: 'Level 10 — Bonus Tebang Pohon PANJI',
+    caseTitle: 'Tebang Pohon Kiri Kanan',
+    desc: 'Bonus cepat. Klik kiri atau kanan untuk menebang batang sambil menghindari akar pohon yang muncul acak. Ada timer dan nyawa.',
+    budget: 'Bonus Level 10',
+    difficulty: 'Arcade Reflex',
+    explanation: 'Bonus ini melatih fokus cepat: pilih sisi aman, jaga ritme, dan jangan kejebak akar pohon.'
+  };
+
+  function buildMainChallengeFlow() {
+    const rushTemplate = CHALLENGE_RAW.find(item => item.type === 'tenderRush');
+    const miniCompetitionPipeline = CHALLENGE_RAW[20];
+    const miniCompetitionQuiz = CHALLENGE_RAW[21];
+    const list = [
+      CHALLENGE_RAW[0],
+      CHALLENGE_RAW[1],
+      rushTemplate ? cloneTenderRushChallenge(rushTemplate, 3, 0) : CHALLENGE_RAW[2],
+      BONUS_LEVEL_4_OPENWORLD,
+      CHALLENGE_RAW[3],
+      CHALLENGE_RAW[4],
+      CHALLENGE_RAW[5],
+      BONUS_LEVEL_8_SNAKE,
+      CHALLENGE_RAW[6],
+      BONUS_LEVEL_10_TREE,
+      CHALLENGE_RAW[7],
+      CHALLENGE_RAW[8],
+      rushTemplate ? cloneTenderRushChallenge(rushTemplate, 12, 1) : CHALLENGE_RAW[2],
+      miniCompetitionPipeline,
+      miniCompetitionQuiz
+    ].filter(Boolean);
+
+    return list;
+  }
+
+  const CHALLENGES = buildMainChallengeFlow().map(buildChallenge);
+
+  const TENDER_RUSH_METHODS = {
+    ekatalog: {
+      key: '1',
+      label: 'e-Katalog',
+      short: 'Katalog',
+      icon: psIcon('cart'),
+      hint: 'Tekan 1 untuk barang/jasa yang tersedia dan sesuai di katalog elektronik.'
+    },
+    pengadaanLangsung: {
+      key: '2',
+      label: 'Pengadaan Langsung',
+      short: 'PL',
+      icon: psIcon('wrench'),
+      hint: 'Tekan 2 untuk paket kecil/sederhana yang memenuhi batas nilai dan tidak dipecah.'
+    },
+    tenderSeleksi: {
+      key: '3',
+      label: 'Tender/Seleksi',
+      short: 'Tender',
+      icon: psIcon('building'),
+      hint: 'Tekan 3 untuk paket besar/kompleks atau jasa konsultansi yang perlu proses formal.'
+    },
+    swakelola: {
+      key: '4',
+      label: 'Swakelola',
+      short: 'Swakelola',
+      icon: psIcon('users'),
+      hint: 'Tekan 4 untuk pekerjaan yang dilaksanakan sendiri/bersama sesuai kriteria swakelola.'
+    },
+    dikecualikan: {
+      key: '5',
+      label: 'Dikecualikan',
+      short: 'Dikecualikan',
+      icon: psIcon('scale'),
+      hint: 'Tekan 5 untuk pengadaan yang punya dasar pengecualian, tetap tertib dan tercatat.'
+    }
+  };
+
+  function formatCurrency(value) {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0
+    }).format(Number(value || 0));
+  }
+
+  const GAME_STATE = {
+    order: [],
+    index: 0,
+    current: null,
+    stage: 'ready',
+    placed: [],
+    shuffledCards: [],
+    selectedCardId: null,
+    answered: false,
+    selectedAnswer: null,
+    score: 0,
+    risk: 0,
+    wrong: 0,
+    correct: 0,
+    progress: 0,
+    logs: [],
+    finished: false,
+    hintUsed: false,
+    hasSeenIntro: false,
+    runId: '',
+    gameStartedAt: 0,
+    scoreSubmitted: false,
+    tenderRush: null,
+    levelTimeLeft: 0,
+    levelTimeLimit: 0,
+    stoppedReason: '',
+    stoppedLevel: 0,
+    pipelineTutorialSeen: false
+  };
+
+  const PLAYER_STATE = {
+    nama: '',
+    instansi: '',
+    leaderboard: [],
+    loadingLeaderboard: false,
+    savingScore: false,
+    lastSaveMessage: '',
+    feedback: '',
+    feedbackDraft: ''
+  };
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function readStoredPlayer() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY) || '{}');
+      PLAYER_STATE.nama = String(saved.nama || '').trim();
+      PLAYER_STATE.instansi = String(saved.instansi || '').trim();
+      PLAYER_STATE.feedback = String(saved.feedback || '').trim();
+    } catch (error) {
+      PLAYER_STATE.nama = '';
+      PLAYER_STATE.instansi = '';
+      PLAYER_STATE.feedback = '';
+    }
+  }
+
+  function hasPlayerProfile() {
+    return Boolean(String(PLAYER_STATE.nama || '').trim() && String(PLAYER_STATE.instansi || '').trim());
+  }
+
+  function savePlayerProfile(nama, instansi) {
+    PLAYER_STATE.nama = String(nama || '').trim();
+    PLAYER_STATE.instansi = String(instansi || '').trim();
+
+    localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify({
+      nama: PLAYER_STATE.nama,
+      instansi: PLAYER_STATE.instansi,
+      feedback: PLAYER_STATE.feedback || '',
+      updatedAt: new Date().toISOString()
+    }));
+  }
+
+  function getCurrentResultSummary() {
+    const maxScore = calculateMaxScore();
+    const percent = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((GAME_STATE.score / maxScore) * 100))) : 0;
+    const totalSoal = CHALLENGES.length;
+    const benar = Math.max(0, Math.min(totalSoal, Number(GAME_STATE.correct || 0)));
+    const salah = Math.max(0, Number(GAME_STATE.wrong || 0));
+    const durasiDetik = GAME_STATE.gameStartedAt
+      ? Math.max(0, Math.round((Date.now() - GAME_STATE.gameStartedAt) / 1000))
+      : 0;
+
+    const levelDicapai = GAME_STATE.stoppedLevel || Math.min(CHALLENGES.length, GAME_STATE.index + 1);
+    const levelSelesai = GAME_STATE.stoppedReason ? Math.max(0, levelDicapai - 1) : (GAME_STATE.finished ? CHALLENGES.length : Math.max(0, levelDicapai - 1));
+
+    return {
+      maxScore,
+      percent,
+      totalSoal,
+      benar,
+      salah,
+      durasiDetik,
+      skor: GAME_STATE.score,
+      risiko: GAME_STATE.risk,
+      levelDicapai,
+      levelSelesai
+    };
+  }
+
+  function formatDuration(seconds) {
+    const total = Math.max(0, Number(seconds || 0));
+    const minutes = Math.floor(total / 60);
+    const rest = total % 60;
+
+    if (minutes <= 0) return `${rest} detik`;
+    return `${minutes} menit ${String(rest).padStart(2, '0')} detik`;
+  }
+
+  async function fetchLeaderboard() {
+    if (!LEADERBOARD_API_URL) return [];
+
+    PLAYER_STATE.loadingLeaderboard = true;
+    renderLeaderboardModalContent();
+
+    try {
+      const response = await fetch(`${LEADERBOARD_API_URL}?action=leaderboard&v=${Date.now()}`, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+
+      const json = await response.json();
+      const rows = Array.isArray(json) ? json : Array.isArray(json.leaderboard) ? json.leaderboard : [];
+      PLAYER_STATE.leaderboard = sortLeaderboardRows(rows);
+      return PLAYER_STATE.leaderboard;
+    } catch (error) {
+      PLAYER_STATE.lastSaveMessage = `Leaderboard belum bisa dimuat: ${error.message || error}`;
+      return [];
+    } finally {
+      PLAYER_STATE.loadingLeaderboard = false;
+      renderLeaderboardModalContent();
+    }
+  }
+
+
+  async function fetchReviewRowsForBubble() {
+    if (!LEADERBOARD_API_URL) return [];
+    try {
+      const response = await fetch(`${LEADERBOARD_API_URL}?action=reviews&v=${Date.now()}`, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      const json = await response.json();
+      const rows = Array.isArray(json)
+        ? json
+        : Array.isArray(json.reviews)
+          ? json.reviews
+          : Array.isArray(json.leaderboard)
+            ? json.leaderboard
+            : [];
+      return rows
+        .filter(row => row && getRowReview(row))
+        .slice(0, 8);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async function showReviewBubbleOnMenuOpen(options = {}) {
+    if (destroyed) return;
+
+    const now = Date.now();
+    if (!options.force && now - reviewBubbleLastShownAt < 3500) return;
+    reviewBubbleLastShownAt = now;
+
+    document.querySelectorAll('.ps-review-bubble-pop').forEach(el => el.remove());
+    if (reviewBubbleTimer) {
+      clearTimeout(reviewBubbleTimer);
+      reviewBubbleTimer = null;
+    }
+
+    const rows = await fetchReviewRowsForBubble();
+    if (destroyed || !rows.length) return;
+    const pickedRows = rows.slice(0, Math.min(8, rows.length));
+    const created = [];
+
+    pickedRows.forEach((row, index) => {
+      const bubble = document.createElement('div');
+      bubble.className = `ps-review-bubble-pop ps-review-bubble-float review-pos-${index % 8}`;
+      bubble.style.setProperty('--review-i', String(index));
+      bubble.style.setProperty('--review-delay', `${index * 0.18}s`);
+      bubble.style.setProperty('--review-rand', String((index * 37) % 19));
+      bubble.innerHTML = `
+        <button type="button" class="ps-review-bubble-close" aria-label="Tutup"><span class="ps-close-line" aria-hidden="true"></span></button>
+        <div class="ps-review-bubble-head">
+          <span>${emojis[index % emojis.length]} Review Pemain</span>
+          <b>PANJI baca...</b>
+        </div>
+        <div class="ps-review-main">
+          “${escapeHtml(getRowReview(row))}”
+          <small>${escapeHtml(row.nama || 'Pemain')} · ${escapeHtml(row.instansi || 'Instansi')}</small>
+        </div>
+      `;
+      document.body.appendChild(bubble);
+      created.push(bubble);
+
+      const closeOne = () => {
+        bubble.classList.add('closing');
+        setTimeout(() => bubble.remove(), 240);
+      };
+      bubble.querySelector('.ps-review-bubble-close')?.addEventListener('click', closeOne);
+      setTimeout(closeOne, 9000 + (index * 900));
+    });
+
+    reviewBubbleEl = created[0] || null;
+    showPanji('Ini review dari pemain lain. Aku munculin kayak bubble biar suasananya hidup. Baca sebentar, siapa tahu ada pengalaman yang nyambung sama kamu', 'happy');
+    reviewBubbleTimer = setTimeout(() => {
+      created.forEach(bubble => {
+        if (bubble && bubble.parentNode) {
+          bubble.classList.add('closing');
+          setTimeout(() => bubble.remove(), 240);
+        }
+      });
+      reviewBubbleEl = null;
+    }, 12000);
+  }
+
+  async function submitFinalScoreToLeaderboard() {
+    if (GAME_STATE.scoreSubmitted || PLAYER_STATE.savingScore) return;
+
+    if (!hasPlayerProfile()) {
+      PLAYER_STATE.lastSaveMessage = 'Isi nama dan instansi dulu agar skor bisa masuk leaderboard.';
+      openLeaderboardModal('player', true);
+      return;
+    }
+
+    PLAYER_STATE.savingScore = true;
+    PLAYER_STATE.lastSaveMessage = 'Menyimpan skor ke leaderboard...';
+    renderLeaderboardModalContent();
+
+    const result = getCurrentResultSummary();
+    const payload = {
+      nama: PLAYER_STATE.nama,
+      instansi: PLAYER_STATE.instansi,
+      skor: result.skor,
+      benar: result.benar,
+      salah: result.salah,
+      risiko: result.risiko,
+      total_soal: result.totalSoal,
+      level_dicapai: result.levelDicapai,
+      level_selesai: result.levelSelesai,
+      durasi_detik: result.durasiDetik,
+      analisa_panji: getFinalPanjiAnalysisText(result),
+      review: PLAYER_STATE.feedback || '',
+      pengalaman_main: PLAYER_STATE.feedback || ''
+    };
+
+    try {
+      const response = await fetch(LEADERBOARD_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await response.json();
+
+      if (!json.ok) {
+        throw new Error(json.message || 'Skor gagal disimpan.');
+      }
+
+      GAME_STATE.scoreSubmitted = true;
+      PLAYER_STATE.lastSaveMessage = 'Skor berhasil disimpan ke leaderboard.';
+      PLAYER_STATE.leaderboard = Array.isArray(json.leaderboard) ? json.leaderboard : PLAYER_STATE.leaderboard;
+
+      if (!PLAYER_STATE.leaderboard.length) {
+        await fetchLeaderboard();
+      }
+    } catch (error) {
+      PLAYER_STATE.lastSaveMessage = `Skor belum tersimpan: ${error.message || error}`;
+    } finally {
+      PLAYER_STATE.savingScore = false;
+      renderLeaderboardModalContent();
+    }
+  }
+
+  function ensureLeaderboardModal() {
+    if (leaderboardModalEl && document.body.contains(leaderboardModalEl)) return leaderboardModalEl;
+
+    leaderboardModalEl = document.createElement('div');
+    leaderboardModalEl.id = 'procstackLeaderboardModal';
+    leaderboardModalEl.className = 'ps-leaderboard-modal ps-hidden';
+    leaderboardModalEl.innerHTML = `
+      <div class="ps-leaderboard-backdrop" data-leaderboard-close></div>
+      <div class="ps-leaderboard-panel">
+        <button type="button" class="ps-leaderboard-close" data-leaderboard-close aria-label="Tutup"><span class="ps-close-line" aria-hidden="true"></span></button>
+        <div class="ps-leaderboard-content" id="psLeaderboardContent"></div>
+      </div>
+    `;
+
+    document.body.appendChild(leaderboardModalEl);
+
+    leaderboardModalEl.querySelectorAll('[data-leaderboard-close]').forEach(button => {
+      button.addEventListener('click', () => {
+        closeLeaderboardModal();
+      });
+    });
+
+    return leaderboardModalEl;
+  }
+
+  function attachPanjiToLeaderboardModal() {
+    if (!leaderboardModalEl) return;
+
+    const panel = leaderboardModalEl.querySelector('.ps-leaderboard-panel');
+    const panji = document.querySelector('.panji-assistant');
+
+    if (!panel || !panji) return;
+
+    const rect = panel.getBoundingClientRect();
+
+    const right = Math.max(10, window.innerWidth - rect.right - 8);
+    const bottom = Math.max(10, window.innerHeight - rect.bottom + 10);
+
+    panji.classList.add('panji-leaderboard-mode');
+    panji.style.setProperty('--panji-lb-right', `${right}px`);
+    panji.style.setProperty('--panji-lb-bottom', `${bottom}px`);
+  }
+
+  function detachPanjiFromLeaderboardModal() {
+    const panji = document.querySelector('.panji-assistant');
+
+    if (!panji) return;
+
+    panji.classList.remove('panji-leaderboard-mode');
+    panji.style.removeProperty('--panji-lb-right');
+    panji.style.removeProperty('--panji-lb-bottom');
+  }
+
+  function openLeaderboardModal(tab = 'player', force = false) {
+    ensureLeaderboardModal();
+    leaderboardModalEl.dataset.activeTab = tab;
+    leaderboardModalEl.dataset.force = force ? 'true' : 'false';
+    leaderboardModalEl.classList.remove('ps-hidden');
+    renderLeaderboardModalContent();
+
+    if (panjiEl) {
+      panjiEl.classList.toggle('panji-result-mode', GAME_STATE.stage === 'result' || GAME_STATE.finished);
+    }
+
+    setTimeout(() => {
+      attachPanjiToLeaderboardModal();
+
+      if (typeof showPanji === 'function') {
+        if (GAME_STATE.stage === 'result' || GAME_STATE.finished) {
+          const reaction = getPanjiFinalReaction();
+          panjiUserMinimized = false;
+
+          if (panjiEl) {
+            panjiEl.classList.remove('panji-hidden', 'panji-minimized');
+          }
+
+          showPanji(reaction.text, reaction.mood);
+
+          if (panjiEl) {
+            panjiEl.classList.remove('panji-celebrate', 'panji-cry');
+            void panjiEl.offsetWidth;
+            panjiEl.classList.add(reaction.anim);
+          }
+        } else {
+          showPanji(
+            'Halo! PANJI di sini. Isi dulu nama dan instansi kamu ya. Setelah selesai main, skor otomatis masuk leaderboard.',
+            'happy'
+          );
+        }
+
+        setTimeout(attachPanjiToLeaderboardModal, 80);
+        setTimeout(attachPanjiToLeaderboardModal, 250);
+        setTimeout(attachPanjiToLeaderboardModal, 600);
+      }
+    }, 120);
+
+    setTimeout(() => {
+      if (!destroyed) showReviewBubbleOnMenuOpen({ force: true });
+    }, 520);
+
+    if (tab === 'leaderboard' || !PLAYER_STATE.leaderboard.length) {
+      fetchLeaderboard();
+    }
+  }
+
+  function closeLeaderboardModal() {
+    if (!leaderboardModalEl) return;
+    leaderboardModalEl.classList.add('ps-hidden');
+    if (panjiEl) panjiEl.classList.remove('panji-result-mode');
+    detachPanjiFromLeaderboardModal();
+  }
+
+  function getLeaderboardPanjiMood(result) {
+    const score = Number(result && result.percent || 0);
+    const risk = Number(result && result.risiko || 0);
+
+    if (score >= 75 && risk <= 45) return 'happy';
+    if (score < 55 || risk >= 80) return 'sad';
+    return 'thinking';
+  }
+
+  function getLeaderboardPanjiNarrative(result) {
+    const mood = getLeaderboardPanjiMood(result);
+    const levelText = 'Level ' + result.levelDicapai + '/' + result.totalSoal;
+
+    const analysis = getFinalPanjiAnalysisText(result);
+
+    if (mood === 'happy') {
+      return 'Mantap! Kamu sampai ' + levelText + ' dengan skor ' + result.skor + '. ' + analysis;
+    }
+
+    if (mood === 'sad') {
+      return 'Yah, hasilnya masih perlu dibenerin. Kamu sampai ' + levelText + ' dengan skor ' + result.skor + '. ' + analysis;
+    }
+
+    return 'Lumayan, kamu sampai ' + levelText + ' dengan skor ' + result.skor + '. ' + analysis;
+  }
+
+  function renderLeaderboardModalContent() {
+    if (!leaderboardModalEl || leaderboardModalEl.classList.contains('ps-hidden')) return;
+
+    const content = leaderboardModalEl.querySelector('#psLeaderboardContent');
+    if (!content) return;
+
+    const existingFeedbackEl = content.querySelector('[name="finalFeedback"]');
+    if (existingFeedbackEl) {
+      PLAYER_STATE.feedbackDraft = existingFeedbackEl.value || PLAYER_STATE.feedbackDraft || '';
+    }
+
+    const activeTab = leaderboardModalEl.dataset.activeTab || 'player';
+    const result = getCurrentResultSummary();
+    const isResult = GAME_STATE.stage === 'result' || GAME_STATE.finished;
+
+    content.innerHTML = `
+      <div class="ps-lb-hero">
+        <div>
+          <div class="ps-lb-kicker">Procurement Mini Game</div>
+          <h3>${isResult ? 'Nilai Akhir & Leaderboard' : 'Masuk Pemain'}</h3>
+          <p>${isResult ? 'Skor selesai main otomatis dikirim ke Google Sheet dan ditampilkan di leaderboard.' : 'Isi nama dan instansi dulu. Setelah selesai main, skor otomatis masuk leaderboard.'}</p>
+        </div>
+        ${isResult ? `<div class="ps-lb-score"><span>Nilai</span><b>${result.percent}%</b></div>` : ''}
+      </div>
+
+      <div class="ps-lb-tabs">
+        <button type="button" class="${activeTab === 'player' ? 'active' : ''}" data-lb-tab="player">Masuk Pemain</button>
+        <button type="button" class="${activeTab === 'leaderboard' ? 'active' : ''}" data-lb-tab="leaderboard">Leaderboard</button>
+      </div>
+
+      ${isResult ? `
+        <div class="ps-lb-summary">
+          <div><span>Pemain</span><b>${escapeHtml(PLAYER_STATE.nama || '-')}</b></div>
+          <div><span>Instansi</span><b>${escapeHtml(PLAYER_STATE.instansi || '-')}</b></div>
+          <div><span>Skor</span><b>${result.skor}/${result.maxScore}</b></div>
+          <div><span>Benar</span><b>${result.benar}/${result.totalSoal}</b></div>
+          <div><span>Salah</span><b>${result.salah}</b></div>
+          <div><span>Risiko</span><b>${result.risiko}</b></div>
+          <div><span>Level Dicapai</span><b>${result.levelDicapai}/${result.totalSoal}</b></div>
+          <div><span>Durasi</span><b>${formatDuration(result.durasiDetik)}</b></div>
+        </div>
+      ` : ''}
+
+      ${isResult && activeTab === 'player' ? renderResultFeedbackBox() : ''}
+
+      <div class="ps-lb-message ${PLAYER_STATE.lastSaveMessage ? '' : 'empty'}">
+        ${escapeHtml(PLAYER_STATE.lastSaveMessage || 'Data pemain disimpan di browser ini dan skor akhir disimpan ke Google Sheet.')}
+      </div>
+
+      ${activeTab === 'player' ? renderPlayerTab() : renderLeaderboardTab()}
+    `;
+
+    content.querySelectorAll('[data-lb-tab]').forEach(button => {
+      button.addEventListener('click', () => {
+        leaderboardModalEl.dataset.activeTab = button.dataset.lbTab;
+        renderLeaderboardModalContent();
+
+        if (button.dataset.lbTab === 'leaderboard') {
+          fetchLeaderboard();
+        }
+      });
+    });
+
+    const form = content.querySelector('#psPlayerForm');
+    if (form) {
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        const nama = form.querySelector('[name="nama"]')?.value || '';
+        const instansi = form.querySelector('[name="instansi"]')?.value || '';
+        const feedback = form.querySelector('[name="feedback"]')?.value || PLAYER_STATE.feedback || '';
+
+        if (!String(nama).trim() || !String(instansi).trim()) {
+          PLAYER_STATE.lastSaveMessage = 'Nama dan instansi wajib diisi.';
+          renderLeaderboardModalContent();
+          return;
+        }
+
+        PLAYER_STATE.feedback = String(feedback || '').trim();
+        savePlayerProfile(nama, instansi);
+        PLAYER_STATE.lastSaveMessage = 'Data pemain tersimpan. Silakan lanjut main.';
+        PLAYER_STATE.feedbackDraft = PLAYER_STATE.feedbackDraft || PLAYER_STATE.feedback || '';
+
+        if (GAME_STATE.stage === 'result' || GAME_STATE.finished) {
+          PLAYER_STATE.lastSaveMessage = 'Nama pemain tersimpan. Sekarang tulis pengalaman mainmu di kotak bawah, lalu kirim ke leaderboard.';
+          renderLeaderboardModalContent();
+          return;
+        }
+
+        closeLeaderboardModal();
+        leaderboardModalEl?.classList.add('ps-hidden');
+
+        if (!GAME_STATE.current || GAME_STATE.stage === 'ready') {
+          GAME_STATE.stage = 'ready';
+          GAME_STATE.finished = false;
+          showPanji('Data pemain sudah tersimpan. Sekarang PANJI mulai perkenalan dulu, lalu kita masuk ke soal pertama. Kalau aku menghalangi layar, klik karakter PANJI untuk sembunyikan/munculkan bubble chat. Kalau aku menghalangi layar, klik karakter PANJI untuk minimize/munculkan bubble chat.', 'happy');
+          closeLeaderboardModal();
+          startGame();
+          setTimeout(() => {
+            if (GAME_STATE.stage !== 'ready' && GAME_STATE.current) {
+              renderGame();
+            }
+          }, 0);
+        } else {
+          showPanjiHowToPlayAfterPlayerSaved();
+        }
+
+        return;
+      });
+    }
+
+    const feedbackForm = content.querySelector('#psFinalFeedbackForm');
+    if (feedbackForm) {
+      const feedbackInput = feedbackForm.querySelector('[name="finalFeedback"]');
+      if (feedbackInput) {
+        feedbackInput.addEventListener('input', () => {
+          PLAYER_STATE.feedbackDraft = feedbackInput.value || '';
+        });
+      }
+      feedbackForm.addEventListener('submit', event => {
+        event.preventDefault();
+        const feedback = feedbackForm.querySelector('[name="finalFeedback"]')?.value || '';
+        PLAYER_STATE.feedback = String(feedback || '').trim();
+        PLAYER_STATE.feedbackDraft = PLAYER_STATE.feedback;
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify({
+          nama: PLAYER_STATE.nama,
+          instansi: PLAYER_STATE.instansi,
+          feedback: PLAYER_STATE.feedback,
+          updatedAt: new Date().toISOString()
+        }));
+
+        if (!hasPlayerProfile()) {
+          PLAYER_STATE.lastSaveMessage = 'Isi nama dan instansi dulu di tab Masuk Pemain, baru pengalaman main bisa masuk ke sheet.';
+          leaderboardModalEl.dataset.activeTab = 'player';
+          renderLeaderboardModalContent();
+          return;
+        }
+
+        PLAYER_STATE.lastSaveMessage = 'Pengalaman main disimpan. Skor sedang dikirim ke leaderboard...';
+        submitFinalScoreToLeaderboard();
+        closeLeaderboardModal();
+        showToast('Pengalaman tersimpan. Makasih!', 'ok');
+      });
+    }
+
+    const refreshBtn = content.querySelector('#psRefreshLeaderboard');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => fetchLeaderboard());
+    }
+  }
+
+  function renderResultFeedbackBox() {
+    return `
+      <form class="ps-final-feedback-box" id="psFinalFeedbackForm">
+        <div>
+          <strong>Ceritain pengalaman mainmu</strong>
+          <p>Nanti masuk ke sheet bareng nama, skor, risiko, dan analisa PANJI. Bisa dipakai buat munculin bubble testimoni di halaman game.</p>
+        </div>
+        <textarea name="finalFeedback" rows="3" placeholder="Contoh: level snake lucu, tapi evaluator battle bikin mikir.">${escapeHtml(PLAYER_STATE.feedbackDraft || PLAYER_STATE.feedback || '')}</textarea>
+        <button type="submit" class="ps-btn ps-btn-primary">Kirim Skor & Pengalaman</button>
+      </form>
+    `;
+  }
+
+  function renderPlayerTab() {
+    return `
+      <form class="ps-player-form" id="psPlayerForm">
+        <label>
+          <span>Nama Pemain</span>
+          <input type="text" name="nama" value="${escapeHtml(PLAYER_STATE.nama)}" placeholder="Contoh: Benni Ramadhan" autocomplete="name" required>
+        </label>
+        <label>
+          <span>Instansi / OPD</span>
+          <input type="text" name="instansi" value="${escapeHtml(PLAYER_STATE.instansi)}" placeholder="Contoh: UKPBJ Kota Bogor" required>
+        </label>
+        <button type="submit" class="ps-btn ps-btn-primary">Simpan & Mulai</button>
+      </form>
+    `;
+  }
+
+  function renderLeaderboardTab() {
+    const rows = PLAYER_STATE.leaderboard || [];
+
+    return `
+      <div class="ps-lb-toolbar">
+        <strong>Top Leaderboard</strong>
+        <button type="button" class="ps-btn ps-btn-soft" id="psRefreshLeaderboard" ${PLAYER_STATE.loadingLeaderboard ? 'disabled' : ''}>
+          ${PLAYER_STATE.loadingLeaderboard ? 'Memuat...' : 'Refresh'}
+        </button>
+      </div>
+
+      <div class="ps-lb-list">
+        ${rows.length ? rows.map(renderLeaderboardRow).join('') : `
+          <div class="ps-lb-empty">
+            ${PLAYER_STATE.loadingLeaderboard ? 'Memuat leaderboard...' : 'Belum ada skor tersimpan.'}
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  function getRowLevelValue(row) {
+    return Number(row.level_dicapai || row.level || row.level_tercapai || row.levelReached || row.total_level || row.total_soal || row.benar || 0);
+  }
+
+  function sortLeaderboardRows(rows) {
+    return [...(rows || [])].sort((a, b) => {
+      const scoreDiff = Number(b.skor || 0) - Number(a.skor || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      const levelDiff = getRowLevelValue(b) - getRowLevelValue(a);
+      if (levelDiff !== 0) return levelDiff;
+      return Number(a.risiko || 0) - Number(b.risiko || 0);
+    }).map((row, index) => ({ ...row, rank: index + 1 }));
+  }
+
+  function getRowReview(row) {
+    return String(row.review || row.pengalaman_main || row.feedback || row.masukan || '').trim();
+  }
+
+  function renderLeaderboardRow(row) {
+    const rank = Number(row.rank || 0);
+    const reviewText = getRowReview(row);
+    const isMine = hasPlayerProfile()
+      && String(row.nama || '').trim().toLowerCase() === PLAYER_STATE.nama.toLowerCase()
+      && String(row.instansi || '').trim().toLowerCase() === PLAYER_STATE.instansi.toLowerCase();
+
+    return `
+      <div class="ps-lb-row ${isMine ? 'mine' : ''}">
+        <div class="ps-lb-rank">${rank || '-'}</div>
+        <div class="ps-lb-main">
+          <b>${escapeHtml(row.nama || '-')}</b>
+          <span>${escapeHtml(row.instansi || '-')}</span>
+        </div>
+        <div class="ps-lb-meta">
+          <b>${Number(row.skor || 0).toLocaleString('id-ID')}</b>
+          <span>Level ${getRowLevelValue(row) || '-'} · ${Number(row.benar || 0)}/${Number(row.total_soal || 0)} benar · Risiko ${Number(row.risiko || 0)}</span>
+          ${reviewText ? `<em class="ps-lb-feedback">“${escapeHtml(reviewText)}”</em>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function shuffleArray(items) {
+    const result = [...items];
+
+    for (let i = result.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+
+    return result;
+  }
+
+
+  function prepareQuizRuntimeOptions(challenge) {
+    const options = Array.isArray(challenge && challenge.options) ? challenge.options : [];
+    const mapped = options.map((text, originalIndex) => ({ text, originalIndex }));
+    let shuffled = shuffleArray(mapped);
+
+    if (mapped.length > 1) {
+      let guard = 0;
+      while (shuffled.findIndex(item => item.originalIndex === challenge.answer) === challenge.answer && guard < 10) {
+        shuffled = shuffleArray(mapped);
+        guard += 1;
+      }
+    }
+
+    challenge.runtimeOptions = shuffled;
+    challenge.runtimeAnswer = shuffled.findIndex(item => item.originalIndex === challenge.answer);
+
+    if (challenge.runtimeAnswer < 0) {
+      challenge.runtimeOptions = mapped;
+      challenge.runtimeAnswer = Number(challenge.answer || 0);
+    }
+  }
+
+  function resetPanjiVisualState() {
+    if (!panjiEl) return;
+
+    panjiEl.classList.remove(
+      'panji-happy',
+      'panji-sad',
+      'panji-thinking',
+      'panji-intro',
+      'panji-talking',
+      'panji-celebrate',
+      'panji-cry',
+      'panji-result-mode'
+    );
+
+    panjiEl.classList.add('panji-thinking');
+
+    if (panjiEmoteEl) {
+      panjiEmoteEl.innerHTML = psIcon('help', 'ps-line-icon ps-panji-face');
+    }
+  }
+
+  function setPanjiMoodOnly(mood = 'thinking') {
+    if (!panjiEl) return;
+
+    panjiEl.classList.remove(
+      'panji-happy',
+      'panji-sad',
+      'panji-thinking',
+      'panji-talking',
+      'panji-celebrate',
+      'panji-cry'
+    );
+
+    panjiEl.classList.add(`panji-${mood}`);
+
+    if (panjiEmoteEl) {
+      panjiEmoteEl.innerHTML = mood === 'happy' ? psIcon('smile', 'ps-line-icon ps-panji-face') : mood === 'sad' ? psIcon('frown', 'ps-line-icon ps-panji-face') : psIcon('help', 'ps-line-icon ps-panji-face');
+    }
+  }
+
+  function getCurrentChallenge() {
+    return GAME_STATE.current;
+  }
+
+  function getPlacedCount() {
+    return GAME_STATE.placed.filter(Boolean).length;
+  }
+
+
+  function getActiveTenderRushPackage(challenge) {
+    const rush = GAME_STATE.tenderRush;
+    const list = rush && Array.isArray(rush.packages)
+      ? rush.packages
+      : Array.isArray(challenge && challenge.packages)
+        ? challenge.packages
+        : [];
+
+    return list[(rush && Number(rush.currentIndex || 0)) || 0] || null;
+  }
+
+  function prepareTenderRushRandomPackages(challenge) {
+    const allPackages = Array.isArray(challenge && challenge.packages) ? challenge.packages : [];
+    if (!allPackages.length) return [];
+
+    const count = Math.min(Number(challenge.packageCount || allPackages.length || 5), allPackages.length);
+    const methodOrder = ['ekatalog', 'pengadaanLangsung', 'tenderSeleksi', 'swakelola', 'dikecualikan'];
+
+    function scorePattern(list) {
+      let score = 0;
+      for (let i = 0; i < list.length; i += 1) {
+        const expectedForward = methodOrder[i % methodOrder.length];
+        const expectedReverse = methodOrder[(methodOrder.length - 1 - i) % methodOrder.length];
+        if (list[i].correct === expectedForward) score += 2;
+        if (list[i].correct === expectedReverse) score += 2;
+        if (i > 0 && list[i].correct === list[i - 1].correct) score += 1;
+      }
+      return score;
+    }
+
+    let best = shuffleArray(allPackages).slice(0, count);
+    let bestScore = scorePattern(best);
+
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const candidate = shuffleArray(allPackages).slice(0, count);
+      const candidateScore = scorePattern(candidate);
+      if (candidateScore < bestScore) {
+        best = candidate;
+        bestScore = candidateScore;
+      }
+    }
+
+    return best.map((item, index) => ({
+      ...item,
+      rushId: `rush-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`
+    }));
+  }
+
+  function getPanjiCurrentGuideMessage() {
+    const challenge = getCurrentChallenge();
+
+    if (!challenge) {
+      return 'Hi.. aku balik lagi. Isi dulu nama pemain dan instansi atau OPD kamu, lalu kita mulai latihan PBJ bareng-bareng.';
+    }
+
+    if (challenge.type === 'pipeline') {
+      const nextEmpty = GAME_STATE.placed.findIndex(item => item === null);
+
+      if (nextEmpty < 0) {
+        return 'Hi.. aku balik lagi. Pipeline soal ini sudah selesai. Kamu tinggal klik lanjut untuk masuk ke soal berikutnya.';
+      }
+
+      const expectedId = challenge.idealIds?.[nextEmpty];
+      const expectedCard = challenge.cards?.find(item => item.id === expectedId);
+
+      if (expectedCard) {
+        return `Hi.. aku balik lagi. Sekarang kamu ada di soal Pipeline. Fokus isi slot nomor ${nextEmpty + 1}. Cari kartu "${expectedCard.label}", lalu susun dari kiri ke kanan. Jangan pilih kartu jebakan.`;
+      }
+
+      return 'Hi.. aku balik lagi. Sekarang kamu ada di soal Pipeline. Susun tahapan PBJ dari kiri ke kanan secara tertib.';
+    }
+
+    if (challenge.type === 'quiz') {
+      return `Hi.. aku balik lagi. Sekarang kamu ada di soal ABCD. Baca kasus "${challenge.caseTitle}" pelan-pelan, lalu pilih jawaban yang paling sesuai prinsip PBJ.`;
+    }
+
+    if (challenge.type === 'tenderRush') {
+      const pkg = getActiveTenderRushPackage(challenge);
+      if (pkg) {
+        const correctMethod = TENDER_RUSH_METHODS[pkg.correct];
+        return `Hi.. aku balik lagi. Ini Tender Rush. Paket aktifnya "${pkg.title}". Perhatikan petunjuknya: ${pkg.clue} Kalau butuh arahan, jalur yang paling aman adalah ${correctMethod ? correctMethod.key + ' - ' + correctMethod.label : 'metode yang sesuai kondisi paket'}.`;
+      }
+
+      return 'Hi.. aku balik lagi. Sekarang kamu ada di Tender Rush. Baca paket yang jatuh, lalu tekan 1 untuk e-Katalog, 2 untuk Pengadaan Langsung, 3 untuk Tender/Seleksi, 4 untuk Swakelola, atau 5 untuk Dikecualikan.';
+    }
+
+    if (challenge.type === 'bonusOpenWorld') {
+      return 'Hi.. aku balik lagi. Ini bonus level 4 versi Zuma. Tugasmu menjaga jalur konsolidasi: tembak bola warna sejenis supaya rantai masalah tidak sampai ke portal e-Purchasing.';
+    }
+
+    if (challenge.type === 'bonusSnake') {
+      return 'Hi.. aku balik lagi. Ini bonus level 8: PANJI Star Snake. Ambil bintang sebanyak mungkin, hindari revisi dan berkas numpuk. Ini buat refreshing tapi tetap masuk skor akhir.';
+    }
+
+    if (challenge.type === 'bonusTree') {
+      return 'Hi.. aku balik lagi. Ini bonus level 10. Tebang pohon dari kiri atau kanan, hindari akar yang muncul acak, jaga nyawa, dan kejar skor sebelum waktu habis.';
+    }
+
+    return 'Hi.. aku balik lagi. Lanjutkan permainan dengan membaca kasus dan memilih langkah PBJ yang paling aman.';
+  }
+
+  function getPanjiFinalReaction() {
+    const result = getCurrentResultSummary();
+    const percent = result.maxScore > 0 ? Math.max(0, Math.min(100, Math.round((result.skor / result.maxScore) * 100))) : 0;
+    const levelDicapai = Math.max(1, Number(result.levelDicapai || GAME_STATE.index + 1 || 1));
+    const totalLevel = CHALLENGES.length;
+
+    if (percent >= 80 && GAME_STATE.risk <= 35) {
+      return {
+        mood: 'happy',
+        anim: 'panji-celebrate',
+        text: `Yeay! Mantap banget. Kamu mencapai level ${levelDicapai}/${totalLevel} dengan skor ${result.skor}. Alur PBJ kamu sudah rapi dan risikonya cukup terkendali. Kalau mau ngejar ranking lebih tinggi, klik tombol "Main Lagi dari Soal 1".`
+      };
+    }
+
+    if (percent >= 55) {
+      return {
+        mood: 'thinking',
+        anim: 'panji-celebrate',
+        text: `Lumayan! Kamu mencapai level ${levelDicapai}/${totalLevel} dengan skor ${result.skor}. Tapi masih ada beberapa bagian yang perlu dirapikan. Coba ulangi lagi, perhatikan urutan pipeline, batas metode, dan jangan buru-buru saat Tender Rush. Klik "Main Lagi dari Soal 1" untuk coba lagi.`
+      };
+    }
+
+    return {
+      mood: 'sad',
+      anim: 'panji-cry',
+      text: `Aduh, PANJI sedih nih. Kamu baru mencapai level ${levelDicapai}/${totalLevel} dengan skor ${result.skor}. Tidak apa-apa, ini latihan. Coba main lagi dari awal, baca kasus lebih pelan, dan jangan asal pilih metode. Klik "Main Lagi dari Soal 1" ya.`
+    };
+  }
+
+  function clearTenderRushTimers() {
+    if (tenderRushTimer) {
+      clearInterval(tenderRushTimer);
+      tenderRushTimer = null;
+    }
+
+    if (tenderRushNextTimer) {
+      clearTimeout(tenderRushNextTimer);
+      tenderRushNextTimer = null;
+    }
+  }
+
+  function enableTenderRushKeyboard() {
+    disableTenderRushKeyboard();
+
+    tenderRushKeyHandler = event => {
+      const activeTag = String(document.activeElement && document.activeElement.tagName || '').toLowerCase();
+      if (['input', 'textarea', 'select'].includes(activeTag)) return;
+
+      const map = {
+        1: 'ekatalog',
+        2: 'pengadaanLangsung',
+        3: 'tenderSeleksi',
+        4: 'swakelola',
+        5: 'dikecualikan'
+      };
+
+      const method = map[event.key];
+      if (!method) return;
+
+      const challenge = getCurrentChallenge();
+      if (!challenge || challenge.type !== 'tenderRush') return;
+
+      event.preventDefault();
+      answerTenderRush(method);
+    };
+
+    document.addEventListener('keydown', tenderRushKeyHandler);
+  }
+
+  function disableTenderRushKeyboard() {
+    if (!tenderRushKeyHandler) return;
+    document.removeEventListener('keydown', tenderRushKeyHandler);
+    tenderRushKeyHandler = null;
+  }
+
+
+  function getDefaultLevelTime(challenge) {
+    if (!challenge || challenge.type === 'tenderRush') return 0;
+
+    const levelNo = getCurrentLevelNumber();
+    const base = challenge.type === 'quiz'
+      ? Number(challenge.timeLimit || 45)
+      : Number(challenge.timeLimit || 90);
+
+    if (levelNo <= 3) return base;
+
+    const reduction = (levelNo - 3) * (challenge.type === 'quiz' ? 3 : 5);
+    const minimum = challenge.type === 'quiz' ? 20 : 45;
+
+    return Math.max(minimum, base - reduction);
+  }
+
+  function clearLevelTimer() {
+    if (levelTimer) {
+      clearInterval(levelTimer);
+      levelTimer = null;
+    }
+  }
+
+  function startLevelTimer(challenge) {
+    clearLevelTimer();
+
+    const limit = getDefaultLevelTime(challenge);
+    GAME_STATE.levelTimeLimit = limit;
+    GAME_STATE.levelTimeLeft = limit;
+    levelTimerStartedAt = Date.now();
+    GAME_STATE.countdownWarned = {};
+
+    if (!limit || GAME_STATE.stage === 'ready' || GAME_STATE.stage === 'result') {
+      updateLevelTimerUi();
+      return;
+    }
+
+    updateLevelTimerUi();
+
+    levelTimer = setInterval(() => {
+      if (destroyed || GAME_STATE.finished) return;
+
+      const activeChallenge = getCurrentChallenge();
+      if (!activeChallenge || activeChallenge.type === 'tenderRush') return;
+
+      GAME_STATE.levelTimeLeft = Math.max(0, Number(GAME_STATE.levelTimeLeft || 0) - 1);
+      updateLevelTimerUi();
+
+      if ((GAME_STATE.levelTimeLeft === 10 || GAME_STATE.levelTimeLeft === 5) && !GAME_STATE.countdownWarned[GAME_STATE.levelTimeLeft]) {
+        GAME_STATE.countdownWarned[GAME_STATE.levelTimeLeft] = true;
+        showPanji('Waktu tinggal ' + GAME_STATE.levelTimeLeft + ' detik. Jangan panik, baca soal yang dekat dengan jawaban, lalu pilih yang paling aman.', 'alert');
+        showToast('Waktu tinggal ' + GAME_STATE.levelTimeLeft + ' detik!', 'bad');
+      }
+
+      if (GAME_STATE.levelTimeLeft <= 0) {
+        stopGameEarly('time');
+      }
+    }, 1000);
+  }
+
+  function updateLevelTimerUi() {
+    const text = root && root.querySelector('#psLevelTimeText');
+    const bar = root && root.querySelector('#psLevelTimeBar');
+    const wrap = root && root.querySelector('.ps-level-time-card');
+    const left = Math.max(0, Number(GAME_STATE.levelTimeLeft || 0));
+    const limit = Math.max(1, Number(GAME_STATE.levelTimeLimit || 1));
+    const percent = Math.max(0, Math.min(100, (left / limit) * 100));
+
+    if (text) text.textContent = left ? `${left}s` : '-';
+    if (bar) bar.style.width = percent + '%';
+
+    if (wrap) {
+      wrap.classList.toggle('danger', left > 0 && left <= 10);
+      wrap.classList.toggle('warning', left > 10 && left <= 25);
+    }
+  }
+
+  function applyLevelTimePenalty(seconds, reasonText = 'Kesalahan') {
+    const challenge = getCurrentChallenge();
+
+    if (!challenge || challenge.type === 'tenderRush') return;
+    if (!GAME_STATE.levelTimeLimit || GAME_STATE.stage === 'result' || GAME_STATE.finished) return;
+
+    const penalty = Math.max(1, Number(seconds || 0));
+    GAME_STATE.levelTimeLeft = Math.max(0, Number(GAME_STATE.levelTimeLeft || 0) - penalty);
+    addLog('bad', reasonText + ': waktu berkurang', 'Waktu level berkurang ' + penalty + ' detik karena pilihan belum tepat.');
+    showToast('Waktu -' + penalty + ' detik', 'bad');
+    updateLevelTimerUi();
+
+    if (GAME_STATE.levelTimeLeft <= 0) {
+      stopGameEarly('time');
+    }
+  }
+
+
+  function applyLevelTimeBonus(seconds, reasonText = 'Bonus waktu') {
+    const challenge = getCurrentChallenge();
+
+    if (!challenge || challenge.type === 'tenderRush') return;
+    if (!GAME_STATE.levelTimeLimit || GAME_STATE.stage === 'result' || GAME_STATE.finished) return;
+
+    const bonus = Math.max(1, Number(seconds || 0));
+    GAME_STATE.levelTimeLeft = Math.min(
+      Number(GAME_STATE.levelTimeLimit || 0),
+      Number(GAME_STATE.levelTimeLeft || 0) + bonus
+    );
+
+    addLog('ok', reasonText, 'Waktu level bertambah ' + bonus + ' detik karena jawaban/urutan benar.');
+    showToast('Waktu +' + bonus + ' detik', 'ok');
+    updateLevelTimerUi();
+  }
+
+  function stopGameEarly(reason = 'time') {
+    if (GAME_STATE.finished || GAME_STATE.stage === 'result') return;
+
+    clearAutoNextTimer();
+    clearLevelTimer();
+    clearTenderRushTimers();
+    disableTenderRushKeyboard();
+    clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+
+    GAME_STATE.finished = true;
+    GAME_STATE.stage = 'result';
+    GAME_STATE.stoppedReason = reason;
+    GAME_STATE.stoppedLevel = GAME_STATE.index + 1;
+    GAME_STATE.progress = 100;
+
+    if (reason === 'rushFailed') {
+      addLog('bad', 'Tender Rush gagal melewati batas', 'Permainan berhenti karena jumlah salah/timeout sudah melewati batas level Tender Rush ini.');
+      showToast('Tender Rush gagal melewati batas. Skor akhir ditampilkan.', 'bad');
+      showPanji('Tender Rush gagal melewati batas level ini. Game berhenti dulu ya. Skor akhir dan level terakhir sudah muncul. Coba ulangi dan baca petunjuk paket lebih cepat.', 'sad');
+    } else {
+      addLog('bad', 'Waktu level habis', `Permainan berhenti di level ${GAME_STATE.stoppedLevel}.`);
+      showToast('Waktu habis. Skor akhir ditampilkan.', 'bad');
+      showPanji(`Waktu level habis. Kamu berhenti di level ${GAME_STATE.stoppedLevel} dengan skor ${GAME_STATE.score}.`, 'sad');
+    }
+
+    renderGame();
+    openLeaderboardModal('player', true);
+  }
+
+  function clearAutoNextTimer() {
+    if (autoNextTimer) {
+      clearTimeout(autoNextTimer);
+      autoNextTimer = null;
+    }
+  }
+
+  function clearPanjiIntroTimers() {
+    panjiIntroTimers.forEach(timer => clearTimeout(timer));
+    panjiIntroTimers = [];
+  }
+
+  function clearPanjiTalkTimer() {
+    if (panjiTalkTimer) {
+      clearTimeout(panjiTalkTimer);
+      panjiTalkTimer = null;
+    }
+  }
+
+  function scheduleAutoNext(message, delay = AUTO_NEXT_DELAY_MS) {
+    clearAutoNextTimer();
+
+    if (message) {
+      showToast(message, 'info');
+    }
+
+    autoNextTimer = setTimeout(() => {
+      autoNextTimer = null;
+
+      if (destroyed) return;
+
+      nextChallenge();
+    }, delay);
+  }
+
+  function calculateMaxScore() {
+    return CHALLENGES.reduce((total, challenge) => {
+      if (challenge.type === 'pipeline') {
+        return total + (challenge.idealIds.length * 10) + 20;
+      }
+
+      if (challenge.type === 'tenderRush') {
+        return total + ((challenge.packages || []).length * 10) + 20;
+      }
+
+      if (challenge.type === 'bonusOpenWorld') {
+        return total + 140;
+      }
+
+      if (challenge.type === 'bonusSnake') {
+        return total + 120;
+      }
+
+      if (challenge.type === 'bonusTree') {
+        return total + 160;
+      }
+
+      return total + 20;
+    }, 0);
+  }
+
+  function getResultGrade(percent) {
+    if (percent >= 90 && GAME_STATE.risk <= 20) {
+      return {
+        label: 'Sangat Baik',
+        icon: psIcon('trophy'),
+        text: 'Pemahaman alur PBJ sudah kuat. Risiko rendah dan keputusan relatif aman.'
+      };
+    }
+
+    if (percent >= 75) {
+      return {
+        label: 'Baik',
+        icon: psIcon('trophy'),
+        text: 'Pemahaman sudah baik, tetapi masih ada beberapa risiko yang perlu dikurangi.'
+      };
+    }
+
+    if (percent >= 60) {
+      return {
+        label: 'Cukup',
+        icon: psIcon('trophy'),
+        text: 'Dasar sudah mulai terbentuk, namun perlu latihan ulang pada studi kasus yang salah.'
+      };
+    }
+
+    return {
+      label: 'Perlu Pembinaan',
+      icon: psIcon('book'),
+      text: 'Disarankan mengulang dari awal agar alur dan prinsip PBJ lebih kuat.'
+    };
+  }
+
+  function addLog(type, title, text) {
+    GAME_STATE.logs.unshift({ type, title, text });
+    GAME_STATE.logs = GAME_STATE.logs.slice(0, 8);
+  }
+
+  function ensureGameAudio() {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      if (!psAudioCtx) psAudioCtx = new AudioContextClass();
+      if (psAudioCtx.state === 'suspended') psAudioCtx.resume();
+      return psAudioCtx;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function playTone(freq, duration, type = 'sine', gainValue = 0.035) {
+    const ctx = ensureGameAudio();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(gainValue, ctx.currentTime + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration + 0.02);
+  }
+
+  function playBeep(freq, duration, type = 'sine', gainValue = 0.035) {
+    playTone(freq, duration, type, gainValue);
+  }
+
+  function playSfx(type = 'info') {
+    if (type === 'ok' || type === 'success') {
+      playTone(660, 0.09, 'triangle', 0.04);
+      setTimeout(() => playTone(880, 0.12, 'triangle', 0.035), 70);
+      return;
+    }
+    if (type === 'bad' || type === 'wrong') {
+      playTone(190, 0.13, 'sawtooth', 0.035);
+      setTimeout(() => playTone(130, 0.16, 'sawtooth', 0.025), 80);
+      return;
+    }
+    playTone(420, 0.08, 'sine', 0.025);
+  }
+
+  function restartGameMusicTimer() {
+    if (!psMusicOn || !psMusicBeatFn) return;
+    if (psMusicTimer) clearInterval(psMusicTimer);
+    psMusicTimer = setInterval(psMusicBeatFn, psMusicBeatMs);
+  }
+
+  function setGameMusicTempo(ms = 360) {
+    const nextMs = Math.max(180, Number(ms || 360));
+    if (psMusicBeatMs === nextMs) return;
+    psMusicBeatMs = nextMs;
+    restartGameMusicTimer();
+  }
+
+  function startGameMusic() {
+    if (psMusicOn) return;
+    psMusicOn = true;
+
+    const melody = [523, 659, 784, 659, 698, 880, 784, 659, 587, 698, 784, 988, 880, 784, 659, 523];
+    const bass = [131, 131, 196, 196, 147, 147, 196, 196];
+    let beat = 0;
+
+    const playBeat = () => {
+      if (destroyed || !psMusicOn) return;
+      if (document.hidden) return;
+
+      const m = melody[beat % melody.length];
+      const b = bass[Math.floor(beat / 2) % bass.length];
+
+      playTone(m, 0.10, beat % 4 === 0 ? 'square' : 'triangle', 0.018);
+      if (beat % 2 === 0) playTone(b, 0.14, 'sine', 0.010);
+      if (beat % 8 === 6) setTimeout(() => playTone(m * 1.25, 0.07, 'triangle', 0.010), 95);
+
+      beat += 1;
+    };
+
+    psMusicBeatFn = playBeat;
+    playBeat();
+    restartGameMusicTimer();
+  }
+
+  function showToast(message, type = 'info') {
+    if (!message) return;
+    startGameMusic();
+    playSfx(type);
+
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'ps-toast';
+      document.body.appendChild(toastEl);
+    }
+
+    toastEl.textContent = message;
+    toastEl.className = `ps-toast ${type}`;
+
+    requestAnimationFrame(() => {
+      if (toastEl) {
+        toastEl.classList.add('show');
+      }
+    });
+
+    clearTimeout(toastEl._hideTimer);
+    toastEl._hideTimer = setTimeout(() => {
+      if (toastEl) {
+        toastEl.classList.remove('show');
+      }
+    }, 1800);
+  }
+
+  function flashScreen(type) {
+    let flash = document.getElementById('psScreenFlash');
+
+    if (!flash) {
+      flash = document.createElement('div');
+      flash.id = 'psScreenFlash';
+      flash.className = 'ps-screen-flash';
+      document.body.appendChild(flash);
+    }
+
+    flash.className = `ps-screen-flash ${type}`;
+
+    setTimeout(() => {
+      flash.className = 'ps-screen-flash';
+    }, 360);
+  }
+
+  function popScore(target, text, type = 'info') {
+    if (!target || !target.getBoundingClientRect) return;
+
+    const rect = target.getBoundingClientRect();
+    const el = document.createElement('div');
+
+    el.className = `ps-floating-score ${type}`;
+    el.textContent = text;
+    el.style.left = `${rect.left + Math.min(80, rect.width / 2)}px`;
+    el.style.top = `${rect.top + 8}px`;
+
+    document.body.appendChild(el);
+
+    setTimeout(() => el.remove(), 850);
+  }
+
+  function spawnConfetti() {
+    const colors = ['#2563eb', '#22d3ee', '#16a34a', '#f59e0b', '#ef4444'];
+    const centerX = window.innerWidth / 2;
+    const startY = 90;
+
+    for (let i = 0; i < 36; i += 1) {
+      const piece = document.createElement('div');
+      piece.className = 'ps-confetti';
+      piece.style.left = `${centerX + (Math.random() * 520 - 260)}px`;
+      piece.style.top = `${startY + Math.random() * 40}px`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = `${Math.random() * .18}s`;
+
+      document.body.appendChild(piece);
+
+      setTimeout(() => piece.remove(), 1100);
+    }
+  }
+
+  function ensurePanjiMarkup(scope) {
+    const oldPanji = document.getElementById('panjiAssistant');
+
+    if (oldPanji) {
+      panjiEl = oldPanji;
+      return;
+    }
+
+    const panji = document.createElement('div');
+    panji.id = 'panjiAssistant';
+    panji.className = 'panji-assistant';
+    panji.innerHTML = `
+      <div class="panji-bubble" id="panjiBubble">
+        <button type="button" class="panji-close" id="panjiClose" aria-label="Tutup PANJI"><span class="ps-close-line" aria-hidden="true"></span></button>
+        <div class="panji-bubble-top">
+          <div class="panji-name">PANJI • PENGADAAN JITU</div>
+          <div class="panji-emote" id="panjiEmote"></div>
+        </div>
+        <div class="panji-text" id="panjiText">
+          Halo, aku PANJI.
+        </div>
+        <div class="panji-actions">
+          <button type="button" id="panjiHintBtn">Tanya PANJI</button>
+          <button type="button" id="panjiMiniBtn">Minimize</button>
+        </div>
+      </div>
+
+      <button type="button" class="panji-character" id="panjiCharacter" aria-label="PANJI">
+        <div class="panji-glow"></div>
+        <div class="panji-head">
+          <div class="panji-hat">PBJ</div>
+          <div class="panji-eye panji-eye-left"></div>
+          <div class="panji-eye panji-eye-right"></div>
+          <div class="panji-mouth"></div>
+        </div>
+        <div class="panji-body">
+          <div class="panji-badge">PJ</div>
+        </div>
+        <div class="panji-hand panji-hand-left"></div>
+        <div class="panji-hand panji-hand-right"></div>
+      </button>
+    `;
+
+    document.body.appendChild(panji);
+  }
+
+  function initPanji(scope) {
+    ensurePanjiMarkup(scope);
+
+    panjiEl = document.querySelector('#panjiAssistant');
+    panjiTextEl = document.querySelector('#panjiText');
+    panjiEmoteEl = document.querySelector('#panjiEmote');
+    panjiBubbleEl = document.querySelector('#panjiBubble');
+    panjiHintBtn = document.querySelector('#panjiHintBtn');
+    panjiMiniBtn = document.querySelector('#panjiMiniBtn');
+    panjiCharacterBtn = document.querySelector('#panjiCharacter');
+    panjiCloseBtn = document.querySelector('#panjiClose');
+
+    if (!panjiEl || !panjiTextEl) return;
+
+    if (panjiHintBtn) {
+      panjiHintBtn.addEventListener('click', () => {
+        if (panjiEl && panjiEl.classList.contains('panji-result-mode')) return;
+        requestHintFromPanji();
+      });
+    }
+
+    if (panjiMiniBtn) {
+      panjiMiniBtn.addEventListener('click', () => {
+        panjiUserMinimized = true;
+        panjiEl.classList.add('panji-minimized');
+      });
+    }
+
+    if (panjiCharacterBtn) {
+      panjiCharacterBtn.addEventListener('click', () => {
+        panjiEl.classList.remove('panji-hidden');
+
+        if (panjiUserMinimized || panjiEl.classList.contains('panji-minimized')) {
+          panjiUserMinimized = false;
+          panjiEl.classList.remove('panji-minimized');
+          showPanji(getPanjiCurrentGuideMessage(), 'thinking');
+          return;
+        }
+
+        panjiUserMinimized = true;
+        panjiEl.classList.add('panji-minimized');
+      });
+    }
+
+    if (panjiCloseBtn) {
+      panjiCloseBtn.addEventListener('click', () => {
+        panjiUserMinimized = true;
+        panjiEl.classList.add('panji-hidden');
+      });
+    }
+
+    forceShowPanji();
+    initPanjiAutoPosition();
+  }
+
+  function forceShowPanji() {
+    if (!panjiEl) return;
+
+    if (panjiEl.parentElement !== document.body) {
+      document.body.appendChild(panjiEl);
+    }
+
+    panjiEl.classList.remove('panji-hidden');
+    panjiEl.classList.remove('panji-minimized');
+
+    panjiEl.style.position = 'fixed';
+    panjiEl.style.right = '26px';
+    panjiEl.style.bottom = 'var(--panji-bottom, 34px)';
+    panjiEl.style.top = 'auto';
+    panjiEl.style.left = 'auto';
+    panjiEl.style.zIndex = '2147483647';
+    panjiEl.style.opacity = '1';
+    panjiEl.style.visibility = 'visible';
+    panjiEl.style.display = 'flex';
+    panjiEl.style.transform = 'none';
+  }
+
+  function updatePanjiAutoBottom() {
+    if (!panjiEl) return;
+
+    const baseBottom = window.innerWidth <= 900 ? 76 : 34;
+    const maxBottom = window.innerWidth <= 900 ? 240 : 340;
+    const gap = 18;
+    let nextBottom = baseBottom;
+
+    const logBox = document.querySelector('.ps-log-box');
+
+    if (logBox) {
+      const logRect = logBox.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const panjiRect = panjiEl.getBoundingClientRect();
+      const panjiHeight = panjiRect.height || 220;
+      const logVisible = logRect.top < viewportHeight && logRect.bottom > 0;
+
+      if (logVisible) {
+        const panjiNormalTop = viewportHeight - baseBottom - panjiHeight;
+        const overlap = logRect.bottom - panjiNormalTop;
+
+        if (overlap > 0 && logRect.top < viewportHeight - 60) {
+          nextBottom = baseBottom + overlap + gap;
+        }
+      }
+    }
+
+    nextBottom = Math.max(baseBottom, Math.min(maxBottom, Math.round(nextBottom)));
+    panjiEl.style.setProperty('--panji-bottom', nextBottom + 'px');
+  }
+
+  function initPanjiAutoPosition() {
+    if (!panjiEl) return;
+
+    if (typeof panjiEl._panjiAutoPositionDestroy === 'function') {
+      panjiEl._panjiAutoPositionDestroy();
+      panjiEl._panjiAutoPositionDestroy = null;
+    }
+
+    let ticking = false;
+
+    const requestUpdate = () => {
+      if (ticking) return;
+
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        ticking = false;
+        updatePanjiAutoBottom();
+      });
+    };
+
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+
+    panjiEl._panjiAutoPositionDestroy = () => {
+      window.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+    };
+
+    requestUpdate();
+  }
+
+  function showPanji(message, mood = 'thinking') {
+    if (!panjiEl || !panjiTextEl) return;
+
+    if (panjiUserMinimized || panjiEl.classList.contains('panji-minimized')) {
+      setPanjiMoodOnly(mood);
+      return;
+    }
+
+    forceShowPanji();
+    clearPanjiTalkTimer();
+
+    panjiEl.classList.remove('panji-hidden');
+    panjiEl.classList.remove('panji-minimized');
+
+    panjiEl.classList.remove(
+      'panji-happy',
+      'panji-sad',
+      'panji-thinking',
+      'panji-intro',
+      'panji-talking',
+      'panji-celebrate',
+      'panji-cry'
+    );
+
+    void panjiEl.offsetWidth;
+
+    panjiEl.classList.add(`panji-${mood}`);
+    panjiEl.classList.add('panji-talking');
+
+    if (panjiEmoteEl) {
+      panjiEmoteEl.innerHTML = mood === 'happy' ? psIcon('smile', 'ps-line-icon ps-panji-face') : mood === 'sad' ? psIcon('frown', 'ps-line-icon ps-panji-face') : psIcon('help', 'ps-line-icon ps-panji-face');
+    }
+
+    panjiTextEl.textContent = message;
+
+    if (panjiBubbleEl) {
+      panjiBubbleEl.classList.remove('burst');
+      void panjiBubbleEl.offsetWidth;
+      panjiBubbleEl.classList.add('burst');
+    }
+
+    const talkDuration = Math.min(
+      6200,
+      Math.max(1300, String(message || '').length * 34)
+    );
+
+    panjiTalkTimer = setTimeout(() => {
+      if (!panjiEl) return;
+
+      panjiEl.classList.remove('panji-talking');
+      panjiTalkTimer = null;
+    }, talkDuration);
+  }
+
+  function showPanjiIntro() {
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+
+    showPanji(
+      'Halo! Perkenalkan, aku PANJI.',
+      'happy'
+    );
+
+    if (panjiEl) {
+      panjiEl.classList.remove('panji-intro');
+      void panjiEl.offsetWidth;
+      panjiEl.classList.add('panji-intro');
+    }
+
+    panjiIntroTimers.push(setTimeout(() => {
+      if (destroyed) return;
+
+      showPanji(
+        'PANJI itu singkatan dari Pengadaan Jitu. Tugas aku nemenin kamu belajar alur PBJ, mulai dari identifikasi kebutuhan, RUP, KAK, HPS, metode, kontrak, BAST, sampai realisasi.',
+        'thinking'
+      );
+    }, 1700));
+
+    panjiIntroTimers.push(setTimeout(() => {
+      if (destroyed) return;
+
+      showPanji(
+        `Kalau kamu bingung, klik tombol "Tanya PANJI". Aku kasih hint, tapi skor kamu berkurang ${HINT_PENALTY} poin. Jadi pakai bantuanku seperlunya aja.`,
+        'thinking'
+      );
+    }, 4500));
+
+    panjiIntroTimers.push(setTimeout(() => {
+      if (destroyed) return;
+
+      showPanji(
+        'Yuk mulai. Jangan cuma cepat, yang penting tertib, ada dasar, ada bukti, dan risikonya rendah.',
+        'happy'
+      );
+    }, 7200));
+  }
+
+  function getHintMessage(challenge) {
+    if (!challenge) {
+      return 'Fokus susun langkah paling tertib ya.';
+    }
+
+    if (challenge.type === 'pipeline') {
+      const nextEmpty = GAME_STATE.placed.findIndex(item => item === null);
+      const expectedId = challenge.idealIds[nextEmpty];
+      const expectedCard = challenge.cards.find(item => item.id === expectedId);
+
+      if (!expectedCard) {
+        return 'Pipeline hampir selesai. Cek lagi urutan dari kiri ke kanan.';
+      }
+
+      if (nextEmpty === 0) {
+        return `Hint PANJI: untuk posisi pertama, fokus cari kartu "${expectedCard.label}". Biasanya alur aman dimulai dari dasar perencanaan atau kondisi kontrak yang sedang berjalan.`;
+      }
+
+      const prev = GAME_STATE.placed[nextEmpty - 1];
+
+      if (prev) {
+        return `Hint PANJI: setelah "${prev.label}", langkah yang lebih aman untuk posisi berikutnya adalah "${expectedCard.label}". Jangan lompat ke tahap akhir sebelum dasarnya siap.`;
+      }
+
+      return `Hint PANJI: fokus cari kartu "${expectedCard.label}" untuk posisi ${nextEmpty + 1}.`;
+    }
+
+    if (challenge.type === 'tenderRush') {
+      const pkg = getActiveTenderRushPackage(challenge);
+
+      if (pkg) {
+        const correctMethod = TENDER_RUSH_METHODS[pkg.correct];
+        return `Hint PANJI: paket aktif adalah "${pkg.title}". Petunjuknya: ${pkg.clue} Jadi jalur paling aman adalah ${correctMethod ? correctMethod.key + ' - ' + correctMethod.label : 'metode yang sesuai'}. Alasannya: ${pkg.explanation}`;
+      }
+
+      return 'Hint PANJI: di Tender Rush, lihat 4 kata kunci dulu: pagu, jenis pekerjaan, apakah tersedia katalog, dan apakah pekerjaannya bisa diswakelolakan. Shortcut-nya: 1 e-Katalog, 2 Pengadaan Langsung, 3 Tender/Seleksi, 4 Swakelola, 5 Dikecualikan.';
+    }
+
+    if (challenge.type === 'bonusOpenWorld') {
+      return 'Hint PANJI: lihat warna rantai dulu. Samakan minimal 3 bola sejenis. Biru untuk data kebutuhan, hijau untuk market sounding, emas untuk KAK/HPS, ungu untuk kontrak payung, dan merah muda untuk katalog/e-Purchasing.';
+    }
+
+    if (challenge.type === 'bonusSnake') {
+      return 'Hint PANJI: di Snake, jangan rakus. Putar arah pelan-pelan, ambil bintang yang aman dulu, dan hindari nabrak jebakan revisi.';
+    }
+
+    if (challenge.type === 'bonusTree') {
+      return 'Hint PANJI: lihat sisi akar terakhir. Kalau akar muncul di kiri, cepat pindah ke kanan, begitu juga sebaliknya. Jangan spam buta.';
+    }
+
+    if (challenge.hint) {
+      return `Hint PANJI: ${challenge.hint}`;
+    }
+
+    return 'Baca kata kunci soal dan pilih jawaban yang paling sesuai prinsip PBJ: efektif, efisien, transparan, terbuka, bersaing, adil, dan akuntabel.';
+  }
+
+  function requestHintFromPanji() {
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+
+    const challenge = getCurrentChallenge();
+
+    if (!challenge || GAME_STATE.finished) return;
+
+    if (GAME_STATE.hintUsed) {
+      showPanji('Untuk soal ini kamu sudah pakai hint dari PANJI ya. Coba lanjutkan dulu dengan logika alur PBJ.', 'thinking');
+      showToast('Hint soal ini sudah dipakai.', 'info');
+      return;
+    }
+
+    GAME_STATE.hintUsed = true;
+    GAME_STATE.score = Math.max(0, GAME_STATE.score - HINT_PENALTY);
+
+    addLog('info', 'Hint PANJI dipakai', `Kamu memakai bantuan PANJI. Skor berkurang ${HINT_PENALTY} poin.`);
+
+    showPanji(getHintMessage(challenge), 'thinking');
+    showToast(`Hint dipakai. Skor -${HINT_PENALTY}.`, 'info');
+
+    if (panjiCharacterBtn) {
+      popScore(panjiCharacterBtn, `-${HINT_PENALTY}`, 'info');
+    }
+
+    renderGame();
+  }
+
+  function panjiForChallenge(challenge) {
+    if (!challenge) return;
+
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+
+    if (challenge.type === 'pipeline') {
+      showPanji(
+        'Ini soal pipeline. Susun kartu dari kiri ke kanan secara tertib. Aku akan jelasin setiap langkah benar supaya kamu paham, bukan cuma hafal.',
+        'thinking'
+      );
+      return;
+    }
+
+    if (challenge.type === 'tenderRush') {
+      showPanji(
+        'Ini Tender Rush. Kontrolnya: 1 e-Katalog, 2 Pengadaan Langsung, 3 Tender/Seleksi, 4 Swakelola, 5 Dikecualikan. Paket baru turun setelah klik Mulai.',
+        'thinking'
+      );
+      return;
+    }
+
+    if (challenge.type === 'bonusOpenWorld') {
+      showPanji(
+        'Bonus level 4 dimulai. Sekarang kita main gaya Zuma. Jaga rantai konsolidasi supaya nggak jebol ke portal. Cocokkan warna, bangun combo, dan rapikan alur sampai e-Purchasing.',
+        'thinking'
+      );
+      return;
+    }
+
+    if (challenge.type === 'bonusSnake') {
+      showPanji(
+        'Bonus level 8: PANJI Star Snake. Ambil bintang, hindari jebakan. Santai, ini buat refreshing sebelum lanjut level akhir.',
+        'happy'
+      );
+      return;
+    }
+
+    if (challenge.type === 'bonusTree') {
+      showPanji(
+        'Bonus level 10 dimulai. Tebang pohon dari kiri atau kanan. Perhatikan akar acak yang muncul, karena itu jebakannya.',
+        'thinking'
+      );
+      return;
+    }
+
+    showPanji(
+      'Ini soal ABCD. Baca kata kuncinya pelan-pelan. Pilih jawaban yang paling sesuai prinsip dan tahapan PBJ, bukan yang sekadar paling cepat.',
+      'thinking'
+    );
+  }
+
+  function startGame() {
+    clearAutoNextTimer();
+    clearTenderRushTimers();
+    disableTenderRushKeyboard();
+    clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+
+    GAME_STATE.order = CHALLENGES.map((_, index) => index);
+    GAME_STATE.index = 0;
+    GAME_STATE.score = 0;
+    GAME_STATE.risk = 0;
+    GAME_STATE.wrong = 0;
+    GAME_STATE.correct = 0;
+    GAME_STATE.finished = false;
+    GAME_STATE.runId = 'run-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+    GAME_STATE.gameStartedAt = Date.now();
+    GAME_STATE.scoreSubmitted = false;
+    GAME_STATE.hasSeenIntro = false;
+    GAME_STATE.levelTimeLeft = 0;
+    GAME_STATE.levelTimeLimit = 0;
+    GAME_STATE.stoppedReason = '';
+    GAME_STATE.stoppedLevel = 0;
+    GAME_STATE.pipelineCombo = 0;
+
+    resetPanjiVisualState();
+    panjiUserMinimized = false;
+
+    if (!panjiIntroAlreadyShown) {
+      showPanjiIntro();
+      panjiIntroAlreadyShown = true;
+    } else {
+      showPanji('Game dimulai ulang dari Soal 1. Aku langsung bantu kalau kamu butuh arahan, tanpa perkenalan lagi.', 'thinking');
+    }
+
+    loadChallenge();
+  }
+
+  function loadChallenge() {
+    clearAutoNextTimer();
+    clearLevelTimer();
+    clearTenderRushTimers();
+    disableTenderRushKeyboard();
+    clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+    clearTenderRushTimers();
+    disableTenderRushKeyboard();
+
+    const challengeIndex = GAME_STATE.order[GAME_STATE.index];
+    const challenge = CHALLENGES[challengeIndex];
+
+    GAME_STATE.current = challenge;
+    GAME_STATE.selectedCardId = null;
+    GAME_STATE.answered = false;
+    GAME_STATE.selectedAnswer = null;
+    GAME_STATE.logs = [];
+    GAME_STATE.finished = false;
+    GAME_STATE.hintUsed = false;
+
+    if (challenge.type === 'pipeline') {
+      GAME_STATE.stage = 'pipeline';
+      GAME_STATE.placed = Array(challenge.idealIds.length).fill(null);
+      GAME_STATE.shuffledCards = shuffleArray(challenge.cards);
+      GAME_STATE.tenderRush = null;
+      GAME_STATE.progress = 0;
+      GAME_STATE.pipelineCombo = 0;
+
+      addLog(
+        'info',
+        'Challenge pipeline dimulai',
+        'Susun kartu dari kiri ke kanan. Kartu jebakan akan menaikkan risiko.'
+      );
+    } else if (challenge.type === 'tenderRush') {
+      GAME_STATE.stage = 'tenderRush';
+      GAME_STATE.placed = [];
+      GAME_STATE.shuffledCards = [];
+      GAME_STATE.progress = 0;
+      GAME_STATE.tenderRush = {
+        started: false,
+        currentIndex: 0,
+        timeLeft: Number(challenge.timeLimit || 8),
+        locked: false,
+        lastResult: null,
+        correctCount: 0,
+        wrongCount: 0,
+        packages: prepareTenderRushRandomPackages(challenge)
+      };
+
+      addLog(
+        'info',
+        'Challenge Tender Rush dimulai',
+        'Baca tutorial PANJI dulu, lalu pilih jalur metode dengan tombol 1 sampai 5.'
+      );
+    } else if (challenge.type === 'bonusOpenWorld') {
+      GAME_STATE.stage = 'bonusOpenWorld';
+      GAME_STATE.placed = [];
+      GAME_STATE.shuffledCards = [];
+      GAME_STATE.tenderRush = null;
+      GAME_STATE.progress = 0;
+      GAME_STATE.bonusOpenWorld = createBonusOpenWorldState();
+
+      addLog(
+        'info',
+        'Bonus Level 4 dimulai',
+        'PPK masuk arena Zuma Konsolidasi bersama PANJI. Jaga rantai proses agar tidak menembus portal e-Purchasing.'
+      );
+    } else if (challenge.type === 'bonusSnake') {
+      GAME_STATE.stage = 'bonusSnake';
+      GAME_STATE.placed = [];
+      GAME_STATE.shuffledCards = [];
+      GAME_STATE.tenderRush = null;
+      GAME_STATE.progress = 0;
+      GAME_STATE.bonusSnake = createBonusSnakeState();
+
+      addLog(
+        'info',
+        'Bonus Level 8 dimulai',
+        'Main Snake, ambil bintang, dan hindari jebakan. Poin bonus masuk nilai akhir.'
+      );
+    } else if (challenge.type === 'bonusTree') {
+      GAME_STATE.stage = 'bonusTree';
+      GAME_STATE.placed = [];
+      GAME_STATE.shuffledCards = [];
+      GAME_STATE.tenderRush = null;
+      GAME_STATE.progress = 0;
+      clearBonusTreeTimers();
+    GAME_STATE.bonusTree = createBonusTreeState();
+
+      addLog(
+        'info',
+        'Bonus Level 10 dimulai',
+        'Tebang pohon kiri kanan, hindari akar, jaga nyawa, dan kejar skor sebelum waktu habis.'
+      );
+    } else {
+      GAME_STATE.stage = 'quiz';
+      GAME_STATE.placed = [];
+      GAME_STATE.shuffledCards = [];
+      GAME_STATE.tenderRush = null;
+      GAME_STATE.progress = 100;
+      prepareQuizRuntimeOptions(challenge);
+
+      addLog(
+        'info',
+        'Challenge ABCD dimulai',
+        'Pilih jawaban yang paling tepat.'
+      );
+    }
+
+    renderGame();
+
+    if (GAME_STATE.index >= 8) {
+      setGameMusicTempo(250);
+    } else {
+      setGameMusicTempo(360);
+    }
+
+    const pauseForPipelineTutorial = challenge.type === 'pipeline' && !GAME_STATE.pipelineTutorialSeen && getCurrentLevelNumber() === 1;
+    if (challenge.type !== 'tenderRush' && challenge.type !== 'bonusOpenWorld' && challenge.type !== 'bonusSnake' && challenge.type !== 'bonusTree' && !pauseForPipelineTutorial) {
+      startLevelTimer(challenge);
+    } else if (pauseForPipelineTutorial) {
+      GAME_STATE.levelTimeLimit = getDefaultLevelTime(challenge);
+      GAME_STATE.levelTimeLeft = GAME_STATE.levelTimeLimit;
+      updateLevelTimerUi();
+      addLog('info', 'Tutorial belum dihitung waktu', 'Santai dulu. Waktu level baru jalan setelah kamu menutup tutorial cara main pipeline.');
+    }
+
+    if (GAME_STATE.index === 0 && !GAME_STATE.hasSeenIntro) {
+      GAME_STATE.hasSeenIntro = true;
+    } else {
+      panjiForChallenge(challenge);
+    }
+  }
+
+  function finishGame() {
+    clearAutoNextTimer();
+    clearLevelTimer();
+    clearTenderRushTimers();
+    disableTenderRushKeyboard();
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+
+    GAME_STATE.finished = true;
+    GAME_STATE.stage = 'result';
+    GAME_STATE.current = null;
+    GAME_STATE.progress = 100;
+
+    renderGame();
+    spawnConfetti();
+    const finalResult = getCurrentResultSummary();
+    showPanji(getLeaderboardPanjiNarrative(finalResult), getLeaderboardPanjiMood(finalResult));
+    showToast('Semua soal selesai. Hasil akhir ditampilkan.', 'ok');
+    openLeaderboardModal('player', true);
+  }
+
+  function nextChallenge() {
+    clearAutoNextTimer();
+    clearLevelTimer();
+    clearTenderRushTimers();
+    disableTenderRushKeyboard();
+    clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+
+    if (GAME_STATE.index < GAME_STATE.order.length - 1) {
+      GAME_STATE.index += 1;
+      loadChallenge();
+      return;
+    }
+
+    finishGame();
+  }
+
+  function canGoNext() {
+    const challenge = getCurrentChallenge();
+
+    if (!challenge) return false;
+    if (challenge.type === 'pipeline') return GAME_STATE.progress === 100;
+    if (challenge.type === 'tenderRush') return GAME_STATE.progress === 100;
+    if (challenge.type === 'bonusOpenWorld') return GAME_STATE.progress === 100;
+    if (challenge.type === 'bonusSnake') return GAME_STATE.progress === 100;
+    if (challenge.type === 'bonusTree') return GAME_STATE.progress === 100;
+    return GAME_STATE.answered;
+  }
+
+  function getChallengeTypeLabel(type) {
+    if (type === 'pipeline') return 'Pipeline';
+    if (type === 'tenderRush') return 'Tender Rush';
+    if (type === 'bonusOpenWorld') return 'Bonus Zuma';
+    if (type === 'bonusSnake') return 'Bonus Snake';
+    if (type === 'bonusTree') return 'Bonus Tebang';
+    return 'ABCD';
+  }
+
+  function getChallengeTypeName(type) {
+    if (type === 'pipeline') return 'Susun Pipeline';
+    if (type === 'tenderRush') return 'Arcade Metode';
+    if (type === 'bonusOpenWorld') return 'Zuma Konsolidasi';
+    if (type === 'bonusSnake') return 'Snake Bintang';
+    if (type === 'bonusTree') return 'Tebang Pohon';
+    return 'Pilihan ABCD';
+  }
+
+  function renderChallengeBody(challenge) {
+    if (challenge.type === 'pipeline') return renderPipelineChallenge(challenge);
+    if (challenge.type === 'tenderRush') return renderTenderRushChallenge(challenge);
+    if (challenge.type === 'bonusOpenWorld') return renderBonusOpenWorldChallenge(challenge);
+    if (challenge.type === 'bonusSnake') return renderBonusSnakeChallenge(challenge);
+    if (challenge.type === 'bonusTree') return renderBonusTreeChallenge(challenge);
+    return renderQuizChallenge(challenge);
+  }
+
+
+  function renderReadyScreen() {
+    if (!root) return;
+
+    root.innerHTML = `
+      <section class="ps-card ps-ready-card">
+
+        <div class="ps-result-note">
+          <strong>Alur game:</strong><br>
+          Soal akan bercampur: susun pipeline, pilihan ABCD, dan Tender Rush. Tender Rush memakai tombol 1 sampai 5 untuk memilih metode pengadaan dengan cepat.
+        </div>
+
+        <div class="ps-buttons">
+          <button type="button" class="ps-btn ps-btn-primary" id="btnOpenPlayerModal">
+            Isi Nama & Instansi
+          </button>
+        </div>
+      </section>
+    `;
+
+    const btn = root.querySelector('#btnOpenPlayerModal');
+    if (btn) {
+      btn.addEventListener('click', () => openLeaderboardModal('player', true));
+    }
+
+    requestAnimationFrame(updatePanjiAutoBottom);
+  }
+
+  function getDisplayChallengeTitle(challenge) {
+    const levelNo = GAME_STATE.index + 1;
+    const rawTitle = String(challenge && challenge.title ? challenge.title : 'Challenge');
+    if (/^(Soal|Level)\s*\d+/i.test(rawTitle)) {
+      return rawTitle.replace(/^(Soal|Level)\s*\d+\s*[—-]?\s*/i, 'Level ' + levelNo + ' — ');
+    }
+    return 'Level ' + levelNo + ' — ' + rawTitle;
+  }
+
+
+  function renderHelperRow(challenge) {
+    return `
+        <div class="ps-helper-row ps-helper-row-compact ps-helper-row-${challenge.type}">
+          <div class="ps-helper-note">
+            <b>PANJI siap bantu.</b> Kalau bingung, tanya PANJI. Hint mengurangi skor <b>${HINT_PENALTY}</b> poin.
+          </div>
+          <div class="ps-helper-actions">
+            <div class="ps-pill ps-current-soal-pill">Soal ${GAME_STATE.index + 1} / ${GAME_STATE.order.length}</div>
+            <div class="ps-level-time-card ps-level-time-compact">
+              <label>Waktu</label>
+              <strong id="psLevelTimeText">${(challenge.type === 'tenderRush' || challenge.type === 'bonusOpenWorld' || challenge.type === 'bonusSnake' || challenge.type === 'bonusTree') ? '-' : `${GAME_STATE.levelTimeLeft || getDefaultLevelTime(challenge)}s`}</strong>
+              <div class="ps-mini-time-track"><div class="ps-mini-time-bar" id="psLevelTimeBar" style="width:100%"></div></div>
+            </div>
+            <button type="button" class="ps-btn ps-btn-soft" id="btnPanjiHint">
+              Tanya PANJI (-${HINT_PENALTY})
+            </button>
+          </div>
+        </div>
+    `;
+  }
+
+  function renderGame() {
+    if (!root) return;
+
+    if (GAME_STATE.stage === 'result') {
+      root.innerHTML = renderResultScreen();
+      bindResultEvents();
+      requestAnimationFrame(updatePanjiAutoBottom);
+      return;
+    }
+
+    const challenge = getCurrentChallenge();
+
+    root.innerHTML = `
+      <section class="ps-card">
+        <div class="ps-card-head">
+          <div>
+            <h3>${escapeHtml(getDisplayChallengeTitle(challenge))}</h3>
+            <p>${escapeHtml(challenge.desc)}</p>
+          </div>
+
+          <div class="ps-pill-row">
+            <div class="ps-pill ${challenge.type === 'pipeline' ? 'green' : challenge.type === 'tenderRush' ? 'rush' : ''}">
+              ${getChallengeTypeLabel(challenge.type)}
+            </div>
+            ${GAME_STATE.selectedCardId ? '<div class="ps-pill warn">Kartu dipilih</div>' : ''}
+            ${GAME_STATE.hintUsed ? '<div class="ps-pill warn">Hint PANJI dipakai</div>' : ''}
+          </div>
+        </div>
+
+        <div class="ps-score-grid">
+          <div class="ps-score-card">
+            <label>Progress</label>
+            <strong>${GAME_STATE.progress}%</strong>
+          </div>
+          <div class="ps-score-card">
+            <label>Skor</label>
+            <strong>${GAME_STATE.score}</strong>
+          </div>
+          <div class="ps-score-card">
+            <label>Risiko</label>
+            <strong>${GAME_STATE.risk}</strong>
+          </div>
+          <div class="ps-score-card">
+            <label>Salah</label>
+            <strong>${GAME_STATE.wrong}</strong>
+          </div>
+        </div>
+
+        <div class="ps-progress-track">
+          <div class="ps-progress-bar" style="width:${GAME_STATE.progress}%"></div>
+        </div>
+
+        ${challenge.type === 'pipeline' ? '' : renderHelperRow(challenge)}
+
+        ${renderChallengeBody(challenge)}
+
+        ${challenge.type === 'pipeline' ? renderHelperRow(challenge) : ''}
+
+        ${renderLogs()}
+
+        <div class="ps-buttons">
+          <button type="button" class="ps-btn ps-btn-soft" id="btnRestartGame">Mulai Ulang dari Soal 1</button>
+          ${
+            challenge.type === 'pipeline' || challenge.type === 'tenderRush'
+              ? '<button type="button" class="ps-btn ps-btn-soft" id="btnResetChallenge">Reset Soal Ini</button>'
+              : ''
+          }
+          <button type="button" class="ps-btn ps-btn-primary" id="btnNextChallenge" ${canGoNext() ? '' : 'disabled'}>
+            Lanjut Soal Berikutnya
+          </button>
+        </div>
+      </section>
+    `;
+
+    bindGameEvents();
+    requestAnimationFrame(updatePanjiAutoBottom);
+  }
+
+
+  function renderQuestionPanel(challenge, mainQuestion = '') {
+    const typeName = getChallengeTypeName(challenge.type);
+    const title = challenge.type === 'bonusOpenWorld'
+      ? 'SOAL BONUS 4 / MISI 3D'
+      : challenge.type === 'bonusSnake'
+        ? 'SOAL BONUS 8 / SNAKE'
+        : 'SOAL / PERTANYAAN';
+    const detail = mainQuestion || challenge.question || challenge.desc || '';
+    const meta = [];
+    if (challenge.budget) meta.push('Pagu/Nilai: ' + challenge.budget);
+    if (challenge.difficulty) meta.push(challenge.difficulty);
+    meta.push(typeName);
+
+    return `
+      <div class="ps-question-panel">
+        <div class="ps-question-label">${title}</div>
+        <div class="ps-question-main">
+          <h2>${escapeHtml(challenge.caseTitle || getDisplayChallengeTitle(challenge))}</h2>
+          <p>${escapeHtml(detail)}</p>
+        </div>
+        <div class="ps-question-meta">
+          ${meta.map(item => `<span>${escapeHtml(item)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPipelineChallenge(challenge) {
+    const placedIds = new Set(GAME_STATE.placed.filter(Boolean).map(item => item.id));
+    const showPipelineTutorial = !GAME_STATE.pipelineTutorialSeen && getCurrentLevelNumber() === 1;
+
+    return `
+      ${showPipelineTutorial ? `
+        <div class="ps-pipeline-tutorial">
+          <div class="ps-tutorial-panji">PANJI</div>
+          <div>
+            <h4>Pelan-pelan dulu, ini cara main pipeline.</h4>
+            <ol>
+              <li><b>Baca panel SOAL / PERTANYAAN</b>: posisinya tepat di atas slot, jadi kamu tidak perlu bolak-balik lihat jauh ke atas.</li>
+              <li><b>Baca tujuan pipeline</b>: susun kartu proses dari kiri ke kanan.</li>
+              <li><b>Cara meletakkan kartu</b>: drag kartu ke slot, atau klik kartu lalu klik slot biru.</li>
+              <li><b>Jangan asal taruh</b>: slot harus diisi urut dari kiri. Kartu jebakan bikin risiko naik.</li>
+              <li><b>Butuh arahan?</b> klik tombol <b>Tanya PANJI</b> untuk hint, tapi skor berkurang sedikit.</li>
+            </ol>
+            <button type="button" class="ps-btn ps-btn-primary" id="btnClosePipelineTutorial">Oke, saya paham</button>
+          </div>
+        </div>
+      ` : ''}
+      ${renderQuestionPanel(challenge)}
+      <div class="ps-pipeline">
+        ${challenge.idealIds.map((_, index) => renderSlot(index)).join('')}
+      </div>
+
+      <div class="ps-card-head">
+        <div>
+          <h3>Atur Urutan Kartu dari Tahapan yang Benar</h3>
+          <p>Baca soal di atas, lalu susun kartu proses dari kiri ke kanan. Drag kartu ke slot, atau klik kartu lalu klik slot biru.</p>
+        </div>
+        <button type="button" class="ps-btn ps-btn-soft" id="btnShuffleCards">
+          Acak Kartu
+        </button>
+      </div>
+
+      <div class="ps-bank">
+        ${GAME_STATE.shuffledCards.map(item => renderPipelineCard(item, placedIds.has(item.id))).join('')}
+      </div>
+
+      ${
+        GAME_STATE.progress === 100
+          ? `
+            <div class="ps-explanation">
+              <strong>Pipeline selesai:</strong><br>
+              ${escapeHtml(challenge.explanation)}
+            </div>
+          `
+          : ''
+      }
+    `;
+  }
+
+  function renderSlot(index) {
+    const placed = GAME_STATE.placed[index];
+    const nextEmpty = GAME_STATE.placed.findIndex(item => item === null);
+    const isReady = GAME_STATE.selectedCardId && !placed && index === nextEmpty;
+
+    if (placed) {
+      return `
+        <div class="ps-slot correct" data-slot-index="${index}">
+          <div class="ps-slot-number">${index + 1}</div>
+          ${renderPipelineCard(placed, false, true)}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="ps-slot ${isReady ? 'click-ready' : ''}" data-slot-index="${index}">
+        <div class="ps-slot-number">${index + 1}</div>
+        <div class="ps-slot-placeholder">
+          ${isReady ? 'Klik untuk pasang kartu' : `Slot ${index + 1}`}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPipelineCard(item, used = false, locked = false) {
+    const selected = GAME_STATE.selectedCardId === item.id ? 'selected' : '';
+    const trapClass = item.type === 'trap' ? 'trap-card' : '';
+
+    return `
+      <div
+        class="ps-action-card ${used ? 'used' : ''} ${locked ? 'correct-card' : ''} ${selected} ${trapClass}"
+        draggable="${used || locked || GAME_STATE.progress === 100 ? 'false' : 'true'}"
+        data-card-id="${escapeHtml(item.id)}"
+      >
+        <div class="ps-card-icon">${item.icon}</div>
+        <strong>${escapeHtml(item.label)}</strong>
+        <span>${escapeHtml(item.note)}</span>
+      </div>
+    `;
+  }
+
+  function renderTenderRushChallenge(challenge) {
+    const rush = GAME_STATE.tenderRush || {
+      started: false,
+      currentIndex: 0,
+      timeLeft: Number(challenge.timeLimit || 8),
+      lastResult: null,
+      correctCount: 0,
+      wrongCount: 0
+    };
+
+    const rushPackages = Array.isArray(rush.packages) && rush.packages.length ? rush.packages : (challenge.packages || []);
+    const total = rushPackages.length;
+    const currentPackage = rushPackages[rush.currentIndex];
+
+    if (!currentPackage && rush.started && GAME_STATE.progress < 100) {
+      GAME_STATE.progress = 100;
+    }
+
+    const percentTime = Math.max(0, Math.min(100, (Number(rush.timeLeft || 0) / Number(challenge.timeLimit || 8)) * 100));
+
+    if (!rush.started) {
+      return `
+        ${renderQuestionPanel(challenge)}
+        <div class="ps-rush-tutorial">
+          <div class="ps-rush-tutorial-main">
+            <div class="ps-rush-kicker">Tutorial PANJI dulu</div>
+            <h3>Jalur Metode Tender Rush</h3>
+            <p>
+              Di soal ini paket akan muncul satu per satu seperti arcade. Tugas kamu memilih jalur metode yang paling tepat
+              sebelum waktu habis. Baca <b>pagu</b>, <b>jenis paket</b>, <b>ketersediaan katalog</b>, dan <b>kondisi pelaksanaan</b>.
+              Di level ini batas salah/miss adalah <b>${getTenderRushFailLimitByLevel(getCurrentLevelNumber())} kali</b>; kalau melewati batas, game langsung berhenti.
+            </p>
+          </div>
+          <div class="ps-rush-method-grid">
+            ${Object.values(TENDER_RUSH_METHODS).map(method => `
+              <div class="ps-rush-method-card">
+                <div class="ps-rush-method-key">${method.key}</div>
+                <div class="ps-rush-method-icon">${method.icon}</div>
+                <strong>${escapeHtml(method.label)}</strong>
+                <span>${escapeHtml(method.hint)}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="ps-buttons">
+            <button type="button" class="ps-btn ps-btn-primary" id="btnStartTenderRush">Saya Paham, Mulai Tender Rush</button>
+          </div>
+        </div>
+      `;
+    }
+
+    if (!currentPackage && GAME_STATE.progress === 100) {
+      return `
+        ${renderQuestionPanel(challenge)}
+        <div class="ps-rush-finished">
+          <h3>Tender Rush selesai</h3>
+          <p>${escapeHtml(challenge.explanation)}</p>
+          <div class="ps-rush-summary">
+            <div><label>Benar</label><strong>${rush.correctCount || 0}</strong></div>
+            <div><label>Salah/Miss</label><strong>${rush.wrongCount || 0}</strong></div>
+            <div><label>Total Paket</label><strong>${total}</strong></div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      ${renderQuestionPanel(challenge)}
+      <div class="ps-rush-arena">
+        <div class="ps-rush-hud">
+          <div><label>Paket</label><strong>${Math.min(rush.currentIndex + 1, total)} / ${total}</strong></div>
+          <div><label>Waktu</label><strong id="psRushTimeText">${rush.timeLeft}</strong></div>
+          <div><label>Benar</label><strong>${rush.correctCount || 0}</strong></div>
+          <div><label>Salah</label><strong>${rush.wrongCount || 0} / ${getTenderRushFailLimitByLevel(getCurrentLevelNumber())}</strong></div>
+        </div>
+
+        <div class="ps-rush-time-track">
+          <div class="ps-rush-time-bar" id="psRushTimeBar" style="width:${percentTime}%"></div>
+        </div>
+
+        <div class="ps-rush-fall-lane">
+          <div class="ps-rush-package ${rush.lastResult ? (rush.lastResult.correct ? 'correct' : 'wrong') : ''}" style="--rush-duration:${Number(challenge.timeLimit || 8)}s">
+            <div class="ps-rush-package-top">
+              <span>${escapeHtml(currentPackage.type)}</span>
+              <b>${formatCurrency(currentPackage.pagu)}</b>
+            </div>
+            <h3>${escapeHtml(currentPackage.title)}</h3>
+            <p>${escapeHtml(currentPackage.clue)}</p>
+          </div>
+        </div>
+
+        ${rush.lastResult ? `
+          <div class="ps-rush-result ${rush.lastResult.correct ? 'ok' : 'bad'}">
+            <strong>${rush.lastResult.correct ? 'Benar!' : 'Belum tepat.'}</strong>
+            ${escapeHtml(rush.lastResult.message)}
+          </div>
+        ` : ''}
+
+        <div class="ps-rush-drop-grid">
+          ${Object.entries(TENDER_RUSH_METHODS).map(([id, method]) => `
+            <button type="button" class="ps-rush-drop" data-rush-method="${id}" ${rush.locked ? 'disabled' : ''}>
+              <span class="ps-rush-key">${method.key}</span>
+              <span class="ps-rush-icon">${method.icon}</span>
+              <strong>${escapeHtml(method.label)}</strong>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+
+  function createBonusOpenWorldState() {
+    const colorMap = {
+      data: { label: 'Data Kebutuhan', short: 'D', color: '#5ecbff', glow: 'rgba(94,203,255,.45)' },
+      pasar: { label: 'Market Sounding', short: 'M', color: '#74d66f', glow: 'rgba(116,214,111,.45)' },
+      kak: { label: 'KAK / HPS', short: 'K', color: '#ffc85a', glow: 'rgba(255,200,90,.45)' },
+      kontrak: { label: 'Kontrak Payung', short: 'C', color: '#a78bfa', glow: 'rgba(167,139,250,.45)' },
+      katalog: { label: 'Katalog / e-Purchasing', short: 'E', color: '#ff79b0', glow: 'rgba(255,121,176,.45)' }
+    };
+
+    return {
+      started: false,
+      running: false,
+      finished: false,
+      failed: false,
+      mounted: false,
+      score: 0,
+      shots: 0,
+      hits: 0,
+      removed: 0,
+      combo: 0,
+      bestCombo: 0,
+      targetRemoved: 18,
+      speed: 50,
+      spacing: 42,
+      ballRadius: 21,
+      shooterAngle: -Math.PI / 2,
+      currentColor: 'data',
+      nextColor: 'pasar',
+      chain: [],
+      projectiles: [],
+      particles: [],
+      path: null,
+      colorMap,
+      colorKeys: Object.keys(colorMap),
+      storyNote: 'Mulai dari data kebutuhan. Kalau data masih berantakan, rantai masalah akan cepat memanjang.',
+      storyMilestones: [
+        { removed: 5, note: 'Data kebutuhan OPD mulai rapi. Sekarang fokus ke pendalaman pasar dan proses bisnis.', panji: 'Bagus. Data kebutuhan mulai rapi, jadi kita bisa masuk ke pendalaman pasar dengan lebih tenang.' },
+        { removed: 10, note: 'Market sounding mulai terbaca. Harga, stok, dan kesiapan penyedia makin jelas.', panji: 'Nah, market sounding mulai kebaca. Jangan cuma lihat harga, cek juga stok dan kesiapan penyedia.' },
+        { removed: 15, note: 'KAK dan HPS mulai terkunci. Spesifikasi makin jelas dan tidak asal copy-paste.', panji: 'Mantap. KAK dan HPS mulai rapi. Jaga supaya spesifikasi tetap fungsional dan tidak mengarah.' },
+        { removed: 20, note: 'Kontrak payung hampir siap. Tinggal jaga ritme supaya jalur tidak jebol.', panji: 'Kontrak payung sudah kelihatan bentuknya. Sedikit lagi, jaga ritme dan jangan panik.' },
+        { removed: 26, note: 'Produk siap masuk katalog dan OPD bisa lanjut belanja lewat e-Purchasing.', panji: 'Selesai! Jalur konsolidasi aman. Tinggal pastikan pencantuman katalog dan e-Purchasing berjalan rapi.' }
+      ],
+      storyIndex: 0
+    };
+  }
+
+  function getBonusOpenWorldState() {
+    if (!GAME_STATE.bonusOpenWorld) {
+      GAME_STATE.bonusOpenWorld = createBonusOpenWorldState();
+    }
+    return GAME_STATE.bonusOpenWorld;
+  }
+
+  function getBonusOpenWorldColorLabel(colorKey) {
+    const bonus = getBonusOpenWorldState();
+    return bonus.colorMap[colorKey] ? bonus.colorMap[colorKey].label : colorKey;
+  }
+
+  function pickBonusOpenWorldColor(bonus) {
+    const source = bonus.chain.map(item => item.color).filter(Boolean);
+    const pool = source.length ? source : bonus.colorKeys;
+    return pool[Math.floor(Math.random() * pool.length)] || bonus.colorKeys[0];
+  }
+
+  function buildBonusOpenWorldPath(width, height) {
+    const cx = width * 0.5;
+    const cy = height * 0.52;
+    const maxR = Math.min(width, height) * 0.46;
+    const minR = 112;
+    const rawPoints = [];
+    const loops = 2.32;
+    const steps = 260;
+
+    for (let i = 0; i <= steps; i += 1) {
+      const t = i / steps;
+      const angle = Math.PI * 1.12 + (loops * Math.PI * 2 * t);
+      const radius = maxR - (maxR - minR) * t;
+      rawPoints.push({
+        x: cx + Math.cos(angle) * radius,
+        y: cy + Math.sin(angle) * radius
+      });
+    }
+
+    const last = rawPoints[rawPoints.length - 1];
+    const portal = { x: cx, y: cy - 92 };
+    for (let i = 1; i <= 36; i += 1) {
+      rawPoints.push({
+        x: last.x + (portal.x - last.x) * (i / 36),
+        y: last.y + (portal.y - last.y) * (i / 36)
+      });
+    }
+
+    const step = 6;
+    const points = [rawPoints[0]];
+    for (let i = 1; i < rawPoints.length; i += 1) {
+      const prev = rawPoints[i - 1];
+      const curr = rawPoints[i];
+      const dx = curr.x - prev.x;
+      const dy = curr.y - prev.y;
+      const dist = Math.hypot(dx, dy);
+      const pieces = Math.max(1, Math.ceil(dist / step));
+      for (let p = 1; p <= pieces; p += 1) {
+        points.push({
+          x: prev.x + dx * (p / pieces),
+          y: prev.y + dy * (p / pieces)
+        });
+      }
+    }
+
+    return {
+      step,
+      points,
+      maxDistance: Math.max(0, (points.length - 1) * step),
+      start: points[0],
+      end: points[points.length - 1]
+    };
+  }
+
+  function getBonusOpenWorldPathPoint(path, distance) {
+    if (!path || !path.points || !path.points.length) {
+      return { x: 0, y: 0 };
+    }
+    const clamped = Math.max(0, Math.min(path.maxDistance, distance));
+    const scaled = clamped / path.step;
+    const baseIndex = Math.floor(scaled);
+    const fract = scaled - baseIndex;
+    const a = path.points[Math.min(baseIndex, path.points.length - 1)];
+    const b = path.points[Math.min(baseIndex + 1, path.points.length - 1)] || a;
+    return {
+      x: a.x + (b.x - a.x) * fract,
+      y: a.y + (b.y - a.y) * fract
+    };
+  }
+
+  function getBonusOpenWorldCenter(bonus) {
+    const canvas = bonus.canvas;
+    return {
+      x: canvas ? canvas.width * 0.5 : 320,
+      y: canvas ? canvas.height * 0.52 : 220
+    };
+  }
+
+  function initialiseBonusOpenWorldChain(bonus, force = false) {
+    if (!bonus.path) return;
+    if (bonus.chain.length && !force) return;
+
+    const totalBalls = 26;
+    const sequence = [];
+    while (sequence.length < totalBalls) {
+      const color = bonus.colorKeys[Math.floor(Math.random() * bonus.colorKeys.length)];
+      const run = 1 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < run && sequence.length < totalBalls; i += 1) {
+        sequence.push(color);
+      }
+    }
+
+    const headDistance = Math.min(bonus.path.maxDistance * 0.34, bonus.spacing * (totalBalls + 5));
+    bonus.chain = sequence.map((color, index) => ({
+      color,
+      distance: headDistance - index * bonus.spacing
+    }));
+    bonus.projectiles = [];
+    bonus.particles = [];
+    bonus.currentColor = pickBonusOpenWorldColor(bonus);
+    bonus.nextColor = pickBonusOpenWorldColor(bonus);
+    bonus.storyNote = 'Mulai dari data kebutuhan. Kalau data masih berantakan, rantai masalah akan cepat memanjang.';
+    bonus.storyIndex = 0;
+  }
+
+  function updateBonusOpenWorldHUD() {
+    const bonus = getBonusOpenWorldState();
+    const currentMeta = bonus.colorMap[bonus.currentColor] || {};
+    const nextMeta = bonus.colorMap[bonus.nextColor] || {};
+    const accuracy = bonus.shots ? Math.round((bonus.hits / bonus.shots) * 100) : 100;
+
+    const setText = (selector, value) => {
+      const el = root && root.querySelector(selector);
+      if (el) el.textContent = String(value);
+    };
+
+    setText('#psBonusZumaScore', bonus.score);
+    setText('#psBonusZumaCombo', bonus.bestCombo);
+    setText('#psBonusZumaRemoved', `${bonus.removed}/${bonus.targetRemoved}`);
+    setText('#psBonusZumaAcc', `${accuracy}%`);
+    setText('#psBonusZumaStory', bonus.storyNote);
+    setText('#psBonusZumaCurrent', currentMeta.label || '-');
+    setText('#psBonusZumaNext', nextMeta.label || '-');
+
+    const currentChip = root && root.querySelector('#psBonusZumaCurrentChip');
+    if (currentChip) currentChip.style.background = currentMeta.color || '#5ecbff';
+    const nextChip = root && root.querySelector('#psBonusZumaNextChip');
+    if (nextChip) nextChip.style.background = nextMeta.color || '#74d66f';
+  }
+
+  function drawBonusOpenWorldBoard() {
+    const bonus = getBonusOpenWorldState();
+    if (!bonus.canvas || !bonus.ctx || !bonus.path) return;
+
+    const ctx = bonus.ctx;
+    const canvas = bonus.canvas;
+    const { width, height } = canvas;
+    const center = getBonusOpenWorldCenter(bonus);
+
+    ctx.clearRect(0, 0, width, height);
+
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, '#122038');
+    bg.addColorStop(.55, '#182f48');
+    bg.addColorStop(1, '#0f1728');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+
+    for (let i = 0; i < 18; i += 1) {
+      ctx.fillStyle = `rgba(255,255,255,${0.02 + (i % 3) * 0.01})`;
+      ctx.beginPath();
+      ctx.arc((i * 83) % width, ((i * 47) % height), 2 + (i % 4), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(237,199,116,.96)';
+    ctx.lineWidth = bonus.ballRadius * 2.42;
+    ctx.beginPath();
+    bonus.path.points.forEach((point, index) => {
+      if (index === 0) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
+    });
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(106,68,28,.9)';
+    ctx.lineWidth = bonus.ballRadius * 1.58;
+    ctx.beginPath();
+    bonus.path.points.forEach((point, index) => {
+      if (index === 0) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    const portal = bonus.path.end;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, .08)';
+    ctx.beginPath();
+    ctx.arc(portal.x, portal.y, 34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#70f0d0';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(portal.x, portal.y, 28, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#dffef6';
+    ctx.font = '700 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('PORTAL', portal.x, portal.y + 4);
+    ctx.restore();
+
+    const start = bonus.path.start;
+    ctx.save();
+    ctx.fillStyle = '#213f5c';
+    ctx.beginPath();
+    ctx.arc(start.x, start.y, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#eef7ff';
+    ctx.font = '700 11px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('OPD', start.x, start.y + 4);
+    ctx.restore();
+
+    bonus.chain.forEach(ball => {
+      const point = getBonusOpenWorldPathPoint(bonus.path, ball.distance);
+      const meta = bonus.colorMap[ball.color] || {};
+      ctx.save();
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = meta.glow || 'rgba(255,255,255,.3)';
+      ctx.fillStyle = meta.color || '#5ecbff';
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, bonus.ballRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(16,24,40,.55)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.28)';
+      ctx.beginPath();
+      ctx.arc(point.x - 4, point.y - 5, bonus.ballRadius * .38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fffdf7';
+      ctx.font = '700 10px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(meta.short || '?', point.x, point.y + 3.5);
+      ctx.restore();
+    });
+
+    bonus.projectiles.forEach(projectile => {
+      const meta = bonus.colorMap[projectile.color] || {};
+      ctx.save();
+      ctx.shadowBlur = 16;
+      ctx.shadowColor = meta.glow || 'rgba(255,255,255,.35)';
+      ctx.fillStyle = meta.color || '#ffffff';
+      ctx.beginPath();
+      ctx.arc(projectile.x, projectile.y, bonus.ballRadius - 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    bonus.particles.forEach(particle => {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, particle.life / particle.maxLife);
+      ctx.fillStyle = particle.color;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    ctx.save();
+    ctx.translate(center.x, center.y);
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = 'rgba(255, 206, 140, .34)';
+    const pedestal = ctx.createRadialGradient(0, 0, 8, 0, 0, 38);
+    pedestal.addColorStop(0, '#20344f');
+    pedestal.addColorStop(1, '#0c1728');
+    ctx.fillStyle = pedestal;
+    ctx.beginPath();
+    ctx.arc(0, 0, 34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.rotate(bonus.shooterAngle);
+    ctx.fillStyle = '#d7a041';
+    ctx.fillRect(0, -6, 34, 12);
+    ctx.beginPath();
+    ctx.arc(38, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    const currentMeta = bonus.colorMap[bonus.currentColor] || {};
+    const nextMeta = bonus.colorMap[bonus.nextColor] || {};
+    ctx.save();
+    ctx.fillStyle = currentMeta.color || '#5ecbff';
+    ctx.beginPath();
+    ctx.arc(center.x, center.y, bonus.ballRadius + 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(currentMeta.short || '?', center.x, center.y + 3.5);
+
+    ctx.fillStyle = nextMeta.color || '#74d66f';
+    ctx.beginPath();
+    ctx.arc(center.x - 42, center.y + 28, bonus.ballRadius - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillText(nextMeta.short || '?', center.x - 42, center.y + 31);
+    ctx.restore();
+  }
+
+  function bonusOpenWorldBurst(point, color, amount = 8) {
+    const bonus = getBonusOpenWorldState();
+    for (let i = 0; i < amount; i += 1) {
+      const angle = (Math.PI * 2 * i) / amount;
+      const speed = 40 + Math.random() * 80;
+      bonus.particles.push({
+        x: point.x,
+        y: point.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 2 + Math.random() * 3,
+        color,
+        life: .42 + Math.random() * .18,
+        maxLife: .52
+      });
+    }
+  }
+
+  function advanceBonusOpenWorldStory() {
+    const bonus = getBonusOpenWorldState();
+    while (bonus.storyMilestones[bonus.storyIndex] && bonus.removed >= bonus.storyMilestones[bonus.storyIndex].removed) {
+      const milestone = bonus.storyMilestones[bonus.storyIndex];
+      bonus.storyNote = milestone.note;
+      addLog('info', 'Progress Konsolidasi', milestone.note);
+      showPanji(milestone.panji, 'talking');
+      bonus.storyIndex += 1;
+    }
+  }
+
+  function resolveBonusOpenWorldMatches(centerIndex) {
+    const bonus = getBonusOpenWorldState();
+    if (!bonus.chain.length) return 0;
+    let totalRemoved = 0;
+    let continueCheck = true;
+    let probeIndex = centerIndex;
+
+    while (continueCheck && bonus.chain.length) {
+      continueCheck = false;
+      probeIndex = Math.max(0, Math.min(probeIndex, bonus.chain.length - 1));
+      const focus = bonus.chain[probeIndex];
+      if (!focus) break;
+      let start = probeIndex;
+      let end = probeIndex;
+      while (start > 0 && bonus.chain[start - 1].color === focus.color) start -= 1;
+      while (end < bonus.chain.length - 1 && bonus.chain[end + 1].color === focus.color) end += 1;
+      const size = end - start + 1;
+      if (size >= 3) {
+        const removedBalls = bonus.chain.splice(start, size);
+        totalRemoved += size;
+        bonus.removed += size;
+        bonus.combo += 1;
+        bonus.bestCombo = Math.max(bonus.bestCombo, bonus.combo);
+        const gain = size * 12 + Math.max(0, bonus.combo - 1) * 8;
+        bonus.score += gain;
+        GAME_STATE.score += gain;
+        GAME_STATE.correct += 1;
+        removedBalls.forEach(ball => {
+          const point = getBonusOpenWorldPathPoint(bonus.path, ball.distance);
+          bonusOpenWorldBurst(point, (bonus.colorMap[ball.color] || {}).color || '#fff', 9);
+        });
+        playTone(720, 0.04, 'triangle', 0.035); setTimeout(() => playTone(980, 0.06, 'triangle', 0.03), 40); if (size >= 4) { setTimeout(() => playTone(1220, 0.09, 'square', 0.022), 90); } showToast(`Match ${size}! +${gain}`, 'ok');
+        flashScreen('ok');
+        popScore(root || document.body, `+${gain}`, 'ok');
+        spawnConfetti();
+        probeIndex = Math.max(0, start - 1);
+        continueCheck = true;
+      } else if (totalRemoved === 0) {
+        bonus.combo = 0;
+      }
+    }
+
+    if (totalRemoved > 0) {
+      advanceBonusOpenWorldStory();
+    }
+
+    return totalRemoved;
+  }
+
+  function insertBonusOpenWorldProjectile(hitIndex, color) {
+    const bonus = getBonusOpenWorldState();
+    if (!bonus.chain.length) return;
+
+    const before = bonus.chain[Math.max(0, hitIndex - 1)] || null;
+    const target = bonus.chain[hitIndex] || null;
+    let distance = target ? target.distance : (before ? before.distance - bonus.spacing : 0);
+
+    if (before && target) {
+      distance = (before.distance + target.distance) / 2;
+    } else if (target) {
+      distance = target.distance + bonus.spacing * .5;
+    }
+
+    bonus.chain.splice(hitIndex, 0, { color, distance });
+    const matched = resolveBonusOpenWorldMatches(hitIndex);
+    if (!matched) {
+      bonus.score += 2;
+      GAME_STATE.score += 2;
+    }
+
+    GAME_STATE.progress = Math.min(99, Math.round((bonus.removed / bonus.targetRemoved) * 100));
+    if (!bonus.chain.length || bonus.removed >= bonus.targetRemoved) {
+      finishBonusOpenWorld(true);
+    }
+  }
+
+  function tickBonusOpenWorldGame(dt) {
+    const bonus = getBonusOpenWorldState();
+    if (!bonus.running || !bonus.path) return;
+
+    if (bonus.chain.length) {
+      bonus.chain[0].distance += bonus.speed * dt;
+      for (let i = 1; i < bonus.chain.length; i += 1) {
+        const desired = bonus.chain[i - 1].distance - bonus.spacing;
+        bonus.chain[i].distance += (desired - bonus.chain[i].distance) * Math.min(1, dt * 12);
+      }
+      if (bonus.chain[0].distance >= bonus.path.maxDistance - 4) {
+        finishBonusOpenWorld(false);
+        return;
+      }
+    }
+
+    for (let i = bonus.projectiles.length - 1; i >= 0; i -= 1) {
+      const projectile = bonus.projectiles[i];
+      projectile.x += projectile.vx * dt;
+      projectile.y += projectile.vy * dt;
+      projectile.life += dt;
+
+      if (!bonus.canvas || projectile.x < -30 || projectile.x > bonus.canvas.width + 30 || projectile.y < -30 || projectile.y > bonus.canvas.height + 30) {
+        bonus.projectiles.splice(i, 1);
+        continue;
+      }
+
+      let hit = false;
+      for (let ballIndex = 0; ballIndex < bonus.chain.length; ballIndex += 1) {
+        const point = getBonusOpenWorldPathPoint(bonus.path, bonus.chain[ballIndex].distance);
+        if (Math.hypot(projectile.x - point.x, projectile.y - point.y) <= bonus.ballRadius * 1.45) {
+          bonus.projectiles.splice(i, 1);
+          bonus.hits += 1;
+          insertBonusOpenWorldProjectile(ballIndex, projectile.color);
+          hit = true;
+          break;
+        }
+      }
+      if (hit) continue;
+    }
+
+    for (let i = bonus.particles.length - 1; i >= 0; i -= 1) {
+      const particle = bonus.particles[i];
+      particle.life -= dt;
+      particle.x += particle.vx * dt;
+      particle.y += particle.vy * dt;
+      particle.vx *= .98;
+      particle.vy *= .98;
+      particle.size *= .992;
+      if (particle.life <= 0 || particle.size < .6) {
+        bonus.particles.splice(i, 1);
+      }
+    }
+
+    GAME_STATE.progress = Math.min(99, Math.round((bonus.removed / bonus.targetRemoved) * 100));
+    updateBonusOpenWorldHUD();
+  }
+
+  function clearBonusZumaTimers() {
+    if (bonusZumaFrame) {
+      cancelAnimationFrame(bonusZumaFrame);
+      bonusZumaFrame = null;
+    }
+    if (bonusZumaResizeHandler) {
+      window.removeEventListener('resize', bonusZumaResizeHandler);
+      bonusZumaResizeHandler = null;
+    }
+    if (bonusZumaKeyHandler) {
+      document.removeEventListener('keydown', bonusZumaKeyHandler);
+      bonusZumaKeyHandler = null;
+    }
+  }
+
+  function mountBonusOpenWorldGame() {
+    const challenge = getCurrentChallenge();
+    const bonus = getBonusOpenWorldState();
+    const canvas = root && root.querySelector('#psBonusZumaCanvas');
+    if (!canvas || !challenge || challenge.type !== 'bonusOpenWorld' || !bonus.started) return;
+
+    clearBonusZumaTimers();
+
+    bonus.canvas = canvas;
+    bonus.ctx = canvas.getContext('2d');
+
+    const fitCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(700, Math.round(rect.width * (window.devicePixelRatio > 1 ? 1.25 : 1)));
+      canvas.height = Math.max(420, Math.round(rect.height * (window.devicePixelRatio > 1 ? 1.25 : 1)));
+      bonus.path = buildBonusOpenWorldPath(canvas.width, canvas.height);
+      if (!bonus.chain.length) {
+        initialiseBonusOpenWorldChain(bonus, true);
+      }
+      drawBonusOpenWorldBoard();
+      updateBonusOpenWorldHUD();
+    };
+
+    fitCanvas();
+
+    const updateAim = (clientX, clientY) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
+      const center = getBonusOpenWorldCenter(bonus);
+      bonus.shooterAngle = Math.atan2(y - center.y, x - center.x);
+      drawBonusOpenWorldBoard();
+    };
+
+    canvas.onpointermove = event => {
+      updateAim(event.clientX, event.clientY);
+    };
+    canvas.onpointerdown = event => {
+      updateAim(event.clientX, event.clientY);
+      shootBonusOpenWorldProjectile();
+    };
+
+    bonusZumaResizeHandler = () => {
+      fitCanvas();
+    };
+    window.addEventListener('resize', bonusZumaResizeHandler);
+
+    bonusZumaKeyHandler = event => {
+      if (!getCurrentChallenge() || getCurrentChallenge().type !== 'bonusOpenWorld') return;
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        shootBonusOpenWorldProjectile();
+      }
+      if (event.key.toLowerCase() === 'x') {
+        event.preventDefault();
+        swapBonusOpenWorldAmmo();
+      }
+      if (event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        resetBonusOpenWorld();
+      }
+    };
+    document.addEventListener('keydown', bonusZumaKeyHandler);
+
+    bonus.running = !bonus.finished && !bonus.failed;
+    let lastTs = performance.now();
+    const frame = now => {
+      const current = getCurrentChallenge();
+      if (destroyed || !current || current.type !== 'bonusOpenWorld') {
+        clearBonusZumaTimers();
+        return;
+      }
+      const dt = Math.min(.032, Math.max(.012, (now - lastTs) / 1000));
+      lastTs = now;
+      if (bonus.running) tickBonusOpenWorldGame(dt);
+      drawBonusOpenWorldBoard();
+      updateBonusOpenWorldHUD();
+      if (bonus.running) {
+        bonusZumaFrame = requestAnimationFrame(frame);
+      }
+    };
+    bonusZumaFrame = requestAnimationFrame(frame);
+  }
+
+  function startBonusOpenWorld() {
+    const bonus = getBonusOpenWorldState();
+    bonus.started = true;
+    bonus.finished = false;
+    bonus.failed = false;
+    bonus.score = 0;
+    bonus.shots = 0;
+    bonus.hits = 0;
+    bonus.removed = 0;
+    bonus.combo = 0;
+    bonus.bestCombo = 0;
+    bonus.chain = [];
+    bonus.projectiles = [];
+    bonus.particles = [];
+    renderGame();
+    showPanji('Gas. Cocokkan minimal 3 warna yang sama. Anggap setiap warna itu tahapan konsolidasi yang harus kamu rapikan supaya jalurnya aman.', 'happy');
+  }
+
+  function resetBonusOpenWorld() {
+    clearBonusZumaTimers();
+    const bonus = createBonusOpenWorldState();
+    bonus.started = true;
+    GAME_STATE.bonusOpenWorld = bonus;
+    GAME_STATE.progress = 0;
+    renderGame();
+    showPanji('Oke, kita ulang bonus Zuma dari awal. Fokus ke rantainya, jangan panik, dan bangun combo pelan-pelan.', 'thinking');
+  }
+
+  function swapBonusOpenWorldAmmo() {
+    const bonus = getBonusOpenWorldState();
+    const temp = bonus.currentColor;
+    bonus.currentColor = bonus.nextColor;
+    bonus.nextColor = temp;
+    updateBonusOpenWorldHUD();
+    drawBonusOpenWorldBoard();
+  }
+
+  function shootBonusOpenWorldProjectile() {
+    const bonus = getBonusOpenWorldState();
+    if (!bonus.running || !bonus.canvas) return;
+    const center = getBonusOpenWorldCenter(bonus);
+    const speed = 520;
+    bonus.projectiles.push({
+      x: center.x + Math.cos(bonus.shooterAngle) * 22,
+      y: center.y + Math.sin(bonus.shooterAngle) * 22,
+      vx: Math.cos(bonus.shooterAngle) * speed,
+      vy: Math.sin(bonus.shooterAngle) * speed,
+      color: bonus.currentColor,
+      life: 0
+    });
+    bonus.shots += 1;
+    const firedLabel = getBonusOpenWorldColorLabel(bonus.currentColor);
+    bonus.currentColor = bonus.nextColor;
+    bonus.nextColor = pickBonusOpenWorldColor(bonus);
+    updateBonusOpenWorldHUD();
+    playBeep(780, .06, 'triangle', .018);
+    if (bonus.shots === 1) {
+      showPanji(`Sip, tembakan pertama keluar. Bola yang kamu lepas barusan mewakili ${firedLabel}. Cari 2 warna sama lainnya biar pecah.`, 'talking');
+    }
+  }
+
+  function renderBonusOpenWorldChallenge() {
+    const bonus = getBonusOpenWorldState();
+    const legend = bonus.colorKeys.map(key => {
+      const item = bonus.colorMap[key];
+      return `
+        <div class="ps-zuma-legend-item">
+          <span class="ps-zuma-ball" style="--ball:${item.color}">${escapeHtml(item.short)}</span>
+          <div>
+            <b>${escapeHtml(item.label)}</b>
+            <small>${
+              key === 'data' ? 'Rapikan kebutuhan OPD' :
+              key === 'pasar' ? 'Cek harga, stok, dan kesiapan pasar' :
+              key === 'kak' ? 'Kunci spesifikasi dan HPS' :
+              key === 'kontrak' ? 'Amankan kontrak payung' :
+              'Dorong katalog & e-Purchasing'
+            }</small>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (!bonus.started) {
+      return `
+        <div class="ps-zuma-shell">
+          <div class="ps-zuma-brief-card">
+            <div class="ps-zuma-kicker">Bonus Level 4 • Zuma Mode</div>
+            <h3>PANJI: Jalur Konsolidasi Kota Bogor</h3>
+            <p>Bonus ini dibuat seperti <b>Zuma</b>. Rantai bola melambangkan masalah yang harus dibereskan dari <b>identifikasi kebutuhan</b>, lanjut <b>pendalaman pasar</b>, <b>KAK/HPS</b>, <b>kontrak payung</b>, sampai <b>katalog elektronik dan e-Purchasing</b>.</p>
+            <div class="ps-zuma-brief-grid">
+              <div class="ps-zuma-brief-box">
+                <b>Cara main</b>
+                <ul>
+                  <li>Klik / tap arena untuk menembak.</li>
+                  <li>Cocokkan minimal <b>3 warna yang sama</b>.</li>
+                  <li>Tombol <b>X</b> atau klik <b>Tukar Bola</b> untuk swap bola aktif.</li>
+                  <li>Jangan sampai rantai menembus <b>portal e-Purchasing</b>.</li>
+                </ul>
+              </div>
+              <div class="ps-zuma-brief-box">
+                <b>Alur cerita</b>
+                <p>Kamu sedang menjaga perjalanan Paket Konsolidasi Kota Bogor. Semakin banyak rantai yang pecah, semakin rapi data, market sounding, KAK/HPS, kontrak payung, sampai akhirnya siap masuk katalog dan dipakai OPD lewat e-Purchasing.</p>
+              </div>
+            </div>
+            <div class="ps-zuma-legend-grid">${legend}</div>
+            <div class="ps-zuma-actions">
+              <button type="button" class="ps-btn ps-btn-primary" id="btnStartBonusZuma">Mulai Bonus Zuma</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="ps-zuma-shell">
+        <div class="ps-zuma-layout ps-zuma-layout-big">
+          <div class="ps-zuma-board-card">
+            <div class="ps-zuma-board-head">
+              <div>
+                <div class="ps-zuma-kicker">Bonus Level 4 • Zuma Konsolidasi</div>
+                <h3>Pertahankan jalur sampai portal e-Purchasing aman</h3>
+              </div>
+              <div class="ps-zuma-mini-hud">
+                <span><label>Poin</label><b id="psBonusZumaScore">0</b></span>
+                <span><label>Combo</label><b id="psBonusZumaCombo">0</b></span>
+                <span><label>Progress</label><b id="psBonusZumaRemoved">0/0</b></span>
+                <span><label>Akurasi</label><b id="psBonusZumaAcc">100%</b></span>
+              </div>
+            </div>
+            <div class="ps-zuma-canvas-wrap ps-zuma-canvas-wrap-big">
+              <canvas id="psBonusZumaCanvas"></canvas>
+              <div class="ps-zuma-canvas-tip">Klik / tap area arena untuk menembak • X untuk tukar bola • R untuk ulang</div>
+            </div>
+            <div class="ps-zuma-bottom-bar">
+              <div class="ps-zuma-ammo-card">
+                <span class="ps-zuma-chip" id="psBonusZumaCurrentChip"></span>
+                <div>
+                  <small>Bola aktif</small>
+                  <b id="psBonusZumaCurrent">-</b>
+                </div>
+              </div>
+              <div class="ps-zuma-ammo-card next">
+                <span class="ps-zuma-chip" id="psBonusZumaNextChip"></span>
+                <div>
+                  <small>Bola berikutnya</small>
+                  <b id="psBonusZumaNext">-</b>
+                </div>
+              </div>
+              <div class="ps-zuma-bottom-actions">
+                <button type="button" class="ps-btn ps-btn-soft" id="btnSwapBonusZuma">Tukar Bola (X)</button>
+                <button type="button" class="ps-btn ps-btn-soft" id="btnRestartBonusZuma">Ulang Bonus</button>
+              </div>
+            </div>
+          </div>
+
+          <aside class="ps-zuma-side-card">
+            <div class="ps-zuma-side-box story">
+              <div class="ps-zuma-kicker">Cerita PANJI</div>
+              <p id="psBonusZumaStory">${escapeHtml(bonus.storyNote)}</p>
+            </div>
+            <div class="ps-zuma-side-box">
+              <div class="ps-zuma-kicker">Makna warna</div>
+              <div class="ps-zuma-legend-grid compact">${legend}</div>
+            </div>
+            <div class="ps-zuma-side-box">
+              <div class="ps-zuma-kicker">Target</div>
+              <ul class="ps-zuma-checklist">
+                <li>Pecahkan rantai minimal <b>${bonus.targetRemoved}</b> bola.</li>
+                <li>Bangun combo supaya poin naik lebih cepat.</li>
+                <li>Jangan sampai rantai menyentuh portal.</li>
+                <li>Kalau panik, tukar bola aktif dulu.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      ${bonus.finished && !bonus.failed ? `
+        <div class="ps-explanation"><strong>Bonus Level 4 selesai:</strong><br>Jalur konsolidasi aman. Kamu berhasil menahan masalah dari data kebutuhan sampai katalog/e-Purchasing.</div>
+      ` : ''}
+    `;
+  }
+
+  function finishBonusOpenWorld(success) {
+    const bonus = getBonusOpenWorldState();
+    if (bonus.finished && !bonus.failed) return;
+
+    bonus.running = false;
+    bonus.finished = Boolean(success);
+    bonus.failed = !success;
+    GAME_STATE.progress = success ? 100 : GAME_STATE.progress;
+    clearBonusZumaTimers();
+
+    if (success) {
+      const reward = 20 + Math.min(90, Math.round(bonus.score * .35));
+      GAME_STATE.score += reward;
+      addLog('ok', 'Bonus level 4 selesai', `Kamu menjaga jalur konsolidasi dengan baik. Bonus akhir +${reward}. Combo terbaik: ${bonus.bestCombo}.`);
+      playSfx('ok'); setTimeout(() => playTone(1040, 0.12, 'triangle', 0.03), 80); showToast('Jalur konsolidasi aman!', 'ok');
+      showPanji('Mantap. Jalur konsolidasi berhasil kamu jaga sampai portal e-Purchasing aman. Ini baru namanya belajar PBJ sambil main.', 'happy');
+      renderGame();
+      setTimeout(() => showBonusOpenWorldCompletePopup(bonus, true), 80);
+      return;
+    }
+
+    GAME_STATE.risk += 10;
+    GAME_STATE.wrong += 1;
+    addLog('bad', 'Portal jebol', 'Rantai masalah berhasil menembus portal. Bonus bisa diulang supaya alur konsolidasi lebih aman.');
+    playSfx('bad'); setTimeout(() => playTone(110, 0.18, 'sawtooth', 0.025), 90); showToast('Portal jebol. Coba lagi.', 'bad');
+    showPanji('Aduh, rantainya sampai ke portal. Artinya jalur konsolidasi belum aman. Santai, bonus ini bisa kamu ulangi.', 'sad');
+    renderGame();
+    setTimeout(() => showBonusOpenWorldCompletePopup(bonus, false), 80);
+  }
+
+  function answerBonusOpenWorld() {
+    return;
+  }
+
+  function showBonusOpenWorldCompletePopup(bonus, success = true) {
+    const existing = document.getElementById('psBonus4FinishPopup');
+    if (existing) existing.remove();
+
+    const accuracy = bonus.shots ? Math.round((bonus.hits / bonus.shots) * 100) : 100;
+    const overlay = document.createElement('div');
+    overlay.id = 'psBonus4FinishPopup';
+    overlay.className = 'ps-bonus4-finish-popup';
+    overlay.innerHTML = success ? `
+      <div class="ps-bonus4-finish-card zuma">
+        <div class="ps-bonus4-finish-orb">${psIcon('trophy')}</div>
+        <h2>Jalur Konsolidasi Aman!</h2>
+        <p><b>Poin internal bonus:</b> ${Number(bonus.score || 0)} · <b>Removed:</b> ${bonus.removed}/${bonus.targetRemoved} · <b>Akurasi:</b> ${accuracy}%</p>
+        <div class="ps-bonus4-panji-note"><b>PANJI:</b> Data kebutuhan sampai e-Purchasing berhasil kamu jaga dengan ritme yang rapi. Itu artinya alur konsolidasi sudah mulai kebayang di kepala kamu.</div>
+        <small>Otomatis lanjut ke level berikutnya...</small>
+        <button type="button" class="ps-btn ps-btn-primary" id="btnBonus4GoNext">Lanjut sekarang</button>
+      </div>
+    ` : `
+      <div class="ps-bonus4-finish-card zuma failed">
+        <div class="ps-bonus4-finish-orb">${psIcon('play')}</div>
+        <h2>Portal Kebobolan</h2>
+        <p><b>Removed:</b> ${bonus.removed}/${bonus.targetRemoved} · <b>Akurasi:</b> ${accuracy}%</p>
+        <div class="ps-bonus4-panji-note"><b>PANJI:</b> Belum apa-apa. Di PBJ juga begitu, kalau ritmenya salah ya diperbaiki. Ulangi bonus atau lewati kalau mau lanjut.</div>
+        <div class="ps-zuma-popup-actions">
+          <button type="button" class="ps-btn ps-btn-primary" id="btnBonus4Retry">Ulangi Bonus</button>
+          <button type="button" class="ps-btn ps-btn-soft" id="btnBonus4Skip">Lewati Bonus</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const go = () => {
+      overlay.remove();
+      GAME_STATE.progress = 100;
+      const current = getCurrentChallenge && getCurrentChallenge();
+      if (current && current.type === 'bonusOpenWorld') {
+        nextChallenge();
+      } else {
+        renderGame();
+      }
+    };
+
+    const retry = () => {
+      overlay.remove();
+      resetBonusOpenWorld();
+    };
+
+    const skip = () => {
+      overlay.remove();
+      GAME_STATE.progress = 100;
+      nextChallenge();
+    };
+
+    document.getElementById('btnBonus4GoNext')?.addEventListener('click', go);
+    document.getElementById('btnBonus4Retry')?.addEventListener('click', retry);
+    document.getElementById('btnBonus4Skip')?.addEventListener('click', skip);
+    if (success) setTimeout(go, 4200);
+  }
+
+  function createBonusSnakeState() {
+
+    return {
+      running: false,
+      finished: false,
+      briefed: false,
+      score: 0,
+      target: 12,
+      hearts: 1,
+      grid: 18,
+      snake: [{x:8,y:9},{x:7,y:9},{x:6,y:9}],
+      dir: {x:1,y:0},
+      nextDir: {x:1,y:0},
+      star: {x:13,y:9},
+      obstacles: [{x:3,y:3},{x:14,y:4},{x:6,y:14},{x:15,y:14},{x:10,y:6}],
+      ticks: 0,
+      activeTip: 'Kisi-kisi: di PBJ jangan cuma kejar cepat. Cek dulu RUP, kebutuhan, harga, katalog, dan bukti proses.'
+    };
+  }
+
+  function getBonusSnakeState() {
+    if (!GAME_STATE.bonusSnake) {
+      GAME_STATE.bonusSnake = createBonusSnakeState();
+    }
+    return GAME_STATE.bonusSnake;
+  }
+
+  function renderBonusSnakeChallenge() {
+    const snake = getBonusSnakeState();
+    return `
+      <div class="ps-snake-wrap ps-snake-wrap-big">
+        <div class="ps-snake-info">
+          <div class="ps-bonus3d-kicker">Bonus Level 8 • Mood Booster</div>
+          <h3>PANJI Star Snake</h3>
+          <p>Ambil bintang sebanyak mungkin. Tembus tembok boleh: kanan tembus ke kiri, bawah tembus ke atas. Yang bahaya itu badan sendiri dan jebakan revisi. Pakai tap HP / klik mouse di area game buat belokin ular. Keyboard WASD/arrow tetap bisa. Bonus ini boleh diulang, atau dilewati kalau mau lanjut level berikutnya.</p>
+          <div class="ps-snake-score-row">
+            <div><label>Bintang</label><b>${snake.score}/${snake.target}</b></div>
+            <div><label>Hati</label><b>${Math.max(0, snake.hearts || 0)}</b></div>
+            <div><label>Bonus</label><b>${Math.min(120, snake.score * 10)}</b></div>
+          </div>
+          <div class="ps-bonus3d-panji">
+            <b>PANJI:</b> Ini level santai. Fokus ambil Bintang Semangat, jangan rakus, dan hindari Revisi. Kamu cuma punya 1 hati. Sekali nabrak, bonus selesai dan langsung lanjut ke level berikutnya.
+          </div>
+          <div class="ps-snake-pbj-pop">
+            <b>Popup kisi-kisi PBJ:</b> ${escapeHtml(snake.activeTip || 'Jangan asal ambil keputusan. Cek data, harga, katalog, dan bukti proses.')}
+          </div>
+          ${!snake.briefed && !snake.running && !snake.finished ? renderCenterAnnouncement('PANJI: Bonus ini santai, tapi tetap pakai otak. Ambil bintang pelan-pelan, jangan rakus, dan hindari revisi. Sambil main, ingat juga kisi-kisi PBJ: cek data, harga, katalog, dan bukti proses.', 'btnSnakeBriefStart', 'Paham, mulai Snake', 'snake') : ''}
+          <div class="ps-buttons">
+            <button type="button" class="ps-btn ps-btn-primary" id="btnStartSnake" ${snake.running ? 'disabled' : ''}>${snake.finished ? 'Main Lagi Snake' : 'Mulai Snake'}</button>
+            <button type="button" class="ps-btn ps-btn-soft" id="btnResetSnake">Ulangi Level Bonus</button>
+            <button type="button" class="ps-btn ps-btn-soft" id="btnSkipSnake">Lewati Level Bonus</button>
+          </div>
+        </div>
+        <div class="ps-snake-stage ps-snake-stage-big">
+          <canvas id="psSnakeCanvas" width="960" height="960" aria-label="PANJI Star Snake"></canvas>
+          <div class="ps-snake-arena-tip" style="--tip-x:${22 + ((snake.score * 17) % 58)}%;--tip-y:${16 + ((snake.score * 23) % 54)}%">
+            <b>PANJI nyeletuk:</b> ${escapeHtml(snake.activeTip || 'Jangan asal klik. Tetap baca kisi-kisi PBJ sambil main.')}
+          </div>
+          <div class="ps-snake-caption">Bintang = poin · Revisi = jebakan · Tap/Klik = belok · WASD/Arrow juga bisa</div>
+        </div>
+      </div>
+      ${snake.finished ? `
+        <div class="ps-explanation"><strong>Bonus Snake selesai:</strong><br>Kamu mendapat ${snake.score} bintang. Poin bonus masuk skor akhir. Klik <b>Main Lagi Snake</b> kalau mau memperbaiki skor, atau <b>Lanjut Soal Berikutnya</b>.</div>
+      ` : ''}
+    `;
+  }
+
+
+  function createBonusTreeState() {
+    return {
+      running: false,
+      finished: false,
+      briefed: false,
+      side: 'left',
+      score: 0,
+      hearts: 3,
+      timeLeft: 25,
+      obstacleQueue: [null, null, 'right', null, null, 'left', null, null, 'right', null],
+      activeTip: 'Klik kiri atau kanan. Kalau akar muncul di sisi tempat kamu berdiri, nyawa berkurang.',
+      timerId: null,
+      powerVisible: false,
+      powerSide: 'left',
+      powerUntil: 0,
+      powerReadyAt: 6
+    };
+  }
+
+  function getBonusTreeState() {
+    if (!GAME_STATE.bonusTree) {
+      clearBonusTreeTimers();
+      GAME_STATE.bonusTree = createBonusTreeState();
+    }
+    return GAME_STATE.bonusTree;
+  }
+
+  function clearBonusTreeTimers() {
+    const tree = GAME_STATE.bonusTree;
+    if (tree && tree.timerId) {
+      clearInterval(tree.timerId);
+      tree.timerId = null;
+    }
+  }
+
+  function isBonusTreePowerActive(tree = null) {
+    const state = tree || getBonusTreeState();
+    return !!(state && state.powerUntil && state.powerUntil > Date.now());
+  }
+
+  function renderBonusTreeChallenge() {
+    const tree = getBonusTreeState();
+    const powerActive = isBonusTreePowerActive(tree);
+    const powerSeconds = powerActive ? Math.max(1, Math.ceil((tree.powerUntil - Date.now()) / 1000)) : 0;
+    return `
+      <div class="ps-tree-wrap">
+        <div class="ps-tree-info">
+          <div class="ps-bonus3d-kicker">Bonus Level 10 • Reflex Arcade</div>
+          <h3>PANJI Tree Chop 2D</h3>
+          <p>Klik <b>Kiri</b> atau <b>Kanan</b> untuk menebang batang. Di keyboard pakai <b>A</b> untuk kiri dan <b>D</b> untuk kanan. Kalau di HP, cukup tap sisi kiri atau sisi kanan area game. Kalau orb <b>Power</b> muncul, ambil dengan tebang di sisi orb itu. Setelah aktif, PANJI jadi <b>ngebut</b> dan <b>kebal</b> beberapa detik.</p>
+          <div class="ps-snake-score-row ps-tree-score-row ps-tree-score-row-4">
+            <div><label>Skor</label><b>${tree.score}</b></div>
+            <div><label>Nyawa</label><b>${Math.max(0, tree.hearts || 0)}</b></div>
+            <div><label>Waktu</label><b>${tree.timeLeft}s</b></div>
+            <div><label>Power</label><b class="${powerActive ? 'ps-tree-power-on' : tree.powerVisible ? 'ps-tree-power-ready' : ''}">${powerActive ? 'ON ' + powerSeconds + 's' : tree.powerVisible ? 'SIAP' : 'OFF'}</b></div>
+          </div>
+          <div class="ps-bonus3d-panji ps-tree-power-tip ${powerActive ? 'active' : tree.powerVisible ? 'ready' : ''}">
+            <b>PANJI:</b> ${powerActive ? 'POWER aktif! Tebang jadi lebih ngebut, +2 skor tiap chop, dan kebal akar beberapa detik.' : tree.powerVisible ? 'Orb power muncul. Ambil dengan menebang di sisi orb biar PANJI ngebut dan invincible.' : 'Main aman dulu. Nanti orb power bisa muncul biar PANJI makin kencang.'}
+          </div>
+          ${!tree.briefed && !tree.running && !tree.finished ? renderCenterAnnouncement('PANJI: Bonus ini simpel tapi bikin refleks keasah. Tebang batang secepat mungkin, tapi jangan berdiri di sisi akar. Kalau akar muncul di kiri, cepat pindah ke kanan. Kalau di kanan, pindah ke kiri. Kalau orb power muncul, ambil biar kamu kebal dan makin ngebut.', 'btnTreeBriefStart', 'Paham, mulai bonus', 'tree') : ''}
+          <div class="ps-buttons">
+            <button type="button" class="ps-btn ps-btn-primary" id="btnTreeLeft" ${tree.finished ? 'disabled' : ''}>Tebang Kiri</button>
+            <button type="button" class="ps-btn ps-btn-primary" id="btnTreeRight" ${tree.finished ? 'disabled' : ''}>Tebang Kanan</button>
+            <button type="button" class="ps-btn ps-btn-soft" id="btnResetTree">Ulang Bonus</button>
+          </div>
+        </div>
+        <div class="ps-tree-stage">
+          <div class="ps-tree-scene ${tree.running ? 'running' : ''} ${tree.hitFlash ? 'hit-flash' : ''} ${tree.comboFx ? 'combo-fx' : ''} ${powerActive ? 'power-active' : ''}">
+            <div class="ps-tree-bg"></div>
+            <div class="ps-tree-timer-bar"><span style="width:${Math.max(0, (tree.timeLeft / 25) * 100)}%"></span></div>
+            ${powerActive ? `<div class="ps-tree-power-badge">POWER ${powerSeconds}s</div>` : ''}
+            <div class="ps-tree-trunk ${tree.chopFlash ? 'swing-' + tree.chopFlash : ''}">
+              ${tree.obstacleQueue.map((side, idx) => `
+                <div class="ps-tree-log-row" style="--row:${idx}">
+                  <span class="ps-tree-log"></span>
+                  ${side === 'left' ? '<span class="ps-tree-root left"></span>' : ''}
+                  ${side === 'right' ? '<span class="ps-tree-root right"></span>' : ''}
+                </div>
+              `).join('')}
+            </div>
+            ${tree.powerVisible && !powerActive ? `<div class="ps-tree-power-orb ${tree.powerSide}"><span>${psIcon('star')}</span><small>POWER</small></div>` : ''}
+            <button type="button" class="ps-tree-touch-zone left" id="btnTreeTapLeft" aria-label="Tap kiri"></button>
+            <button type="button" class="ps-tree-touch-zone right" id="btnTreeTapRight" aria-label="Tap kanan"></button>
+            <div class="ps-tree-player ${tree.side} ${tree.chopFlash ? 'chop-' + tree.chopFlash : ''}"><span>${powerActive ? 'PANJI POWER' : 'PANJI'}</span></div><div class="ps-tree-score-pop ${tree.comboFx ? 'show' : ''}">${powerActive ? '+2' : '+1'}</div>
+            <div class="ps-tree-ground"></div>
+          </div>
+          <div class="ps-snake-caption">A / ← = kiri · D / → = kanan · HP: tap layar kiri / kanan · Ambil orb Power untuk boost · Waktu habis = bonus selesai</div>
+        </div>
+      </div>
+      ${tree.finished ? `<div class="ps-explanation"><strong>Bonus Tebang Pohon selesai:</strong><br>Skor kamu ${tree.score}. Bonus masuk nilai akhir dan game lanjut otomatis.</div>` : ''}
+    `;
+  }
+
+  function updateBonusTreeTip(textMsg) {
+    const tree = getBonusTreeState();
+    tree.activeTip = textMsg;
+  }
+
+  function finishBonusTree(message) {
+    const tree = getBonusTreeState();
+    if (tree.finished) return;
+    clearBonusTreeTimers();
+    tree.running = false;
+    tree.finished = true;
+    GAME_STATE.progress = 100;
+    const bonus = Math.min(140, tree.score * 8 + Math.max(0, tree.hearts) * 10);
+    playSfx(tree.hearts > 0 ? 'ok' : 'bad');
+    GAME_STATE.score += bonus;
+    addLog(tree.hearts > 0 ? 'ok' : 'bad', 'Bonus Tebang Pohon selesai', message + ' Bonus +' + bonus + '.');
+    showPanji(message, tree.hearts > 0 ? 'happy' : 'sad');
+    renderGame();
+    setTimeout(() => {
+      const current = getCurrentChallenge();
+      if (current && current.type === 'bonusTree' && GAME_STATE.progress === 100) nextChallenge();
+    }, 2200);
+  }
+
+  function shiftBonusTreeQueue() {
+    const tree = getBonusTreeState();
+    tree.obstacleQueue.shift();
+    const roll = Math.random();
+    tree.obstacleQueue.push(roll < 0.18 ? 'left' : roll < 0.36 ? 'right' : null);
+  }
+
+  function chopBonusTree(side) {
+    const tree = getBonusTreeState();
+    if (!tree.running || tree.finished) return;
+    tree.side = side;
+    tree.chopFlash = side;
+    tree.lastHitAt = Date.now();
+    const now = Date.now();
+    const wasPowerActive = isBonusTreePowerActive(tree);
+    if (tree.powerVisible && side === tree.powerSide) {
+      tree.powerVisible = false;
+      tree.powerUntil = now + 5000;
+      playTone(860, 0.08, 'triangle', 0.05);
+      playTone(1120, 0.10, 'triangle', 0.04);
+      showToast('POWER aktif! Tebang ngebut & kebal 5 detik', 'ok');
+      updateBonusTreeTip('POWER masuk! Selama beberapa detik kamu ngebut dan invincible.');
+    }
+    const powerActive = isBonusTreePowerActive(tree);
+    const danger = tree.obstacleQueue[0];
+    playTone(side === 'left' ? (powerActive ? 360 : 260) : (powerActive ? 420 : 320), 0.05, powerActive ? 'triangle' : 'square', powerActive ? 0.05 : 0.03);
+    setTimeout(() => { const t = getBonusTreeState(); t.chopFlash = ''; renderGame(); }, powerActive ? 80 : 120);
+    if (danger === side && !powerActive) {
+      tree.hearts -= 1;
+      playSfx('bad');
+      tree.hitFlash = true; setTimeout(() => { const t = getBonusTreeState(); t.hitFlash = false; renderGame(); }, 180); updateBonusTreeTip('Aduh, kena akar. Lihat sisi terdekat sebelum nebang lagi.');
+      showToast('Kena akar! Nyawa -1', 'bad');
+      if (tree.hearts <= 0) {
+        finishBonusTree('Nyawa habis karena terlalu sering kena akar.');
+        return;
+      }
+    } else {
+      const gain = powerActive ? 2 : 1;
+      tree.score += gain;
+      GAME_STATE.correct += 1;
+      tree.comboFx = true; setTimeout(() => { const t = getBonusTreeState(); t.comboFx = false; renderGame(); }, powerActive ? 90 : 120);
+      if (powerActive && !wasPowerActive) {
+        showPanji('Wih, power masuk. Sekarang kamu ngebut dan aman dari akar sebentar!', 'happy');
+      }
+      if (powerActive) {
+        updateBonusTreeTip('Power aktif! Spam aman secukupnya, kamu lagi ngebut dan kebal akar.');
+      } else {
+        updateBonusTreeTip('Mantap. Ritme bagus, lanjut jaga sisi aman.');
+      }
+      if (!powerActive && !tree.powerVisible && tree.score >= tree.powerReadyAt && tree.score % 6 === 0) {
+        tree.powerVisible = true;
+        tree.powerSide = Math.random() < 0.5 ? 'left' : 'right';
+        playTone(620, 0.05, 'triangle', 0.03);
+        showToast('Orb power muncul! Ambil di sisi ' + (tree.powerSide === 'left' ? 'kiri' : 'kanan'), 'info');
+        updateBonusTreeTip('Orb power muncul di sisi ' + (tree.powerSide === 'left' ? 'kiri' : 'kanan') + '. Ambil biar PANJI ngebut dan invincible.');
+      }
+      if (tree.score % 5 === 0) {
+        playTone(720, 0.06, 'triangle', 0.04);
+        playTone(920, 0.08, 'triangle', 0.03);
+        showToast(powerActive ? 'POWER combo +2!' : 'Combo tebang +5!', 'ok');
+      }
+    }
+    shiftBonusTreeQueue();
+    renderGame();
+  }
+
+  function startBonusTree() {
+    const tree = getBonusTreeState();
+    clearBonusTreeTimers();
+    tree.briefed = true;
+    tree.running = true;
+    tree.finished = false;
+    showPanji('Gas. Tebang dari sisi aman. Jangan asal spam, lihat akar terdekat dulu.', 'happy');
+    renderGame();
+    tree.timerId = setInterval(() => {
+      tree.timeLeft = Math.max(0, tree.timeLeft - 1);
+      renderGame();
+      if (tree.timeLeft <= 0) {
+        finishBonusTree('Waktu habis. Kamu berhasil bertahan sampai timer selesai.');
+      }
+    }, 1000);
+  }
+
+  function resetBonusTree() {
+    const old = getBonusTreeState();
+    if (old.timerId) clearInterval(old.timerId);
+    clearBonusTreeTimers();
+    GAME_STATE.bonusTree = createBonusTreeState();
+    GAME_STATE.progress = 0;
+    renderGame();
+  }
+
+  function renderQuizChallenge(challenge) {
+    const options = Array.isArray(challenge.runtimeOptions) && challenge.runtimeOptions.length
+      ? challenge.runtimeOptions
+      : (challenge.options || []).map((text, originalIndex) => ({ text, originalIndex }));
+    const correctRuntimeIndex = Number.isInteger(challenge.runtimeAnswer) ? challenge.runtimeAnswer : Number(challenge.answer || 0);
+
+    return `
+      ${renderQuestionPanel(challenge, challenge.question)}
+
+      <div class="ps-quiz-options">
+        ${options.map((option, index) => {
+          let cls = '';
+
+          if (GAME_STATE.answered) {
+            if (index === correctRuntimeIndex) cls = 'correct';
+            else if (index === GAME_STATE.selectedAnswer) cls = 'wrong';
+          }
+
+          return `
+            <button
+              type="button"
+              class="ps-quiz-option ${cls}"
+              data-answer-index="${index}"
+              ${GAME_STATE.answered ? 'disabled' : ''}
+            >
+              ${String.fromCharCode(65 + index)}. ${escapeHtml(option.text)}
+            </button>
+          `;
+        }).join('')}
+      </div>
+
+      ${
+        GAME_STATE.answered
+          ? `
+            <div class="ps-explanation">
+              <strong>Pembahasan:</strong><br>
+              ${escapeHtml(challenge.explanation)}
+            </div>
+          `
+          : ''
+      }
+    `;
+  }
+
+  function renderLogs() {
+    if (!GAME_STATE.logs.length) return '';
+
+    return `
+      <div class="ps-log-box">
+        <strong>Log Pembelajaran</strong>
+        <div class="ps-log-list">
+          ${GAME_STATE.logs.map(item => `
+            <div class="ps-log-item">
+              <div class="ps-log-icon ${item.type}">
+                ${item.type === 'ok' ? psIcon('check') : item.type === 'bad' ? psIcon('alert') : psIcon('help')}
+              </div>
+              <div>
+                <div class="ps-log-title">${escapeHtml(item.title)}</div>
+                <div class="ps-log-sub">${escapeHtml(item.text)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderResultScreen() {
+    const maxScore = calculateMaxScore();
+    const percent = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((GAME_STATE.score / maxScore) * 100))) : 0;
+    const grade = getResultGrade(percent);
+    const totalQuestions = CHALLENGES.length;
+    const riskLabel = GAME_STATE.risk <= 20
+      ? 'Rendah'
+      : GAME_STATE.risk <= 60
+        ? 'Sedang'
+        : 'Tinggi';
+    const stopTitle = GAME_STATE.stoppedReason === 'rushFailed'
+      ? 'Game berhenti karena Tender Rush gagal melewati batas level.'
+      : GAME_STATE.stoppedReason === 'time'
+        ? 'Game berhenti karena waktu level habis.'
+        : '';
+
+    return `
+      <section class="ps-card">
+        <div class="ps-result-hero">
+          <h2>${grade.icon} ${grade.label}</h2>
+          <p>${escapeHtml(grade.text)}</p>
+        </div>
+
+        <div class="ps-result-grid">
+          <div class="ps-result-card">
+            <label>Nilai Akhir</label>
+            <strong>${percent}%</strong>
+          </div>
+
+          <div class="ps-result-card">
+            <label>Skor</label>
+            <strong>${GAME_STATE.score}/${maxScore}</strong>
+          </div>
+
+          <div class="ps-result-card">
+            <label>Risiko</label>
+            <strong>${GAME_STATE.risk}</strong>
+          </div>
+
+          <div class="ps-result-card">
+            <label>Salah</label>
+            <strong>${GAME_STATE.wrong}</strong>
+          </div>
+
+          <div class="ps-result-card">
+            <label>Level Dicapai</label>
+            <strong>${getCurrentResultSummary().levelDicapai}/${totalQuestions}</strong>
+          </div>
+        </div>
+
+        ${stopTitle ? `
+          <div class="ps-result-note ps-result-stop-note">
+            <strong>${escapeHtml(stopTitle)}</strong><br>
+            Kamu mencapai <strong>Level ${GAME_STATE.stoppedLevel || (GAME_STATE.index + 1)}</strong> dengan skor <strong>${GAME_STATE.score}</strong> dan risiko <strong>${GAME_STATE.risk}</strong>.
+          </div>
+        ` : ''}
+
+        <div class="ps-result-note">
+          <strong>Ringkasan:</strong><br>
+          Kamu sudah menyelesaikan ${totalQuestions} soal/challenge. Level risiko kamu saat ini:
+          <strong>${riskLabel}</strong>. Ingat, terlalu sering memakai hint dari PANJI memang membantu,
+          tetapi mengurangi skor.
+        </div>
+
+        <div class="ps-result-note">
+          <strong>Analisa PANJI:</strong><br>
+          ${escapeHtml(getFinalPanjiAnalysisText(getCurrentResultSummary()))}
+        </div>
+
+        <div class="ps-result-note">
+          <strong>Catatan pembelajaran:</strong><br>
+          Dalam praktik PBJ, keputusan tidak cukup hanya cepat. Harus ada alur yang tertib, bukti yang jelas,
+          pemilihan metode yang sesuai, serta dokumentasi saat terjadi perubahan kondisi seperti katalog tidak tersedia
+          atau kontrak perlu diadendum.
+        </div>
+<div class="ps-buttons">
+          <button type="button" class="ps-btn ps-btn-primary" id="btnPlayAgain">
+            Main Lagi dari Soal 1
+          </button>
+          <button type="button" class="ps-btn ps-btn-soft" id="btnOpenLeaderboard">
+            Lihat Leaderboard
+          </button>
+        </div>
+      </section>
+    `;
+  }
+
+  function bindResultEvents() {
+    const btnPlayAgain = root.querySelector('#btnPlayAgain');
+    const btnOpenLeaderboard = root.querySelector('#btnOpenLeaderboard');
+    const btnSaveFeedback = root.querySelector('#btnSaveFeedback');
+
+    if (btnPlayAgain) {
+      btnPlayAgain.addEventListener('click', () => {
+        clearAutoNextTimer();
+        startGame();
+      });
+    }
+
+    if (btnOpenLeaderboard) {
+      btnOpenLeaderboard.addEventListener('click', () => {
+        openLeaderboardModal('leaderboard', true);
+      });
+    }
+
+    if (btnSaveFeedback) {
+      btnSaveFeedback.addEventListener('click', () => {
+        const box = root.querySelector('#psFinalFeedback');
+        PLAYER_STATE.feedback = String(box ? box.value || '' : '').trim();
+        savePlayerProfile(PLAYER_STATE.nama, PLAYER_STATE.instansi);
+        showToast('Masukan disimpan. Terima kasih!', 'ok');
+        showPanji('Makasih masukannya. Aku catat buat pengembangan game PBJ berikutnya.', 'happy');
+      });
+    }
+  }
+
+
+  function maybeStartSnakeFromAnyInput(event) {
+    const challenge = getCurrentChallenge && getCurrentChallenge();
+    if (!challenge || challenge.type !== 'bonusSnake') return;
+    const snake = getBonusSnakeState();
+    if (!snake || snake.running || snake.finished) return;
+    if (!snake.briefed) snake.briefed = true;
+    startBonusSnakeGame();
+    if (event) event.preventDefault && event.preventDefault();
+  }
+
+  function clearBonusSnakeTimers() {
+    if (bonusSnakeTimer) {
+      clearInterval(bonusSnakeTimer);
+      bonusSnakeTimer = null;
+    }
+    if (bonusSnakeKeyHandler) {
+      document.removeEventListener('keydown', bonusSnakeKeyHandler);
+      bonusSnakeKeyHandler = null;
+    }
+  }
+
+  function setSnakeDirection(dx, dy) {
+    const snake = getBonusSnakeState();
+    if (!snake || !snake.running || snake.finished) return;
+    if (snake.dir.x === -dx && snake.dir.y === -dy) return;
+    snake.nextDir = {x: dx, y: dy};
+  }
+
+  function steerSnakeFromPointer(event) {
+    const canvas = root && root.querySelector('#psSnakeCanvas');
+    const snake = getBonusSnakeState();
+    if (!canvas || !snake || snake.finished) return;
+
+    if (!snake.running) {
+      snake.briefed = true;
+      startBonusSnakeGame();
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const point = event.touches && event.touches[0] ? event.touches[0] : event;
+    const head = snake.snake[0];
+    const cellW = rect.width / snake.grid;
+    const cellH = rect.height / snake.grid;
+    const headX = rect.left + ((head.x + 0.5) * cellW);
+    const headY = rect.top + ((head.y + 0.5) * cellH);
+    const dx = point.clientX - headX;
+    const dy = point.clientY - headY;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setSnakeDirection(dx > 0 ? 1 : -1, 0);
+    } else {
+      setSnakeDirection(0, dy > 0 ? 1 : -1);
+    }
+
+    if (event) event.preventDefault && event.preventDefault();
+  }
+
+  function drawCanvasHeart(ctx, x, y, size, color = '#ffffff') {
+    ctx.save(); ctx.fillStyle = color; ctx.beginPath();
+    ctx.moveTo(x, y + size * .3); ctx.bezierCurveTo(x, y, x - size * .5, y, x - size * .5, y + size * .35);
+    ctx.bezierCurveTo(x - size * .5, y + size * .7, x, y + size, x, y + size);
+    ctx.bezierCurveTo(x, y + size, x + size * .5, y + size * .7, x + size * .5, y + size * .35);
+    ctx.bezierCurveTo(x + size * .5, y, x, y, x, y + size * .3); ctx.fill(); ctx.restore();
+  }
+  function drawCanvasStar(ctx, cx, cy, outer, color = '#facc15') {
+    ctx.save(); ctx.fillStyle = color; ctx.beginPath();
+    for (let i=0;i<10;i+=1){const a=-Math.PI/2+i*Math.PI/5;const r=i%2===0?outer:outer*.45;const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  function drawCanvasDocument(ctx, x, y, w, h, color = '#ffffff') {
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = Math.max(2, w * .08); ctx.lineJoin='round';
+    ctx.strokeRect(x,y,w,h); ctx.beginPath(); ctx.moveTo(x+w*.2,y+h*.38); ctx.lineTo(x+w*.8,y+h*.38); ctx.moveTo(x+w*.2,y+h*.62); ctx.lineTo(x+w*.7,y+h*.62); ctx.stroke(); ctx.restore();
+  }
+
+  function drawBonusSnake() {
+    const canvas = root && root.querySelector('#psSnakeCanvas');
+    if (!canvas) return;
+    const snake = getBonusSnakeState();
+    const c = canvas.getContext('2d');
+
+    const cssW = Math.max(320, Math.floor(canvas.clientWidth || 960));
+    const cssH = Math.max(320, Math.floor(canvas.clientHeight || 720));
+    if (canvas.width !== cssW || canvas.height !== cssH) {
+      canvas.width = cssW;
+      canvas.height = cssH;
+    }
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const cellW = w / snake.grid;
+    const cellH = h / snake.grid;
+    const radius = Math.max(8, Math.min(cellW, cellH) * .22);
+
+    c.clearRect(0, 0, w, h);
+    const g = c.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, '#071a2e');
+    g.addColorStop(.55, '#123a72');
+    g.addColorStop(1, '#06111f');
+    c.fillStyle = g;
+    c.fillRect(0, 0, w, h);
+
+    for (let x = 0; x < snake.grid; x += 1) {
+      for (let y = 0; y < snake.grid; y += 1) {
+        c.fillStyle = (x + y) % 2 === 0 ? 'rgba(255,255,255,.045)' : 'rgba(255,255,255,.018)';
+        c.fillRect(x * cellW, y * cellH, cellW, cellH);
+      }
+    }
+
+    c.fillStyle = 'rgba(255,255,255,.96)';
+    c.font = 'bold 22px Arial';
+    c.fillText('Nyawa ' + Math.max(0, snake.hearts || 0), 18, 34);
+    c.font = 'bold 18px Arial';
+    c.fillText('Bintang ' + snake.score + '/' + snake.target, Math.max(18, w - 170), 34);
+
+    snake.obstacles.forEach(o => {
+      c.fillStyle = '#dc2626';
+      c.beginPath();
+      c.roundRect(o.x * cellW + 5, o.y * cellH + 5, cellW - 10, cellH - 10, radius);
+      c.fill();
+      drawCanvasDocument(c, o.x * cellW + cellW * .27, o.y * cellH + cellH * .22, cellW * .46, cellH * .56, '#ffffff');
+    });
+
+    drawCanvasStar(c, snake.star.x * cellW + cellW * .5, snake.star.y * cellH + cellH * .5, Math.min(cellW, cellH) * .3, '#facc15');
+
+    snake.snake.forEach((part, index) => {
+      c.fillStyle = index === 0 ? '#f59e0b' : '#22d3ee';
+      c.beginPath();
+      c.roundRect(part.x * cellW + 4, part.y * cellH + 4, cellW - 8, cellH - 8, radius);
+      c.fill();
+      if (index === 0) {
+        c.fillStyle = '#111827';
+        c.font = `bold ${Math.max(12, Math.min(cellW, cellH) * .33)}px Arial`;
+        c.fillText('P', part.x * cellW + cellW * .36, part.y * cellH + cellH * .62);
+      }
+    });
+  }
+
+  function randomSnakeCell(snake) {
+    let guard = 0;
+    while (guard < 300) {
+      const cell = { x: Math.floor(Math.random() * snake.grid), y: Math.floor(Math.random() * snake.grid) };
+      const occupied = snake.snake.some(p => p.x === cell.x && p.y === cell.y) || snake.obstacles.some(o => o.x === cell.x && o.y === cell.y);
+      if (!occupied) return cell;
+      guard += 1;
+    }
+    return {x:1,y:1};
+  }
+
+  function startBonusSnakeGame() {
+    let snake = getBonusSnakeState();
+    if (snake.running) return;
+    if (snake.finished) {
+      GAME_STATE.bonusSnake = createBonusSnakeState();
+      GAME_STATE.progress = 0;
+      snake = getBonusSnakeState();
+      renderGame();
+    }
+    clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+    snake.running = true;
+    playSfx('ok');
+    showPanji('Gas! Tap atau klik area game buat belokin ular. Ambil bintang, jangan tabrak revisi. Tembok bisa ditembus. Skor bonus tetap dihitung.', 'happy');
+
+    bonusSnakeKeyHandler = event => {
+      const key = event.key.toLowerCase();
+      if ((key === 'arrowup' || key === 'w') && snake.dir.y !== 1) snake.nextDir = {x:0,y:-1};
+      if ((key === 'arrowdown' || key === 's') && snake.dir.y !== -1) snake.nextDir = {x:0,y:1};
+      if ((key === 'arrowleft' || key === 'a') && snake.dir.x !== 1) snake.nextDir = {x:-1,y:0};
+      if ((key === 'arrowright' || key === 'd') && snake.dir.x !== -1) snake.nextDir = {x:1,y:0};
+    };
+    document.addEventListener('keydown', bonusSnakeKeyHandler);
+
+    bonusSnakeTimer = setInterval(tickBonusSnake, 230);
+    drawBonusSnake();
+  }
+
+  function finishBonusSnake(message, crashed = false) {
+    const snake = getBonusSnakeState();
+    if (snake.finished) return;
+    snake.running = false;
+    snake.finished = true;
+    clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+    const bonus = Math.min(120, snake.score * 10);
+    GAME_STATE.score += bonus;
+    if (crashed) {
+      GAME_STATE.risk += 6;
+      GAME_STATE.wrong += 1;
+      addLog('bad', 'Snake selesai karena tabrakan', message + ' Bonus tetap dihitung dari bintang yang sempat kamu ambil.');
+      showPanji(message + ' Hati habis, tapi santai. Ini bonus, jadi aku langsung bantu lanjut ke level berikutnya.', 'sad');
+      setTimeout(() => {
+        const current = getCurrentChallenge && getCurrentChallenge();
+        if (current && current.type === 'bonusSnake' && GAME_STATE.progress === 100) nextChallenge();
+      }, 2400);
+    } else {
+      GAME_STATE.correct += 1;
+      addLog('ok', 'Snake selesai', message);
+      showPanji(message + ' Aku lanjutkan ke soal berikutnya.', 'happy');
+      spawnConfetti();
+    }
+    GAME_STATE.progress = 100;
+    renderGame();
+    if (!crashed) {
+      setTimeout(() => {
+        const current = getCurrentChallenge && getCurrentChallenge();
+        if (current && current.type === 'bonusSnake' && GAME_STATE.progress === 100) nextChallenge();
+      }, 1800);
+    }
+  }
+
+  function getSnakePbjTip(score) {
+    const tips = [
+      'Kisi-kisi: Perencanaan dulu. Jangan langsung belanja kalau kebutuhan, volume, lokasi, dan jadwal belum kebaca.',
+      'Kisi-kisi: Di Katalog V6 alurnya cari produk, isi detail pesanan, negosiasi, buat pesanan/kontrak, pembayaran, pengiriman, BAST, baru review.',
+      'Kisi-kisi: e-Purchasing tetap perlu cek spek, stok, ongkir, total harga, PDN/TKDN, dan bukti proses. Jangan cuma lihat harga item.',
+      'Kisi-kisi: Negosiasi di katalog itu bukan asal minta murah. Yang dicari harga wajar, stok jelas, pengiriman masuk akal, dan bukti rapi.',
+      'Kisi-kisi: Mini kompetisi konstruksi dipakai supaya penyedia katalog punya kesempatan yang sama dan prosesnya lebih kompetitif.',
+      'Kisi-kisi: Sebelum tetapkan penyedia, cek lagi kebenaran produk, kualifikasi, dan kesesuaian penawaran. Jangan modal percaya.',
+      'Kisi-kisi: Swakelola juga ada tahapan. Ada perencanaan, persiapan, pelaksanaan, pengawasan, serah terima, dan pembayaran.',
+      'Kisi-kisi: Kontrak jangan cuma dibuat lalu ditinggal. Pantau waktu, mutu, volume, perubahan, dan bukti serah terimanya.',
+      'Kisi-kisi: BAST jangan asal tanda tangan. Pastikan barang atau pekerjaan sudah sesuai, lengkap, dan bisa dipakai.',
+      'Kisi-kisi: Percepatan PBJ boleh, tapi jangan nabrak prinsip efisien, efektif, transparan, dan akuntabel.',
+      'Kisi-kisi: Kalau rencana awal katalog gagal, dokumentasikan hasil cek dulu. Baru evaluasi metode, jangan langsung lompat.',
+      'Kisi-kisi: Risiko naik kalau kamu memilih karena biasa, karena cepat, atau karena murah doang. Balik lagi ke data.'
+    ];
+    return tips[Math.abs(Number(score || 0)) % tips.length];
+  }
+
+  function tickBonusSnake() {
+    const snake = getBonusSnakeState();
+    if (!snake.running || snake.finished) return;
+    snake.dir = snake.nextDir;
+    const head = snake.snake[0];
+    const next = {
+      x: (head.x + snake.dir.x + snake.grid) % snake.grid,
+      y: (head.y + snake.dir.y + snake.grid) % snake.grid
+    };
+
+    const hitSelf = snake.snake.some(p => p.x === next.x && p.y === next.y);
+    const hitObs = snake.obstacles.some(o => o.x === next.x && o.y === next.y);
+    if (hitSelf || hitObs) {
+      snake.hearts = Math.max(0, Number(snake.hearts || 0) - 1);
+      addLog('bad', 'Snake kena jebakan', 'PANJI nabrak revisi. Hati tersisa ' + snake.hearts + '.');
+      showToast('Aduh nabrak! Hati -1', 'bad');
+      playSfx('bad');
+      showPanji(snake.hearts > 0 ? 'Aduh, kena revisi. Masih ada hati. Kita lanjut pelan-pelan ya.' : 'Hati habis. Tidak apa-apa, level bonus selesai dan kita lanjut.', snake.hearts > 0 ? 'thinking' : 'sad');
+      if (snake.hearts <= 0) {
+        finishBonusSnake('Hati PANJI habis karena terlalu sering nabrak revisi.', true);
+        return;
+      }
+      snake.snake = [{x:8,y:9},{x:7,y:9},{x:6,y:9}];
+      snake.dir = {x:1,y:0};
+      snake.nextDir = {x:1,y:0};
+      drawBonusSnake();
+      return;
+    }
+
+    snake.snake.unshift(next);
+    if (next.x === snake.star.x && next.y === snake.star.y) {
+      snake.score += 1;
+      snake.star = randomSnakeCell(snake);
+      snake.activeTip = getSnakePbjTip(snake.score);
+      showToast('Bintang semangat +1', 'ok');
+      playSfx('ok');
+      showPanji(snake.activeTip.replace('Kisi-kisi:', 'Kisi-kisi PBJ:'), 'talking');
+      if (snake.score >= snake.target) {
+        finishBonusSnake('Mantap! Semua bintang semangat terkumpul. Mood naik, lanjut analisa PBJ.', false);
+        return;
+      }
+      renderGame();
+      setTimeout(drawBonusSnake, 0);
+      return;
+    }
+    snake.snake.pop();
+    snake.ticks += 1;
+    drawBonusSnake();
+  }
+
+  function skipBonusSnake() {
+    clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+    const snake = getBonusSnakeState();
+    if (!snake.finished) {
+      snake.running = false;
+      snake.finished = true;
+      GAME_STATE.progress = 100;
+      addLog('info', 'Bonus Snake dilewati', 'User memilih melewati bonus level 8. Skor bonus tidak ditambahkan, tapi game tetap bisa lanjut.');
+      showPanji('Oke, level bonus dilewati. Tidak apa-apa, kita lanjut ke level berikutnya.', 'thinking');
+      showToast('Bonus level dilewati', 'info');
+      renderGame();
+    }
+  }
+
+  function resetBonusSnake() {
+    clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+    GAME_STATE.bonusSnake = createBonusSnakeState();
+    GAME_STATE.progress = 0;
+    renderGame();
+    showPanji('Snake direset. Coba ambil bintang dengan lebih santai.', 'thinking');
+  }
+
+  function getFinalPanjiAnalysisText(result) {
+    const percent = result.maxScore > 0 ? Math.max(0, Math.min(100, Math.round((result.skor / result.maxScore) * 100))) : 0;
+    const risk = Number(result.risiko || 0);
+    const wrong = Number(result.salah || 0);
+    let riskReason = 'Risikonya rendah karena pilihanmu cukup tertib dan jarang kena jebakan.';
+
+    if (risk > 70) {
+      riskReason = 'Risikonya tinggi karena kamu beberapa kali kena jebakan: biasanya lompat tahap, terlalu ngejar cepat, atau kurang cek dasar sebelum ambil keputusan.';
+    } else if (risk > 45) {
+      riskReason = 'Risikonya sedang. Artinya alurmu sudah jalan, tapi masih ada keputusan yang perlu dicek ulang biar nggak jadi catatan.';
+    } else if (wrong > 0) {
+      riskReason = 'Risikonya masih aman, tapi ada beberapa salah pilih. Pelan-pelan baca kasusnya, jangan cuma lihat kata kunci.';
+    }
+
+    if (percent >= 85 && risk <= 30) return 'PANJI bilang: analisamu sudah tajam. Kamu cukup rapi baca kasus, milih metode, dan menjaga tahapan PBJ. ' + riskReason;
+    if (percent >= 70) return 'PANJI bilang: hasilmu sudah bagus. Kamu sudah paham arah besarnya, tinggal kurangi keputusan yang keburu-buru. ' + riskReason;
+    if (percent >= 55) return 'PANJI bilang: kamu sudah mulai nangkep, tapi masih perlu latihan. Fokus lagi ke RUP, KAK/HPS, katalog, kontrak, BAST, dan jangan gampang ketipu kartu jebakan. ' + riskReason;
+    return 'PANJI bilang: belum apa-apa, ini masih latihan. Jangan kejar cepat dulu. Pahami kenapa tahapan itu ada, baru ambil keputusan. ' + riskReason;
+  }
+
+
+  function startTenderRush() {
+    const challenge = getCurrentChallenge();
+    if (!challenge || challenge.type !== 'tenderRush') return;
+
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+    clearLevelTimer();
+    clearTenderRushTimers();
+
+    GAME_STATE.tenderRush = {
+      started: true,
+      currentIndex: 0,
+      timeLeft: Number(challenge.timeLimit || 8),
+      locked: false,
+      lastResult: null,
+      correctCount: 0,
+      wrongCount: 0,
+      packages: prepareTenderRushRandomPackages(challenge)
+    };
+
+    enableTenderRushKeyboard();
+    beginTenderRushRound();
+    showPanji(`Mulai! Paket pertama turun. Ingat: 1 e-Katalog, 2 Pengadaan Langsung, 3 Tender/Seleksi, 4 Swakelola, 5 Dikecualikan. Batas salah level ini ${getTenderRushFailLimitByLevel(getCurrentLevelNumber())} kali.`, 'happy');
+  }
+
+  function beginTenderRushRound() {
+    const challenge = getCurrentChallenge();
+    const rush = GAME_STATE.tenderRush;
+
+    if (!challenge || challenge.type !== 'tenderRush' || !rush) return;
+
+    clearTenderRushTimers();
+
+    const rushPackages = Array.isArray(rush.packages) && rush.packages.length ? rush.packages : (challenge.packages || []);
+
+    if (rush.currentIndex >= rushPackages.length) {
+      finishTenderRush();
+      return;
+    }
+
+    rush.timeLeft = Number(challenge.timeLimit || 8);
+    rush.locked = false;
+    rush.lastResult = null;
+    GAME_STATE.progress = Math.round((rush.currentIndex / Math.max(1, rushPackages.length)) * 100);
+
+    renderGame();
+
+    tenderRushTimer = setInterval(() => {
+      if (destroyed) return;
+
+      const activeChallenge = getCurrentChallenge();
+      const activeRush = GAME_STATE.tenderRush;
+
+      if (!activeChallenge || activeChallenge.type !== 'tenderRush' || !activeRush || activeRush.locked) return;
+
+      activeRush.timeLeft -= 1;
+      updateTenderRushClock();
+
+      if (activeRush.timeLeft <= 0) {
+        answerTenderRush(null);
+      }
+    }, 1000);
+  }
+
+  function updateTenderRushClock() {
+    const challenge = getCurrentChallenge();
+    const rush = GAME_STATE.tenderRush;
+
+    if (!challenge || !rush) return;
+
+    const text = root && root.querySelector('#psRushTimeText');
+    const bar = root && root.querySelector('#psRushTimeBar');
+    const percent = Math.max(0, Math.min(100, (Number(rush.timeLeft || 0) / Number(challenge.timeLimit || 8)) * 100));
+
+    if (text) text.textContent = String(Math.max(0, rush.timeLeft));
+    if (bar) bar.style.width = percent + '%';
+  }
+
+  function answerTenderRush(methodId) {
+    const challenge = getCurrentChallenge();
+    const rush = GAME_STATE.tenderRush;
+
+    if (!challenge || challenge.type !== 'tenderRush' || !rush || !rush.started || rush.locked) return;
+
+    const rushPackages = Array.isArray(rush.packages) && rush.packages.length ? rush.packages : (challenge.packages || []);
+    const pkg = rushPackages[rush.currentIndex];
+    if (!pkg) return;
+
+    clearTenderRushTimers();
+    rush.locked = true;
+
+    const isTimeout = !methodId;
+    const isCorrect = methodId === pkg.correct;
+    const correctMethod = TENDER_RUSH_METHODS[pkg.correct];
+    const chosenMethod = methodId ? TENDER_RUSH_METHODS[methodId] : null;
+
+    if (isCorrect) {
+      GAME_STATE.score += 10;
+      rush.correctCount += 1;
+      addLog('ok', `Tender Rush benar: ${pkg.title}`, pkg.explanation);
+      showToast('Jalur benar. +10 skor.', 'ok');
+      showPanji(`Betul! ${pkg.explanation}`, 'happy');
+      flashScreen('ok');
+      spawnConfetti();
+      rush.lastResult = {
+        correct: true,
+        message: `${pkg.title} tepat masuk ${correctMethod.label}. ${pkg.explanation}`
+      };
+    } else {
+      GAME_STATE.risk += isTimeout ? 10 : 8;
+      GAME_STATE.wrong += 1;
+      GAME_STATE.score = Math.max(0, GAME_STATE.score - 4);
+      rush.wrongCount += 1;
+
+      const message = isTimeout
+        ? `Waktu habis. Seharusnya masuk ${correctMethod.label}. ${pkg.explanation}`
+        : `Kamu memilih ${chosenMethod ? chosenMethod.label : 'jalur lain'}, padahal yang lebih tepat ${correctMethod.label}. ${pkg.explanation}`;
+
+      addLog('bad', `Tender Rush belum tepat: ${pkg.title}`, message);
+      showToast(isTimeout ? 'Waktu habis. Risiko naik.' : 'Jalur belum tepat. Risiko naik.', 'bad');
+      showPanji(message, 'sad');
+      flashScreen('bad');
+      rush.lastResult = { correct: false, message };
+    }
+
+    GAME_STATE.progress = Math.round(((rush.currentIndex + 1) / Math.max(1, rushPackages.length)) * 100);
+    renderGame();
+
+    if (rush.wrongCount >= getTenderRushFailLimitByLevel(getCurrentLevelNumber())) {
+      tenderRushNextTimer = setTimeout(() => {
+        if (!destroyed) stopGameEarly('rushFailed');
+      }, 900);
+      return;
+    }
+
+    tenderRushNextTimer = setTimeout(() => {
+      if (destroyed) return;
+      rush.currentIndex += 1;
+
+      if (rush.currentIndex >= rushPackages.length) {
+        finishTenderRush();
+        return;
+      }
+
+      beginTenderRushRound();
+    }, 1650);
+  }
+
+  function finishTenderRush() {
+    const challenge = getCurrentChallenge();
+    const rush = GAME_STATE.tenderRush;
+
+    if (!challenge || challenge.type !== 'tenderRush' || !rush) return;
+
+    clearTenderRushTimers();
+    disableTenderRushKeyboard();
+
+    rush.started = true;
+    const rushPackages = Array.isArray(rush.packages) && rush.packages.length ? rush.packages : (challenge.packages || []);
+    rush.currentIndex = rushPackages.length;
+    rush.locked = true;
+    rush.lastResult = null;
+    GAME_STATE.progress = 100;
+    GAME_STATE.correct += 1;
+    GAME_STATE.score += 20;
+
+    addLog('ok', 'Tender Rush selesai', challenge.explanation);
+    renderGame();
+    showToast('Tender Rush selesai. Otomatis lanjut...', 'ok');
+    showPanji('Mantap! Tender Rush selesai. Ini melatih refleks membaca pagu, jenis paket, katalog, dan kondisi pelaksanaan sebelum memilih metode.', 'happy');
+    spawnConfetti();
+    scheduleAutoNext('Tender Rush selesai. Otomatis lanjut ke soal berikutnya...');
+  }
+
+  function bindGameEvents() {
+    root.querySelectorAll('.ps-action-card[draggable="true"]').forEach(cardEl => {
+      cardEl.addEventListener('dragstart', event => {
+        event.dataTransfer.setData('text/plain', cardEl.dataset.cardId);
+        event.dataTransfer.effectAllowed = 'move';
+        cardEl.classList.add('selected');
+      });
+
+      cardEl.addEventListener('dragend', () => {
+        cardEl.classList.remove('selected');
+      });
+
+      cardEl.addEventListener('click', () => {
+        selectCard(cardEl.dataset.cardId);
+      });
+    });
+
+    root.querySelectorAll('.ps-slot').forEach(slot => {
+      slot.addEventListener('dragover', event => {
+        event.preventDefault();
+        slot.classList.add('drag-over');
+      });
+
+      slot.addEventListener('dragleave', () => {
+        slot.classList.remove('drag-over');
+      });
+
+      slot.addEventListener('drop', event => {
+        event.preventDefault();
+        slot.classList.remove('drag-over');
+
+        const cardId = event.dataTransfer.getData('text/plain');
+        const slotIndex = Number(slot.dataset.slotIndex);
+        placeCard(cardId, slotIndex, slot);
+      });
+
+      slot.addEventListener('click', () => {
+        if (!GAME_STATE.selectedCardId) return;
+
+        const slotIndex = Number(slot.dataset.slotIndex);
+        placeCard(GAME_STATE.selectedCardId, slotIndex, slot);
+      });
+    });
+
+    root.querySelectorAll('[data-answer-index]').forEach(button => {
+      button.addEventListener('click', () => {
+        answerQuiz(Number(button.dataset.answerIndex), button);
+      });
+    });
+
+    root.querySelectorAll('[data-rush-method]').forEach(button => {
+      button.addEventListener('click', () => {
+        answerTenderRush(button.dataset.rushMethod);
+      });
+    });
+
+    const btnStartTenderRush = root.querySelector('#btnStartTenderRush');
+    if (btnStartTenderRush) {
+      btnStartTenderRush.addEventListener('click', () => {
+        startTenderRush();
+      });
+    }
+
+    root.querySelectorAll('[data-bonus-node]').forEach(button => {
+      button.addEventListener('click', () => {
+        const bonus = GAME_STATE.bonusOpenWorld;
+        if (!bonus) return;
+        const order = bonus.nodes.map(node => node.id);
+        const targetId = button.dataset.bonusNode;
+        const targetIndex = order.indexOf(targetId);
+        const completedCount = Object.keys(bonus.completed).length;
+        if (targetIndex > completedCount) {
+          showPanji('Belum bisa lompat ke quest itu. Bonus level 4 ini story line, jadi jalannya harus berurutan dulu.', 'sad');
+          showToast('Quest masih terkunci', 'bad');
+          return;
+        }
+        bonus.activeNode = targetId;
+        renderGame();
+        showPanji('Quest dipilih. Baca pilihan pelan-pelan ya, karena opsi diacak dan ada jebakan.', 'thinking');
+      });
+    });
+
+    root.querySelectorAll('[data-bonus-choice]').forEach(button => {
+      button.addEventListener('click', () => {
+        answerBonusOpenWorld(button.dataset.bonusChoice, button);
+      });
+    });
+
+    const btnStartBonusZuma = root.querySelector('#btnStartBonusZuma');
+    if (btnStartBonusZuma) {
+      btnStartBonusZuma.addEventListener('click', () => {
+        startBonusOpenWorld();
+      });
+    }
+
+    const btnRestartBonusZuma = root.querySelector('#btnRestartBonusZuma');
+    if (btnRestartBonusZuma) {
+      btnRestartBonusZuma.addEventListener('click', () => {
+        resetBonusOpenWorld();
+      });
+    }
+
+    const btnSwapBonusZuma = root.querySelector('#btnSwapBonusZuma');
+    if (btnSwapBonusZuma) {
+      btnSwapBonusZuma.addEventListener('click', () => {
+        swapBonusOpenWorldAmmo();
+      });
+    }
+
+    if (getCurrentChallenge() && getCurrentChallenge().type === 'bonusOpenWorld' && GAME_STATE.bonusOpenWorld && GAME_STATE.bonusOpenWorld.started) {
+      setTimeout(() => {
+        mountBonusOpenWorldGame();
+      }, 0);
+    }
+
+    const btnSnakeBriefStart = root.querySelector('#btnSnakeBriefStart');
+    if (btnSnakeBriefStart) {
+      btnSnakeBriefStart.addEventListener('click', () => {
+        const snake = getBonusSnakeState();
+        snake.briefed = true;
+        showPanji('Kisi-kisi PBJ aku bacain juga ya: jangan cuma kejar cepat. Tetap cek RUP, kebutuhan, harga, katalog, negosiasi, dan bukti proses. Oke, Snake mulai!', 'talking');
+        startBonusSnakeGame();
+      });
+    }
+
+    root.querySelectorAll('.ps-typewriter-box').forEach((el, idx) => {
+      if (el.dataset.typed) return;
+      el.dataset.typed = '1';
+      const full = el.dataset.fulltext || '';
+      const words = full.split(/\s+/);
+      let i = 0;
+      el.textContent = '';
+      const timer = setInterval(() => {
+        el.textContent = words.slice(0, i + 1).join(' ');
+        i += 1;
+        if (i >= words.length) clearInterval(timer);
+      }, 92);
+    });
+
+    const btnTreeBriefStart = root.querySelector('#btnTreeBriefStart');
+    if (btnTreeBriefStart) {
+      btnTreeBriefStart.addEventListener('click', () => {
+        startBonusTree();
+      });
+    }
+    root.querySelector('#btnTreeLeft')?.addEventListener('click', () => chopBonusTree('left'));
+    root.querySelector('#btnTreeRight')?.addEventListener('click', () => chopBonusTree('right'));
+    root.querySelector('#btnResetTree')?.addEventListener('click', () => resetBonusTree());
+
+    root.querySelector('#btnTreeTapLeft')?.addEventListener('click', () => chopBonusTree('left'));
+    root.querySelector('#btnTreeTapRight')?.addEventListener('click', () => chopBonusTree('right'));
+
+    if (!window.__psTreeKeyBound) {
+      window.__psTreeKeyBound = event => {
+        const current = getCurrentChallenge && getCurrentChallenge();
+        if (!current || current.type !== 'bonusTree') return;
+        const key = String(event.key || '').toLowerCase();
+        if (key === 'a' || key === 'arrowleft') {
+          event.preventDefault();
+          chopBonusTree('left');
+        }
+        if (key === 'd' || key === 'arrowright') {
+          event.preventDefault();
+          chopBonusTree('right');
+        }
+      };
+      document.addEventListener('keydown', window.__psTreeKeyBound);
+    }
+
+    const btnStartSnake = root.querySelector('#btnStartSnake');
+    if (btnStartSnake) {
+      btnStartSnake.addEventListener('click', event => {
+        const snake = getBonusSnakeState();
+        snake.briefed = true;
+        startBonusSnakeGame();
+        event.preventDefault();
+      });
+      setTimeout(drawBonusSnake, 0);
+      const snake = getBonusSnakeState();
+      if (!snake.running && !snake.finished && !snake._panjiTipShown) {
+        snake._panjiTipShown = true;
+        setTimeout(() => showPanji('Sebelum mulai Snake, aku kasih kisi-kisi PBJ ya: jangan cuma kejar cepat. Cek RUP, kebutuhan, katalog, harga, negosiasi, dan bukti proses. Klik atau tekan tombol apa saja kalau sudah siap.', 'talking'), 350);
+      }
+    }
+
+    const snakePageKeyStarter = event => {
+      const current = getCurrentChallenge && getCurrentChallenge();
+      if (!current || (current.type !== 'bonusSnake' && current.type !== 'bonusTree')) return;
+      const key = String(event.key || '').toLowerCase();
+      if (!['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '].includes(key)) return;
+      maybeStartSnakeFromAnyInput(event);
+    };
+    document.removeEventListener('keydown', snakePageKeyStarter);
+    document.addEventListener('keydown', snakePageKeyStarter, {once:true});
+
+    const snakeCanvas = root.querySelector('#psSnakeCanvas');
+    const snakeStage = root.querySelector('.ps-snake-stage');
+    const snakeInputStarter = event => {
+      const snake = getBonusSnakeState();
+      if (!snake.running && !snake.finished) {
+        maybeStartSnakeFromAnyInput(event);
+        setTimeout(() => steerSnakeFromPointer(event), 20);
+        return;
+      }
+      steerSnakeFromPointer(event);
+    };
+    if (snakeCanvas) {
+      snakeCanvas.addEventListener('pointerdown', snakeInputStarter);
+      snakeCanvas.addEventListener('touchstart', snakeInputStarter, {passive:false});
+    }
+    if (snakeStage) {
+      snakeStage.addEventListener('pointerdown', snakeInputStarter);
+    }
+
+    const btnResetSnake = root.querySelector('#btnResetSnake');
+    if (btnResetSnake) {
+      btnResetSnake.addEventListener('click', () => resetBonusSnake());
+    }
+
+    const btnSkipSnake = root.querySelector('#btnSkipSnake');
+    if (btnSkipSnake) {
+      btnSkipSnake.addEventListener('click', () => skipBonusSnake());
+    }
+
+    const btnClosePipelineTutorial = root.querySelector('#btnClosePipelineTutorial');
+    if (btnClosePipelineTutorial) {
+      btnClosePipelineTutorial.addEventListener('click', () => {
+        GAME_STATE.pipelineTutorialSeen = true;
+        startLevelTimer(getCurrentChallenge());
+        renderGame();
+        showPanji('Oke, baru sekarang waktunya jalan. Baca panel SOAL di atas slot, pilih kartu, lalu taruh dari slot kiri ke kanan.', 'happy');
+      });
+    }
+
+    if (GAME_STATE.current && GAME_STATE.current.type === 'bonusSnake') {
+      setTimeout(drawBonusSnake, 0);
+    }
+
+    const btnNext = root.querySelector('#btnNextChallenge');
+    const btnRestart = root.querySelector('#btnRestartGame');
+    const btnReset = root.querySelector('#btnResetChallenge');
+    const btnShuffle = root.querySelector('#btnShuffleCards');
+    const btnPanjiHint = root.querySelector('#btnPanjiHint');
+
+    if (btnNext) {
+      btnNext.addEventListener('click', () => {
+        clearPipelineIdleHint();
+        clearAutoNextTimer();
+        nextChallenge();
+      });
+    }
+
+    if (btnRestart) {
+      btnRestart.addEventListener('click', () => {
+        clearPipelineIdleHint();
+        clearAutoNextTimer();
+        startGame();
+      });
+    }
+
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        clearPipelineIdleHint();
+        clearAutoNextTimer();
+        clearTenderRushTimers();
+        disableTenderRushKeyboard();
+        loadChallenge();
+      });
+    }
+
+    if (btnShuffle) {
+      btnShuffle.addEventListener('click', () => {
+        clearPipelineIdleHint();
+        clearPipelineIdleHint();
+        const challenge = getCurrentChallenge();
+
+        if (!challenge || challenge.type !== 'pipeline') return;
+
+        GAME_STATE.shuffledCards = shuffleArray(challenge.cards);
+        GAME_STATE.selectedCardId = null;
+
+        renderGame();
+        showToast('Kartu diacak ulang.', 'info');
+        showPanji('Kartu sudah diacak ulang. Coba fokus lagi dari urutan yang paling awal.', 'thinking');
+      });
+    }
+
+    if (btnPanjiHint) {
+      btnPanjiHint.addEventListener('click', () => {
+        clearPipelineIdleHint();
+        requestHintFromPanji();
+      });
+    }
+
+    if (getCurrentChallenge() && getCurrentChallenge().type === 'pipeline' && GAME_STATE.progress < 100) {
+      schedulePipelineIdleHint();
+    } else {
+      clearPipelineIdleHint();
+    }
+  }
+
+  function clearPipelineIdleHint() {
+    if (pipelineIdleTimer) {
+      clearTimeout(pipelineIdleTimer);
+      pipelineIdleTimer = null;
+    }
+    if (pipelineHintPulseTimer) {
+      clearTimeout(pipelineHintPulseTimer);
+      pipelineHintPulseTimer = null;
+    }
+    if (root) {
+      root.querySelectorAll('.ps-action-card.ps-hint-next, .ps-slot.ps-hint-slot').forEach(el => {
+        el.classList.remove('ps-hint-next', 'ps-hint-slot');
+      });
+    }
+  }
+
+  function schedulePipelineIdleHint() {
+    clearPipelineIdleHint();
+    const challenge = getCurrentChallenge();
+    if (!root || !challenge || challenge.type !== 'pipeline' || GAME_STATE.progress >= 100) return;
+
+    pipelineIdleTimer = setTimeout(() => {
+      const nextEmpty = GAME_STATE.placed.findIndex(item => item === null);
+      if (nextEmpty < 0) return;
+      const expectedId = challenge.idealIds[nextEmpty];
+      const cardEl = root.querySelector(`.ps-action-card[data-card-id="${expectedId}"]`);
+      const slotEl = root.querySelector(`.ps-slot[data-slot-index="${nextEmpty}"]`);
+      if (cardEl) cardEl.classList.add('ps-hint-next');
+      if (slotEl) slotEl.classList.add('ps-hint-slot');
+      playTone(900, 0.06, 'triangle', 0.03);
+      setTimeout(() => playTone(1180, 0.08, 'triangle', 0.022), 70);
+      showToast('Hint PANJI: coba lihat kartu yang berpendar dulu.', 'info');
+      showPanji('Kalau bingung, lihat kartu dan slot yang berkedip. Itu petunjuk langkah berikutnya.', 'thinking');
+      pipelineHintPulseTimer = setTimeout(() => {
+        if (cardEl) cardEl.classList.remove('ps-hint-next');
+        if (slotEl) slotEl.classList.remove('ps-hint-slot');
+      }, 1800);
+    }, 5000);
+  }
+
+  function renderCenterAnnouncement(message, buttonId, buttonText, variant = 'snake') {
+    return `
+      <div class="ps-center-announcement ${variant}">
+        <div class="ps-center-announcement-card">
+          <div class="ps-center-announcement-kicker">PANJI ANNOUNCEMENT</div>
+          <div class="ps-typewriter-box ps-typewriter-announce" id="${buttonId}Typewriter" data-fulltext="${escapeHtml(message)}"></div>
+          <button type="button" class="ps-btn ps-btn-primary" id="${buttonId}">${buttonText}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function selectCard(cardId) {
+    if (GAME_STATE.progress === 100) return;
+
+    clearPipelineIdleHint();
+    GAME_STATE.selectedCardId = GAME_STATE.selectedCardId === cardId ? null : cardId;
+
+    if (GAME_STATE.selectedCardId) {
+      const challenge = getCurrentChallenge();
+      const item = challenge.cards.find(cardItem => cardItem.id === cardId);
+      showToast(`Kartu dipilih: ${item ? item.label : cardId}. Klik slot biru.`, 'info');
+    }
+
+    renderGame();
+    schedulePipelineIdleHint();
+  }
+
+  function placeCard(cardId, slotIndex, slotEl) {
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+
+    const challenge = getCurrentChallenge();
+
+    if (!challenge || challenge.type !== 'pipeline') return;
+    if (GAME_STATE.progress === 100) return;
+
+    const expectedId = challenge.idealIds[slotIndex];
+    const item = challenge.cards.find(cardItem => cardItem.id === cardId);
+
+    if (!item) return;
+
+    const alreadyPlaced = GAME_STATE.placed.some(placedItem => placedItem && placedItem.id === cardId);
+    if (alreadyPlaced) return;
+
+    const nextEmpty = GAME_STATE.placed.findIndex(placedItem => placedItem === null);
+
+    if (slotIndex !== nextEmpty) {
+      wrongMove(cardId, `Isi pipeline dari kiri ke kanan. Slot berikutnya adalah nomor ${nextEmpty + 1}.`);
+      return;
+    }
+
+    if (cardId !== expectedId) {
+      const expected = challenge.cards.find(cardItem => cardItem.id === expectedId);
+      wrongMove(cardId, `Kamu memilih "${item.label}", posisi ini seharusnya "${expected ? expected.label : expectedId}".`);
+      return;
+    }
+
+    GAME_STATE.placed[slotIndex] = item;
+    GAME_STATE.selectedCardId = null;
+    GAME_STATE.progress = Math.round((getPlacedCount() / challenge.idealIds.length) * 100);
+    GAME_STATE.score += 10;
+    GAME_STATE.pipelineCombo = Number(GAME_STATE.pipelineCombo || 0) + 1;
+    applyLevelTimeBonus(2, 'Kartu benar: bonus waktu');
+
+    if (GAME_STATE.pipelineCombo > 1 && GAME_STATE.pipelineCombo % 3 === 0) {
+      applyLevelTimeBonus(4, 'Combo pipeline: bonus waktu');
+      showToast('Combo ' + GAME_STATE.pipelineCombo + 'x! Waktu +4 detik', 'ok');
+    }
+
+    addLog('ok', `${item.label} benar`, getCorrectMessage(item.id));
+
+    showToast(`Benar: ${item.label}`, 'ok');
+    showPanji(getPanjiReactionMessage(item.id), 'happy');
+    flashScreen('ok');
+    popScore(slotEl || document.body, '+10', 'ok');
+
+    const completed = GAME_STATE.progress === 100;
+
+    renderGame();
+    if (!completed) schedulePipelineIdleHint();
+    pulseSlot(slotIndex);
+
+    if (completed) {
+      clearLevelTimer();
+      GAME_STATE.score += 20;
+      GAME_STATE.correct += 1;
+      addLog('ok', 'Pipeline selesai', challenge.explanation);
+      showPanji('Mantap! Pipeline ini selesai dengan benar. Kamu sudah menyusun alur PBJ secara tertib. Kita lanjut ke soal berikutnya ya.', 'happy');
+      showToast('Pipeline benar 100%. Otomatis lanjut...', 'ok');
+      spawnConfetti();
+
+      scheduleAutoNext('Pipeline selesai. Otomatis lanjut ke soal berikutnya...');
+    }
+  }
+
+  function pulseSlot(slotIndex) {
+    requestAnimationFrame(() => {
+      const slot = root.querySelector(`.ps-slot[data-slot-index="${slotIndex}"]`);
+
+      if (!slot) return;
+
+      slot.classList.add('fx-correct');
+
+      setTimeout(() => {
+        slot.classList.remove('fx-correct');
+      }, 520);
+    });
+  }
+
+  function shakeCard(cardId) {
+    requestAnimationFrame(() => {
+      const cardEl = root.querySelector(`.ps-action-card[data-card-id="${cardId}"]`);
+
+      if (!cardEl) return;
+
+      cardEl.classList.remove('wrong');
+      void cardEl.offsetWidth;
+      cardEl.classList.add('wrong');
+
+      setTimeout(() => {
+        cardEl.classList.remove('wrong');
+      }, 360);
+    });
+  }
+
+  function wrongMove(cardId, message) {
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+
+    GAME_STATE.risk += 10;
+    GAME_STATE.wrong += 1;
+    GAME_STATE.score = Math.max(0, GAME_STATE.score - 5);
+    GAME_STATE.selectedCardId = null;
+    GAME_STATE.pipelineCombo = 0;
+
+    addLog('bad', 'Urutan belum tepat', message);
+
+    showToast('Belum tepat. Risiko naik.', 'bad');
+    showPanji(getPanjiWrongMessage(cardId, message), 'sad');
+    flashScreen('bad');
+    applyLevelTimePenalty(2, 'Pipeline salah');
+
+    if (GAME_STATE.stage === 'result') return;
+
+    renderGame();
+    shakeCard(cardId);
+  }
+
+  function answerQuiz(selectedIndex, buttonEl) {
+    clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+    clearLevelTimer();
+
+    const challenge = getCurrentChallenge();
+
+    if (!challenge || challenge.type !== 'quiz') return;
+    if (GAME_STATE.answered) return;
+
+    GAME_STATE.selectedAnswer = selectedIndex;
+    GAME_STATE.answered = true;
+
+    const correctAnswerIndex = Number.isInteger(challenge.runtimeAnswer) ? challenge.runtimeAnswer : Number(challenge.answer || 0);
+
+    if (selectedIndex === correctAnswerIndex) {
+      GAME_STATE.score += 20;
+      GAME_STATE.correct += 1;
+
+      addLog('ok', 'Jawaban benar', challenge.explanation);
+
+      showToast('Jawaban benar. Otomatis lanjut...', 'ok');
+      showPanji(`Jawabanmu benar! ${challenge.explanation}`, 'happy');
+      flashScreen('ok');
+      popScore(buttonEl || document.body, '+20', 'ok');
+      spawnConfetti();
+
+      renderGame();
+      scheduleAutoNext('Jawaban benar. Otomatis lanjut ke soal berikutnya...');
+    } else {
+      GAME_STATE.risk += 8;
+      GAME_STATE.wrong += 1;
+      GAME_STATE.score = Math.max(0, GAME_STATE.score - 5);
+
+      addLog('bad', 'Jawaban belum tepat', challenge.explanation);
+
+      showToast('Jawaban belum tepat. Otomatis lanjut setelah pembahasan.', 'bad');
+      showPanji(`Yah, belum tepat. Cek pembahasan ini ya: ${challenge.explanation}`, 'sad');
+      flashScreen('bad');
+      popScore(buttonEl || document.body, '+8 Risiko', 'bad');
+      applyLevelTimePenalty(10, 'ABCD salah');
+
+      if (GAME_STATE.stage === 'result') return;
+
+      renderGame();
+      scheduleAutoNext('Pembahasan terbuka. Otomatis lanjut ke soal berikutnya...', 2500);
+    }
+  }
+
+  function getCorrectMessage(cardId) {
+    const messages = {
+      rup: 'RUP menjadi pintu awal untuk memastikan paket, jadwal, pagu, metode, dan satker.',
+      identifikasi: 'Identifikasi kebutuhan mencegah paket tidak relevan, dobel, atau tidak sesuai prioritas.',
+      konsolidasi: 'Konsolidasi membantu mengelola kebutuhan sejenis agar tidak terpecah tanpa alasan.',
+      kak: 'KAK/spesifikasi harus berbasis kebutuhan dan tidak mengarah.',
+      'review-spek': 'Review spesifikasi penting agar persaingan sehat.',
+      hps: 'HPS/referensi harga menjadi dasar kewajaran biaya.',
+      'cek-pdn': 'PDN/TKDN perlu diperhatikan untuk mendukung produk dalam negeri.',
+      'cek-umkk': 'UMK/Koperasi perlu diperhatikan dalam afirmasi belanja pemerintah.',
+      'cek-katalog': 'Cek katalog membantu menentukan apakah e-Purchasing dapat digunakan.',
+      'katalog-tidak-sesuai': 'Jika katalog tidak menyediakan produk/penyedia sesuai, kondisi itu harus dicatat.',
+      'dokumentasi-gagal-katalog': 'Dokumentasi hasil cek katalog menjadi dasar perubahan metode.',
+      'evaluasi-metode': 'Evaluasi metode diperlukan agar metode baru sesuai nilai, jenis, dan kondisi paket.',
+      'pilih-metode': 'Metode dipilih setelah kebutuhan, nilai, jadwal, dan pasar dipahami.',
+      'metode-pl': 'Pengadaan Langsung tepat bila nilai dan kondisi paket sesuai.',
+      'metode-epurchasing': 'e-Purchasing tepat jika tersedia di katalog dan sesuai kebutuhan.',
+      'mini-kompetisi': 'Mini kompetisi mendukung transparansi dan persaingan sehat pada katalog tertentu.',
+      tender: 'Tender dipakai saat karakter paket membutuhkan proses pemilihan formal.',
+      seleksi: 'Seleksi relevan untuk jasa konsultansi.',
+      swakelola: 'Swakelola dapat dipilih jika memenuhi kriteria.',
+      'tim-persiapan': 'Tim persiapan penting dalam penyelenggaraan swakelola.',
+      'tim-pelaksana': 'Tim pelaksana menjalankan pekerjaan swakelola.',
+      'tim-pengawas': 'Tim pengawas memastikan swakelola terkendali.',
+      klarifikasi: 'Klarifikasi/negosiasi memastikan harga, spesifikasi, dan kemampuan pelaksanaan.',
+      proses: 'Proses pemilihan dilakukan setelah dokumen dan metode siap.',
+      kontrak: 'Kontrak/SPK menjadi dasar pelaksanaan setelah proses pengadaan.',
+      'monitoring-kontrak': 'Monitoring kontrak mengendalikan waktu, mutu, volume, dan kewajiban penyedia.',
+      'uang-muka': 'Uang muka, jaminan, dan syarat kontrak perlu dikelola tertib.',
+      'identifikasi-perubahan': 'Perubahan kontrak harus diawali identifikasi kondisi perubahan.',
+      'kaji-kontrak': 'Klausul kontrak perlu dikaji sebelum adendum.',
+      'justifikasi-teknis': 'Justifikasi teknis menjadi dasar perubahan kontrak.',
+      'negosiasi-perubahan': 'Negosiasi perubahan membahas dampak harga, waktu, dan volume.',
+      'adendum-kontrak': 'Adendum dituangkan secara tertulis sebelum perubahan dilaksanakan lebih lanjut.',
+      teguran: 'Teguran/evaluasi diperlukan saat penyedia terlambat atau bermasalah.',
+      pemeriksaan: 'Pemeriksaan hasil mencegah barang/jasa tidak sesuai langsung diterima.',
+      bast: 'BAST dilakukan setelah hasil diperiksa dan sesuai.',
+      pembayaran: 'Pembayaran dilakukan setelah dokumen pendukung memadai.',
+      realisasi: 'Pencatatan realisasi memastikan data monitoring tidak bolong.'
+    };
+
+    return messages[cardId] || 'Langkah ini benar pada posisi pipeline saat ini.';
+  }
+
+  function getPanjiReactionMessage(cardId) {
+    const messages = {
+      rup:
+        'Betul. Cek RUP dulu di SiRUP untuk memastikan paket sudah diumumkan, pagu, metode, jadwal, dan satkernya sesuai sebelum proses lanjut. Dari RUP ini kita tahu prosesnya tidak loncat dari perencanaan.',
+
+      identifikasi:
+        'Betul. Identifikasi kebutuhan itu pondasi awal. PPK perlu memastikan barang atau jasa memang dibutuhkan, volumenya jelas, lokasinya jelas, waktunya masuk akal, dan tidak dobel dengan paket lain.',
+
+      konsolidasi:
+        'Betul. Kalau kebutuhannya sejenis, pikirkan konsolidasi dulu. Ini bisa membantu efisiensi, menguatkan posisi belanja pemerintah, dan mencegah paket dipecah-pecah tanpa alasan yang kuat.',
+
+      'review-spek':
+        'Betul. Spesifikasi perlu direview supaya tidak mengarah ke merek atau penyedia tertentu. Spek harus menjelaskan kebutuhan dan standar kinerja, bukan mengunci calon pemenang.',
+
+      kak:
+        'Betul. KAK atau spesifikasi menjelaskan kebutuhan secara teknis, ruang lingkup, output, jadwal, lokasi, dan standar yang harus dipenuhi. KAK yang rapi bikin proses berikutnya lebih aman.',
+
+      hps:
+        'Betul. Setelah KAK jelas, HPS atau referensi harga disusun sebagai dasar kewajaran harga. Jangan asal ambil angka tanpa survei, pembanding, katalog, pasar, atau dasar yang masuk akal.',
+
+      'cek-pdn':
+        'Betul. Cek PDN dan TKDN penting untuk mendukung penggunaan produk dalam negeri. Kalau produk dalam negeri tersedia dan sesuai, jangan langsung lari ke produk impor.',
+
+      'cek-umkk':
+        'Betul. Afirmasi UMK dan koperasi perlu diperhatikan. Belanja pemerintah bukan cuma mengejar barang cepat datang, tapi juga mendorong pelaku usaha kecil dan koperasi bila sesuai.',
+
+      'cek-katalog':
+        'Betul. Cek e-Katalog dulu untuk melihat apakah barang atau jasa tersedia, spesifikasinya sesuai, penyedianya ada, harganya wajar, TKDN-nya cocok, dan proses e-Purchasing bisa dipertanggungjawabkan.',
+
+      'katalog-tidak-sesuai':
+        'Betul. Kalau katalog tidak menyediakan produk atau penyedia yang sesuai, kondisi itu harus dicatat. Jangan memaksakan e-Purchasing kalau barangnya tidak cocok dengan kebutuhan.',
+
+      'dokumentasi-gagal-katalog':
+        'Betul. Dokumentasi hasil cek katalog penting sebagai bukti kenapa metode awal tidak bisa dilanjutkan. Simpan dasar pengecekan agar perubahan metode tidak terlihat asal-asalan.',
+
+      'evaluasi-metode':
+        'Betul. Setelah ada bukti katalog tidak sesuai, metode perlu dievaluasi ulang berdasarkan nilai paket, jenis pengadaan, kondisi pasar, ketersediaan penyedia, dan ketentuan yang berlaku.',
+
+      'pilih-metode':
+        'Betul. Metode dipilih setelah kebutuhan, HPS, kondisi pasar, jenis pengadaan, dan nilai paket jelas. Jangan pilih metode hanya karena paling cepat atau paling gampang.',
+
+      'metode-pl':
+        'Betul. Pengadaan Langsung bisa dipakai kalau nilai dan kondisinya sesuai. Kalau nilainya melewati batas atau paketnya kompleks, jangan dipaksa jadi Pengadaan Langsung.',
+
+      'metode-epurchasing':
+        'Betul. e-Purchasing tepat kalau barang atau jasa tersedia di katalog, spesifikasinya sesuai, penyedianya ada, dan prosesnya bisa dipertanggungjawabkan.',
+
+      'mini-kompetisi':
+        'Betul. Mini kompetisi dipakai untuk memberi kesempatan yang sama kepada penyedia katalog dan menjaga persaingan sehat, terutama pada sektor yang mewajibkan mekanisme tersebut.',
+
+      tender:
+        'Betul. Tender dipakai untuk paket yang memerlukan proses pemilihan formal dan kompetitif, terutama jika nilai atau karakter pekerjaannya tidak cocok dengan metode sederhana.',
+
+      seleksi:
+        'Betul. Untuk jasa konsultansi, metode seleksi sering digunakan karena yang dinilai bukan cuma harga, tapi juga kualitas keahlian, pengalaman, dan pendekatan teknis.',
+
+      swakelola:
+        'Betul. Swakelola digunakan kalau kegiatan memenuhi kriteria swakelola. Tetap harus ada perencanaan, KAK, anggaran, pelaksanaan, pengawasan, dan pertanggungjawaban.',
+
+      'tim-persiapan':
+        'Betul. Dalam swakelola, tim persiapan penting untuk menyusun sasaran, rencana kegiatan, KAK, jadwal, dan kebutuhan pelaksanaan secara jelas.',
+
+      'tim-pelaksana':
+        'Betul. Tim pelaksana menjalankan pekerjaan swakelola. Jadi tidak cukup cuma niat swakelola, pelaksananya harus jelas.',
+
+      'tim-pengawas':
+        'Betul. Tim pengawas menjaga agar pelaksanaan swakelola sesuai rencana, mutu, waktu, dan output yang sudah ditetapkan.',
+
+      klarifikasi:
+        'Betul. Klarifikasi atau negosiasi memastikan harga, spesifikasi, jadwal, dan kemampuan pelaksanaan benar-benar masuk akal sebelum kontrak dilakukan.',
+
+      proses:
+        'Betul. Proses pemilihan dilakukan setelah dokumen dan metode siap. Jangan lompat ke kontrak sebelum proses pemilihannya tertib dan bisa dipertanggungjawabkan.',
+
+      kontrak:
+        'Betul. Kontrak atau SPK menjadi dasar pelaksanaan pekerjaan. Ini dilakukan setelah proses pengadaan selesai dan penyedia atau pelaksana sudah ditetapkan.',
+
+      'monitoring-kontrak':
+        'Betul. Setelah kontrak berjalan, PPK wajib memantau waktu, mutu, volume, progres, dan kewajiban penyedia. Jangan baru sadar bermasalah saat mau BAST.',
+
+      'uang-muka':
+        'Betul. Kalau ada uang muka atau jaminan, pengelolaannya harus sesuai ketentuan kontrak. Ini bagian penting dari pengendalian risiko pelaksanaan.',
+
+      teguran:
+        'Betul. Kalau penyedia terlambat atau tidak sesuai, lakukan teguran atau evaluasi. Masalah kontrak harus dikendalikan, bukan dibiarkan sampai akhir.',
+
+      pemeriksaan:
+        'Betul. Pemeriksaan hasil dilakukan sebelum BAST. Barang atau pekerjaan harus dicek dulu kesesuaiannya dengan kontrak, spesifikasi, volume, dan kualitas.',
+
+      bast:
+        'Betul. BAST dilakukan setelah hasil pekerjaan atau barang sesuai. Jangan BAST kalau barang belum diperiksa, belum lengkap, atau masih bermasalah.',
+
+      pembayaran:
+        'Betul. Pembayaran dilakukan setelah dokumen pendukung lengkap, prestasi pekerjaan sesuai, dan proses serah terima tertib.',
+
+      realisasi:
+        'Betul. Realisasi harus dicatat supaya data monitoring tidak bolong, termasuk untuk evaluasi, laporan, dan pemantauan kinerja pengadaan.',
+
+      'identifikasi-perubahan':
+        'Betul. Kalau ada perubahan kontrak, mulai dari identifikasi dulu: apa yang berubah, kenapa berubah, dan dampaknya ke volume, waktu, mutu, atau biaya.',
+
+      'kaji-kontrak':
+        'Betul. Sebelum adendum, klausul kontrak harus dikaji. Tidak semua perubahan bisa langsung ditulis jadi adendum tanpa dasar kontraktual.',
+
+      'justifikasi-teknis':
+        'Betul. Justifikasi teknis menjelaskan alasan perubahan secara tertib. Ini penting supaya adendum tidak terlihat asal mengubah kontrak.',
+
+      'negosiasi-perubahan':
+        'Betul. Perubahan kontrak perlu dibahas dampaknya, termasuk harga, waktu, volume, mutu, dan risiko. Jangan sampai perubahan merugikan atau tidak jelas dasarnya.',
+
+      'adendum-kontrak':
+        'Betul. Adendum kontrak menuangkan perubahan secara tertulis. Setelah itu pelaksanaan lanjut sesuai perubahan yang sudah disepakati.'
+    };
+
+    return messages[cardId] || 'Betul. Langkah itu sudah tepat di posisi pipeline ini. Lanjutkan dengan urutan yang tertib dan jangan lompat proses.';
+  }
+
+  function getPanjiWrongMessage(cardId, fallbackMessage) {
+    const messages = {
+      'kontrak-awal':
+        'Aduh, jangan kontrak dulu. Kontrak atau SPK baru aman setelah dokumen siap, metode jelas, proses pemilihan selesai, dan penyedia sudah ditetapkan.',
+
+      'pecah-paket':
+        'Waduh, hati-hati. Pecah paket tanpa alasan kuat bisa dianggap menghindari metode yang seharusnya. Kalau kebutuhan sejenis, pikirkan konsolidasi.',
+
+      'spek-mengarah':
+        'Jangan pakai spek mengarah. Spesifikasi harus menjelaskan kebutuhan, bukan mengunci merek atau penyedia tertentu.',
+
+      'abaikan-katalog':
+        'Jangan abaikan katalog. Untuk barang atau jasa yang berpotensi tersedia di e-Katalog, cek dulu kesesuaian produk, penyedia, harga, TKDN, dan kebutuhan.',
+
+      'lanjut-epurchasing-paksa':
+        'Jangan memaksa e-Purchasing kalau produk atau penyedia di katalog tidak sesuai kebutuhan. Dokumentasikan hasil cek dulu, baru evaluasi metode.',
+
+      'ganti-metode-tanpa-bukti':
+        'Jangan ganti metode tanpa bukti. Perubahan metode harus punya dasar, misalnya hasil cek katalog tidak sesuai dan dokumentasi pendukungnya jelas.',
+
+      'lewati-rup':
+        'Jangan lewati RUP. RUP di SiRUP adalah pintu awal untuk memastikan paket memang sudah direncanakan dan diumumkan.',
+
+      'bast-tanpa-cek':
+        'Jangan BAST tanpa pemeriksaan. Barang atau pekerjaan harus dicek dulu kesesuaiannya dengan kontrak, volume, spesifikasi, dan kualitas.',
+
+      'bayar-dulu':
+        'Jangan bayar dulu. Pembayaran harus menunggu prestasi pekerjaan, dokumen pendukung, dan serah terima yang tertib.',
+
+      'tunda-dokumen':
+        'Jangan tunda dokumen. Dalam PBJ, bukti dan administrasi itu bagian dari akuntabilitas, bukan pelengkap belakangan.',
+
+      'metode-asal-cepat':
+        'Jangan pilih metode hanya karena cepat. Metode harus sesuai nilai paket, jenis pengadaan, kondisi pasar, dan ketentuan.',
+
+      'realisasi-lupa':
+        'Jangan lupa catat realisasi. Kalau realisasi tidak dicatat, monitoring dan laporan kinerja pengadaan jadi bolong.',
+
+      'adendum-tanpa-dasar':
+        'Jangan membuat adendum tanpa dasar. Perubahan kontrak harus diawali identifikasi, kajian klausul, justifikasi teknis, dan kesepakatan yang tertib.',
+
+      'bayar-sebelum-adendum':
+        'Jangan bayar sebelum perubahan kontrak tertib. Kalau ada perubahan volume, waktu, atau nilai, rapikan dasar dan adendumnya dulu.',
+
+      'swakelola-tanpa-tim':
+        'Jangan swakelola tanpa tim yang jelas. Swakelola perlu tim persiapan, tim pelaksana, dan tim pengawas agar peran dan kontrolnya tertib.',
+
+      'abaikan-pdn':
+        'Jangan abaikan PDN/TKDN. Afirmasi produk dalam negeri menjadi bagian penting dalam kebijakan PBJ dan belanja katalog.'
+    };
+
+    return messages[cardId] || `Aduh, belum tepat. ${fallbackMessage}`;
+  }
+
+  window.__moduleInit = function ({ container }) {
+    destroyed = false;
+    containerRef = container;
+    root = container.querySelector('#procstackRoot');
+
+    if (!root) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'procstack-shell';
+      wrapper.innerHTML = `
+        <section class="procstack-hero">
+          <h2>Procurement Stacker</h2>
+          <p>
+            Susun pipeline pengadaan, jawab studi kasus, dan belajar alur PBJ bersama PANJI.
+            Game ini melatih logika tahapan: perencanaan, pemilihan, kontrak, serah terima, dan realisasi.
+          </p>
+        </section>
+
+        <section class="procstack-game-card">
+          <div id="procstackRoot"></div>
+        </section>
+      `;
+
+      container.appendChild(wrapper);
+      root = container.querySelector('#procstackRoot');
+    }
+
+    readStoredPlayer();
+    ensureLeaderboardModal();
+    fetchLeaderboard();
+    initPanji(container);
+    setTimeout(() => showReviewBubbleOnMenuOpen({ force: true }), 1200);
+
+    GAME_STATE.stage = 'ready';
+    GAME_STATE.current = null;
+    renderReadyScreen();
+    showPanji('Halo, perkenalkan. Aku PANJI, Pengadaan Jitu. Sebelum main, isi dulu nama pemain dan instansi atau OPD kamu ya.', 'happy');
+
+    setTimeout(() => {
+      if (!destroyed) {
+        openLeaderboardModal('player', true);
+      }
+    }, 650);
+
+    leaderboardRefreshTimer = setInterval(() => {
+      if (!destroyed && leaderboardModalEl && !leaderboardModalEl.classList.contains('ps-hidden')) {
+        fetchLeaderboard();
+      }
+    }, 60000);
+
+    return function destroy() {
+      destroyed = true;
+
+      clearAutoNextTimer();
+      clearLevelTimer();
+      clearTenderRushTimers();
+      disableTenderRushKeyboard();
+      clearBonusZumaTimers();
+    clearBonusTreeTimers();
+    clearBonusTreeTimers();
+    clearBonusSnakeTimers();
+      clearPanjiIntroTimers();
+    clearPipelineIdleHint();
+      clearPanjiTalkTimer();
+
+      if (leaderboardRefreshTimer) {
+        clearInterval(leaderboardRefreshTimer);
+        leaderboardRefreshTimer = null;
+      }
+
+      if (reviewBubbleTimer) {
+        clearTimeout(reviewBubbleTimer);
+        reviewBubbleTimer = null;
+      }
+
+      if (reviewBubbleEl) {
+        reviewBubbleEl.remove();
+        reviewBubbleEl = null;
+      }
+
+      if (leaderboardModalEl) {
+        leaderboardModalEl.remove();
+        leaderboardModalEl = null;
+      }
+
+      if (psMusicTimer) {
+        clearInterval(psMusicTimer);
+        psMusicTimer = null;
+        psMusicOn = false;
+      }
+
+      if (toastEl) {
+        toastEl.remove();
+        toastEl = null;
+      }
+
+      const flash = document.getElementById('psScreenFlash');
+
+      if (flash) {
+        flash.remove();
+      }
+
+      document.querySelectorAll('.ps-confetti, .ps-floating-score').forEach(el => {
+        el.remove();
+      });
+
+      if (panjiEl) {
+        if (typeof panjiEl._panjiAutoPositionDestroy === 'function') {
+          panjiEl._panjiAutoPositionDestroy();
+          panjiEl._panjiAutoPositionDestroy = null;
+        }
+
+        panjiEl.remove();
+        panjiEl = null;
+        panjiTextEl = null;
+        panjiEmoteEl = null;
+        panjiBubbleEl = null;
+        panjiHintBtn = null;
+        panjiMiniBtn = null;
+        panjiCharacterBtn = null;
+        panjiCloseBtn = null;
+      }
+
+      containerRef = null;
+      root = null;
+    };
+  };
+
+  document.addEventListener('click', () => startGameMusic(), { once: true });
+  document.addEventListener('keydown', () => startGameMusic(), { once: true });
+
+})();
