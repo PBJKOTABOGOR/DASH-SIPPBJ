@@ -292,7 +292,7 @@
       const doubleControl={check:'DOUBEL INPUT Pengadaan Langsung',value:doubles.length,status:doubles.length?'PERLU CEK':'OK',note:'Kode RUP tercatat di Non Tender dan Pencatatan Non Tender sekaligus.'};
       const controlRows=[...state.kontrol,doubleControl];
       const bad=controlRows.filter(r=>/PERLU|SELISIH/i.test(String(r.status)));
-      const adminPanel=state.adminMode?renderAdminPanel():`<div class="itkp74-admin-note"><strong>Mode baca.</strong> Login admin melalui logo SIPPBJ untuk membuka koreksi Kode RUP dan input realisasi manual.</div>`;
+      const adminPanel=state.adminMode?renderAdminPanel():`<div class="itkp74-admin-note"><strong></strong></div>`;
       el.content.innerHTML=`
         <div class="itkp74-control-grid">
           ${state.kontrol.slice(0,4).map(r=>`<div class="itkp74-control-card"><div class="label">${esc(r.check)}</div><div class="value">${controlValue(r)}</div><div class="note">${esc(r.note)}</div></div>`).join('')}
