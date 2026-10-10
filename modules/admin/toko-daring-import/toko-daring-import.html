@@ -1,0 +1,95 @@
+<div class="td-admin-page">
+  <section class="td-admin-hero">
+    <div>
+      <div class="td-admin-kicker">AKSES ADMIN</div>
+      <h2>Import Data Toko Daring</h2>
+      <p>Import file XLSX Toko Daring. Data langsung dipakai Monitoring Realisasi dan ITKP KEPKA 74 2026.</p>
+    </div>
+    <div class="td-admin-hero-badge">TOKO DARING</div>
+  </section>
+
+  <div id="tdAdminError" class="td-admin-alert td-admin-alert-error" hidden></div>
+  <div id="tdAdminSuccess" class="td-admin-alert td-admin-alert-success" hidden></div>
+
+  <section class="td-admin-grid">
+    <div class="td-admin-card td-admin-import-card">
+      <div class="td-admin-card-head">
+        <div>
+          <span class="td-admin-section-kicker">IMPORT FILE</span>
+          <h3>Pilih File XLSX</h3>
+          <p>Header utama yang dibaca: <b>rup_no</b>, <b>po_id</b>, <b>purchase_order_no</b>, <b>total</b>, dan <b>grand_total</b>.</p>
+        </div>
+      </div>
+
+      <label class="td-admin-drop" for="tdAdminFile">
+        <input id="tdAdminFile" type="file" accept=".xlsx,.xls" hidden>
+        <span class="td-admin-drop-icon">⇧</span>
+        <strong>Klik untuk pilih file Toko Daring</strong>
+        <small>XLSX / XLS</small>
+      </label>
+
+      <div id="tdAdminPreview" class="td-admin-preview" hidden>
+        <div class="td-admin-file-row">
+          <div>
+            <span>File dipilih</span>
+            <strong id="tdAdminFileName">-</strong>
+          </div>
+          <button id="tdAdminResetFile" class="td-admin-btn td-admin-btn-soft" type="button">Ganti File</button>
+        </div>
+        <div class="td-admin-stats">
+          <div><span>Rincian</span><strong id="tdAdminRows">0</strong></div>
+          <div><span>Kode RUP</span><strong id="tdAdminRup">0</strong></div>
+          <div><span>Pesanan</span><strong id="tdAdminOrders">0</strong></div>
+          <div><span>Total</span><strong id="tdAdminTotal">Rp0</strong></div>
+        </div>
+        <button id="tdAdminSave" class="td-admin-btn td-admin-btn-primary" type="button">Simpan & Aktifkan Data</button>
+      </div>
+    </div>
+
+    <div class="td-admin-card">
+      <div class="td-admin-card-head">
+        <div>
+          <span class="td-admin-section-kicker">DATA AKTIF</span>
+          <h3>Status Import</h3>
+          <p>Monitoring membaca cache import ini lebih dulu supaya buka halaman tetap cepat.</p>
+        </div>
+      </div>
+      <div id="tdAdminCurrentEmpty" class="td-admin-empty">Belum ada data Toko Daring yang diimport dari panel ini.</div>
+      <div id="tdAdminCurrent" hidden>
+        <div class="td-admin-current-name" id="tdAdminCurrentName">-</div>
+        <div class="td-admin-current-time" id="tdAdminCurrentTime">-</div>
+        <div class="td-admin-stats td-admin-stats-current">
+          <div><span>Rincian</span><strong id="tdAdminCurrentRows">0</strong></div>
+          <div><span>Kode RUP</span><strong id="tdAdminCurrentRup">0</strong></div>
+          <div><span>Pesanan</span><strong id="tdAdminCurrentOrders">0</strong></div>
+          <div><span>Total</span><strong id="tdAdminCurrentTotal">Rp0</strong></div>
+        </div>
+        <div class="td-admin-actions">
+          <button id="tdAdminOpenMonitoring" class="td-admin-btn td-admin-btn-primary" type="button">Buka Monitoring Realisasi</button>
+          <button id="tdAdminOpenItkp" class="td-admin-btn td-admin-btn-soft" type="button">Buka Realisasi ITKP</button>
+          <button id="tdAdminDelete" class="td-admin-btn td-admin-btn-danger" type="button">Hapus Cache Import</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="td-admin-card td-admin-section-gap">
+    <div class="td-admin-card-head td-admin-card-head-row">
+      <div>
+        <span class="td-admin-section-kicker">GOOGLE SHEET</span>
+        <h3>Sinkronisasi ke Sheet TOKO_DARING</h3>
+        <p>Opsional. Kalau URL Apps Script sudah dipasang, data yang sama bisa dikirim ke Google Sheet agar terbaca semua perangkat.</p>
+      </div>
+      <span id="tdAdminSyncBadge" class="td-admin-sync-badge">BELUM DISET</span>
+    </div>
+    <div class="td-admin-sync-row">
+      <label>
+        <span>URL Apps Script Web App</span>
+        <input id="tdAdminSyncUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+      </label>
+      <button id="tdAdminSaveSyncUrl" class="td-admin-btn td-admin-btn-soft" type="button">Simpan URL</button>
+      <button id="tdAdminSyncDrive" class="td-admin-btn td-admin-btn-primary" type="button">Kirim ke Sheet Drive</button>
+    </div>
+    <div class="td-admin-note">Target sheet: <b>TOKO_DARING</b>. File Apps Script siap pakai ada di folder <code>apps-script</code> pada ZIP project.</div>
+  </section>
+</div>

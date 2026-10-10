@@ -1,0 +1,9 @@
+ITKP KEPKA 74 - V5
+
+Perubahan data:
+1. Realisasi Pengadaan Langsung = Non Tender + Pencatatan Non Tender.
+2. Realisasi Penunjukan Langsung = Non Tender + Pencatatan Non Tender.
+3. Jika satu Kode RUP memiliki lebih dari satu Sumber Transaksi, detail web menandai DOUBEL INPUT.
+4. Penunjukan Langsung tanpa RUP ditampilkan 100% pada web.
+5. Export XLSX mencantumkan Tanggal Export pada bagian atas lembar.
+6. Program/Kegiatan/Sub Kegiatan tetap dibaca dari kolom Q:R:S ITKP_MASTER_PAKET.
