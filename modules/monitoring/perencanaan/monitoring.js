@@ -14,7 +14,7 @@
     }
   };
 
-  window.__moduleInit = function ({ container }) {
+  const initMonitoringEngine = function ({ container, dashboardOnly = false, onDashboardUpdate = null, forceDashboardData = false }) {
     const root = container || document;
 
     let allRows = [];
@@ -111,7 +111,7 @@
 
     async function fetchSheet(sheetName, sheetId = CONFIG.SHEET_ID) {
       if (!window.Papa) throw new Error('Library PapaParse belum tersedia.');
-      const text = await window.SippbjFastData.fetchText(csvUrlBySheetName(sheetId, sheetName), {ttlMs:120000});
+      const text = await window.SippbjFastData.fetchText(csvUrlBySheetName(sheetId, sheetName), {ttlMs:120000, force: dashboardOnly && forceDashboardData});
       const result = Papa.parse(text, {header:true, skipEmptyLines:true});
       if (result.errors?.some(error => error.type === 'Quotes')) {
         console.warn('Periksa CSV pada sheet ' + sheetName, result.errors[0]);
@@ -1947,6 +1947,33 @@
       });
     }
 
+    // Dipakai Dashboard Paket Warning. Jalankan mesin data yang SAMA dengan
+    // Monitoring Realisasi, tetapi tanpa memasang UI, modal, atau event modul.
+    // Request dimulai SETELAH dashboard dan ITKP siap, bukan saat boot awal.
+    if (dashboardOnly) {
+      return ensurePapaLoaded().then(async () => {
+        const [perencanaan, realisasi, pembayaran, tokoDaring, history] = await Promise.all([
+          fetchSheet(CONFIG.SHEETS.perencanaan),
+          fetchRealisasiSheet(),
+          fetchSheet(CONFIG.SHEETS.pembayaran),
+          fetchTokoDaringSheet(),
+          fetchHistoryRup()
+        ]);
+        const rows = buildMonitoringData(perencanaan, realisasi, pembayaran, tokoDaring, history);
+        // Pembaruan HISTORYRUP memproses ulang sumber yang sudah di memori,
+        // tidak meminta ulang realisasi, perencanaan, BAST atau toko daring.
+        if (historyFromSnapshot) {
+          void fetchLiveHistoryRup().then(live => {
+            if (live && historyFingerprint(live) !== historyFingerprint(history)) {
+              const updatedRows = buildMonitoringData(perencanaan, realisasi, pembayaran, tokoDaring, live);
+              if (typeof onDashboardUpdate === 'function') onDashboardUpdate(updatedRows);
+            }
+          }).catch(error => console.warn('HISTORYRUP Dashboard:', error));
+        }
+        return rows;
+      });
+    }
+
     window.runMonitoring = runMonitoring;
     window.runMonitoringFast = runMonitoringFast;
     window.toggleSortWaktu = toggleSortWaktu;
@@ -2001,5 +2028,19 @@
       if (window.handleModalBackdrop === handleModalBackdrop) window.handleModalBackdrop = undefined;
       if (window.exportMonitoringExcel === exportMonitoringExcel) window.exportMonitoringExcel = undefined;
     };
+  };
+
+  // Jembatan baca-saja untuk Dashboard, tidak mengubah inisialisasi submenu.
+  // Jangan mengubah initializer modul lain ketika file dipanggil di belakang
+  // layar oleh Dashboard. Loader route tetap menggunakan window.__moduleInit.
+  if (document.currentScript?.dataset?.dashboardMonitoringEngine !== 'true') {
+    window.__moduleInit = initMonitoringEngine;
+  }
+  window.SippbjMonitoringWarningService = function ({ onUpdate, force = false } = {}) {
+    return initMonitoringEngine({
+      dashboardOnly: true,
+      onDashboardUpdate: onUpdate,
+      forceDashboardData: force
+    });
   };
 })();
