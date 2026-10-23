@@ -1789,6 +1789,9 @@
         'Kode RUP': row.kode_rup,
         'Nama Paket': row.nama_paket,
         'Satuan Kerja': row.satuan_kerja,
+        'Program': row.program || '-',
+        'Kegiatan': row.kegiatan || '-',
+        'Sub Kegiatan': row.sub_kegiatan || '-',
         'Metode Pengadaan': row.metode,
         'Waktu Pemilihan': row.waktu_pemilihan_label,
         'Pagu RUP (Rp)': Number(row.pagu || 0),
@@ -1809,6 +1812,9 @@
           'No': index + 1,
           'Satuan Kerja': row.satuan_kerja,
           'Nama Paket': row.nama_paket,
+          'Program': row.program || '-',
+          'Kegiatan': row.kegiatan || '-',
+          'Sub Kegiatan': row.sub_kegiatan || '-',
           'Kode RUP Perencanaan': row.kode_rup,
           'Kode RUP Realisasi': row.kode_rup_realisasi || '-',
           'Kondisi': row.kecocokan_rup === 'Perlu Penyesuaian' ? 'Perlu Sesuaikan RUP' : 'Perlu Cek Riwayat',
@@ -1846,11 +1852,11 @@
         const workbook = XLSX.utils.book_new();
         const worksheet = XLSX.utils.json_to_sheet(rows);
         configureExportSheet(worksheet,
-          [6, 16, 44, 32, 21, 18, 21, 21, 24, 15, 23, 23, 19, 56],
-          [6, 7, 8]);
+          [6, 16, 44, 32, 36, 44, 44, 21, 18, 21, 21, 24, 15, 23, 23, 19, 56],
+          [9, 10, 11]);
         // Nilai persentase disimpan sebagai 75,50 bukan 0,7550; format tampil sesuai data dashboard.
         for (let row = 1; row <= rows.length; row++) {
-          const cell = worksheet[`J${row + 1}`];
+          const cell = worksheet[`M${row + 1}`];
           if (cell && cell.t === 'n') cell.z = '0.00"%"';
         }
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Monitoring');
@@ -1859,7 +1865,7 @@
         if (actionRows.length) {
           const actionSheet = XLSX.utils.json_to_sheet(actionRows);
           configureExportSheet(actionSheet,
-            [6, 30, 44, 22, 22, 25, 64, 54, 23], [8]);
+            [6, 30, 44, 36, 44, 44, 22, 22, 25, 64, 54, 23], [11]);
           XLSX.utils.book_append_sheet(workbook, actionSheet, 'Tindak Lanjut OPD');
         }
 
