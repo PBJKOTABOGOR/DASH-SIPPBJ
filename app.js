@@ -218,6 +218,10 @@ let dashboardBootShownThisSession = false;
 let dashboardRenderToken = 0;
 let dashboardLoadGeneration = 0;
 let dashboardWarningPromise = null;
+let dashboardMonitoringEnginePromise = null;
+let dashboardMonitoringRows = null;
+let dashboardMonitoringRowsPromise = null;
+
 let dashboardBootOverlayEl = null;
 let dashboardBootProgressTimer = null;
 
@@ -1131,134 +1135,62 @@ function analyzeDashboardPackageStatuses(rows, metodeRup) {
   return summary;
 }
 
-function buildDashboardWarningSummary(planningRows, realRows, getFieldFn) {
-  return {
-    sedangBerjalan: 0,
-    selesaiProsesPemilihan: 0,
-    melewatiWaktuPemilihan: 0,
-    melebihiTargetPemilihan: 0,
-    melebihiPaguRealisasi: 0
-  };
-}
-
+// Status dan perhitungan berikut berasal dari hasil buildMonitoringData() yang
+// digunakan persis sama oleh halaman Monitoring Realisasi.
 function normalizeSatkerName(value) {
-  return String(value || '')
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, ' ');
+  return String(value || '').trim().toUpperCase().replace(/\s+/g, ' ');
 }
 
-function getAllprogCell(row, index, candidates) {
-  const cells = Array.isArray(row && row.__cells) ? row.__cells : [];
-  const valueByIndex = String(cells[index] || '').trim();
-
-  // ALLPROG punya struktur kolom tetap:
-  // A Cara Pengadaan, B Jenis Pengadaan, C Kode RUP, D Satuan Kerja,
-  // E Metode Pengadaan, F Sumber Transaksi, G Nama Paket, H Nilai Pagu,
-  // I Nilai Realisasi, J Status Paket, K Waktu Pemilihan, L Warning.
-  // Jadi popup dan export harus ambil dari posisi kolom ini, bukan tebakan header.
-  if (valueByIndex) return valueByIndex;
-
-  return getField(row, candidates || []);
+function scopeDashboardMonitoringRows(rows, profileName, isCity) {
+  if (isCity) return rows || [];
+  const key = normalizeSatkerName(profileName);
+  return (rows || []).filter(row => normalizeSatkerName(row.satuan_kerja) === key);
 }
 
-function getAllprogSatker(row) {
-  return getAllprogCell(row, 3, [
-    'Satuan Kerja',
-    'Nama Satuan Kerja',
-    'Satker',
-    'Nama Satker',
-    'OPD',
-    'Nama OPD',
-    'Perangkat Daerah',
-    'Unit Kerja'
-  ]);
-}
-
-function mapAllprogRows(rows, selectedProfileName, selectedIsCity) {
-  const selectedKey = normalizeSatkerName(selectedProfileName);
-
-  return (rows || []).map((row) => ({
-    caraPengadaan: getAllprogCell(row, 0, ['Cara Pengadaan']),
-    jenisPengadaan: getAllprogCell(row, 1, ['Jenis Pengadaan']),
-    kodeRup: getAllprogCell(row, 2, ['Kode RUP', 'Kode Rup']),
-    satker: getAllprogSatker(row),
-    metodePengadaan: getAllprogCell(row, 4, ['Metode Pengadaan']),
-    sumberTransaksi: getAllprogCell(row, 5, ['Sumber Transaksi']),
-    namaPaket: getAllprogCell(row, 6, ['Nama Paket']),
-    nilaiPagu: toNumber(getAllprogCell(row, 7, ['Nilai Pagu', 'Pagu'])),
-    nilaiRealisasi: toNumber(getAllprogCell(row, 8, ['Nilai Realisasi', 'Realisasi'])),
-    statusPaket: getAllprogCell(row, 9, ['Status Paket', 'Status']),
-    waktuPemilihan: getAllprogCell(row, 10, ['Waktu Pemilihan', 'Waktu_Pemilihan', 'Waktu Pemilihan Paket']),
-    warning: getAllprogCell(row, 11, ['Warning'])
-  })).filter((item) => {
-    if (selectedIsCity) return true;
-    return normalizeSatkerName(item.satker) === selectedKey;
-  });
-}
-
-function normalizeWarningText(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
-}
-
-function buildAllprogWarningSummary(rows) {
+function buildMonitoringWarningSummary(rows) {
   const summary = {
     totalPaket: (rows || []).length,
     selesai: 0,
     sedangBerjalan: 0,
     belumBerjalan: 0,
+    selesaiPemilihan: 0,
     melewatiWaktuPemilihan: 0,
-    melebihiTargetPemilihan: 0
+    melebihiPagu: 0,
+    perluSesuaikanRup: 0,
+    perluCekRiwayat: 0
   };
-
-  (rows || []).forEach((item) => {
-    const warning = normalizeWarningText(item.warning);
-
-    if (warning === 'selesai') {
-      summary.selesai += 1;
-      return;
-    }
-    if (warning === 'sedang berjalan') {
-      summary.sedangBerjalan += 1;
-      return;
-    }
-    if (warning === 'belum berjalan') {
-      summary.belumBerjalan += 1;
-      return;
-    }
-    if (warning === 'melewati waktu pemilihan') {
-      summary.melewatiWaktuPemilihan += 1;
-      return;
-    }
-    if (warning === 'melebihi target pemilihan') {
-      summary.melebihiTargetPemilihan += 1;
-    }
+  (rows || []).forEach(row => {
+    if (row.status === 'Selesai') summary.selesai++;
+    else if (row.status === 'Berjalan') summary.sedangBerjalan++;
+    else if (row.status === 'Belum Berjalan') summary.belumBerjalan++;
+    else if (row.status === 'Selesai Proses Pemilihan') summary.selesaiPemilihan++;
+    if (row.posisi_jadwal === 'Melewati') summary.melewatiWaktuPemilihan++;
+    if (row.progres === 'Melebihi Pagu') summary.melebihiPagu++;
+    if (row.kecocokan_rup === 'Perlu Penyesuaian') summary.perluSesuaikanRup++;
+    if (row.kecocokan_rup === 'Perlu Verifikasi') summary.perluCekRiwayat++;
   });
-
   return summary;
 }
 
 function getWarningTypeTitle(type) {
   return ({
     selesai: 'Selesai',
-    sedangBerjalan: 'Sedang Berjalan',
+    sedangBerjalan: 'Berjalan',
     belumBerjalan: 'Belum Berjalan',
+    selesaiPemilihan: 'Selesai Proses Pemilihan',
     melewatiWaktuPemilihan: 'Melewati Waktu Pemilihan',
-    melebihiTargetPemilihan: 'Melebihi Target Pemilihan'
-  })[type] || 'Detail Paket Warning';
+    melebihiPagu: 'Melebihi Pagu'
+  })[type] || 'Detail Paket';
 }
 
 function filterWarningRowsByType(rows, type) {
-  return (rows || []).filter((item) => {
-    const warning = normalizeWarningText(item.warning);
-    if (type === 'selesai') return warning === 'selesai';
-    if (type === 'sedangBerjalan') return warning === 'sedang berjalan';
-    if (type === 'belumBerjalan') return warning === 'belum berjalan';
-    if (type === 'melewatiWaktuPemilihan') return warning === 'melewati waktu pemilihan';
-    if (type === 'melebihiTargetPemilihan') return warning === 'melebihi target pemilihan';
+  return (rows || []).filter(row => {
+    if (type === 'selesai') return row.status === 'Selesai';
+    if (type === 'sedangBerjalan') return row.status === 'Berjalan';
+    if (type === 'belumBerjalan') return row.status === 'Belum Berjalan';
+    if (type === 'selesaiPemilihan') return row.status === 'Selesai Proses Pemilihan';
+    if (type === 'melewatiWaktuPemilihan') return row.posisi_jadwal === 'Melewati';
+    if (type === 'melebihiPagu') return row.progres === 'Melebihi Pagu';
     return false;
   });
 }
@@ -1319,12 +1251,13 @@ function closeWarningModal() {
 
 
 function getWarningUiKey(value) {
-  const warning = normalizeWarningText(value);
-  if (warning === 'selesai') return 'selesai';
-  if (warning === 'sedang berjalan') return 'sedang';
-  if (warning === 'belum berjalan') return 'belum';
-  if (warning === 'melewati waktu pemilihan') return 'melewati';
-  if (warning === 'melebihi target pemilihan') return 'melebihi';
+  const key = String(value || '').trim().toLowerCase();
+  if (key === 'selesai') return 'selesai';
+  if (key === 'berjalan') return 'sedang';
+  if (key === 'belum berjalan') return 'belum';
+  if (key === 'selesai proses pemilihan') return 'selesai';
+  if (key === 'melewati') return 'melewati';
+  if (key === 'melebihi pagu') return 'melebihi';
   return 'belum';
 }
 
@@ -1384,37 +1317,43 @@ function renderWarningModalPage() {
         <table class="warning-table">
           <thead>
             <tr>
-              <th>No</th>
-              <th>Cara Pengadaan</th>
-              <th>Jenis Pengadaan</th>
+              <th>No.</th>
               <th>Kode RUP</th>
-              <th>Satuan Kerja</th>
-              <th>Metode Pengadaan</th>
-              <th>Sumber Transaksi</th>
               <th>Nama Paket</th>
-              <th>Nilai Pagu</th>
-              <th>Nilai Realisasi</th>
-              <th>Status Paket</th>
-              <th>Waktu Pemilihan</th>
-              <th>Warning</th>
+              <th>Satuan Kerja</th>
+              <th>Program</th>
+              <th>Kegiatan</th>
+              <th>Sub Kegiatan</th>
+              <th>Metode</th>
+              <th>Pagu RUP</th>
+              <th>Nilai Kontrak</th>
+              <th>Realisasi Keuangan</th>
+              <th>Status</th>
+              <th>Posisi Jadwal</th>
+              <th>Kesesuaian Kode RUP</th>
+              <th>RUP Realisasi</th>
+              <th>Tindak Lanjut</th>
             </tr>
           </thead>
           <tbody>
             ${pageRows.map((item, index) => `
-              <tr class="warning-row--${getWarningUiKey(item.warning)}">
+              <tr class="warning-row--${getWarningUiKey(item.posisi_jadwal === 'Melewati' ? 'Melewati' : item.status)}">
                 <td>${start + index + 1}</td>
-                <td>${escapeHtml(item.caraPengadaan || '-')}</td>
-                <td>${escapeHtml(item.jenisPengadaan || '-')}</td>
-                <td>${escapeHtml(item.kodeRup || '-')}</td>
-                <td>${escapeHtml(item.satker || '-')}</td>
-                <td>${escapeHtml(item.metodePengadaan || '-')}</td>
-                <td>${escapeHtml(item.sumberTransaksi || '-')}</td>
-                <td>${escapeHtml(item.namaPaket || '-')}</td>
-                <td>${escapeHtml(formatMoney(item.nilaiPagu || 0))}</td>
-                <td>${escapeHtml(formatMoney(item.nilaiRealisasi || 0))}</td>
-                <td>${escapeHtml(item.statusPaket || '-')}</td>
-                <td>${escapeHtml(item.waktuPemilihan || '-')}</td>
-                <td>${renderWarningBadge(item.warning)}</td>
+                <td>${escapeHtml(item.kode_rup || '-')}</td>
+                <td>${escapeHtml(item.nama_paket || '-')}</td>
+                <td>${escapeHtml(item.satuan_kerja || '-')}</td>
+                <td>${escapeHtml(item.program || '-')}</td>
+                <td>${escapeHtml(item.kegiatan || '-')}</td>
+                <td>${escapeHtml(item.sub_kegiatan || '-')}</td>
+                <td>${escapeHtml(item.metode || '-')}</td>
+                <td>${escapeHtml(formatMoney(item.pagu || 0))}</td>
+                <td>${escapeHtml(formatMoney(item.nilai_kontrak || 0))}</td>
+                <td>${escapeHtml(formatMoney(item.realisasi_keuangan || 0))}</td>
+                <td>${renderWarningBadge(item.status)}</td>
+                <td>${escapeHtml(item.posisi_jadwal || '-')}</td>
+                <td>${escapeHtml(item.kecocokan_rup || '-')}</td>
+                <td>${escapeHtml(item.kode_rup_realisasi || '-')}</td>
+                <td>${escapeHtml(item.tindak_lanjut_rup !== '-' ? item.tindak_lanjut_rup : (item.warning || 'OK'))}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -1450,57 +1389,49 @@ function ensureXlsxLibrary() {
 
 window.SippbjEnsureXlsx = ensureXlsxLibrary;
 
-async function exportWarningRowsToXlsx() {
-  await ensureXlsxLibrary();
-  const rows = WARNING_MODAL_STATE.filteredRows.map((item) => ({
-    'Satuan Kerja': item.satker || '',
-    'Cara Pengadaan': item.caraPengadaan || '',
-    'Jenis Pengadaan': item.jenisPengadaan || '',
-    'Kode RUP': item.kodeRup || '',
-    'Metode Pengadaan': item.metodePengadaan || '',
-    'Sumber Transaksi': item.sumberTransaksi || '',
-    'Nama Paket': item.namaPaket || '',
-    'Nilai Pagu': item.nilaiPagu || 0,
-    'Nilai Realisasi': item.nilaiRealisasi || 0,
-    'Status Paket': item.statusPaket || '',
-    'Waktu Pemilihan': item.waktuPemilihan || '',
-    'Warning': item.warning || ''
-  }));
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Warning');
-  const safeName = WARNING_MODAL_STATE.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-  XLSX.writeFile(wb, `${safeName || 'warning'}_${Date.now()}.xlsx`);
+function mapDashboardWarningExcelRow(item) {
+  return {
+    'Kode RUP': item.kode_rup || '',
+    'Nama Paket': item.nama_paket || '',
+    'Satuan Kerja': item.satuan_kerja || '',
+    'Program': item.program || '-',
+    'Kegiatan': item.kegiatan || '-',
+    'Sub Kegiatan': item.sub_kegiatan || '-',
+    'Metode Pengadaan': item.metode || '-',
+    'Pagu RUP': Number(item.pagu || 0),
+    'Nilai Kontrak': Number(item.nilai_kontrak || 0),
+    'Realisasi Keuangan': Number(item.realisasi_keuangan || 0),
+    'Status': item.status || '',
+    'Posisi Jadwal': item.posisi_jadwal || '',
+    'Kesesuaian Kode RUP': item.kecocokan_rup || '',
+    'Kode RUP Realisasi': item.kode_rup_realisasi || '-',
+    'Riwayat Kode RUP': item.riwayat_kode_rup || '-',
+    'Tindak Lanjut': item.tindak_lanjut_rup !== '-' ? item.tindak_lanjut_rup : (item.warning || 'OK')
+  };
 }
 
+async function exportWarningRowsToXlsx() {
+  await ensureXlsxLibrary();
+  const rows = WARNING_MODAL_STATE.filteredRows.map(mapDashboardWarningExcelRow);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Monitoring');
+  const safeName = WARNING_MODAL_STATE.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+  XLSX.writeFile(wb, `${safeName || 'monitoring'}_${Date.now()}.xlsx`);
+}
 
 async function exportAllWarningRowsToXlsx() {
   await ensureXlsxLibrary();
-  const rows = ((DASHBOARD_STATE.data && DASHBOARD_STATE.data.allprogRows) || []).map((item) => ({
-    'Satuan Kerja': item.satker || '',
-    'Cara Pengadaan': item.caraPengadaan || '',
-    'Jenis Pengadaan': item.jenisPengadaan || '',
-    'Kode RUP': item.kodeRup || '',
-    'Metode Pengadaan': item.metodePengadaan || '',
-    'Sumber Transaksi': item.sumberTransaksi || '',
-    'Nama Paket': item.namaPaket || '',
-    'Nilai Pagu': item.nilaiPagu || 0,
-    'Nilai Realisasi': item.nilaiRealisasi || 0,
-    'Status Paket': item.statusPaket || '',
-    'Waktu Pemilihan': item.waktuPemilihan || '',
-    'Warning': item.warning || ''
-  }));
-
+  const rows = ((DASHBOARD_STATE.data && DASHBOARD_STATE.data.monitoringWarningRows) || []).map(mapDashboardWarningExcelRow);
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Semua Paket');
-  XLSX.writeFile(wb, `semua_paket_warning_${Date.now()}.xlsx`);
+  XLSX.utils.book_append_sheet(wb, ws, 'Monitoring');
+  XLSX.writeFile(wb, `monitoring_realisasi_${Date.now()}.xlsx`);
 }
-
 
 function openWarningModal(type) {
   ensureWarningModalStyle();
-  const rows = filterWarningRowsByType((DASHBOARD_STATE.data && DASHBOARD_STATE.data.allprogRows) || [], type);
+  const rows = filterWarningRowsByType((DASHBOARD_STATE.data && DASHBOARD_STATE.data.monitoringWarningRows) || [], type);
   WARNING_MODAL_STATE.rows = rows;
   WARNING_MODAL_STATE.filteredRows = rows;
   WARNING_MODAL_STATE.type = type;
@@ -1515,13 +1446,13 @@ function openWarningModal(type) {
     <div class="warning-modal-card" role="dialog" aria-modal="true">
       <div class="warning-modal-header">
         <div>
-          <div class="warning-modal-kicker">Detail Paket Warning</div>
+          <div class="warning-modal-kicker">Detail Monitoring Realisasi</div>
           <h3 id="warningModalTitle">${escapeHtml(WARNING_MODAL_STATE.title)}</h3>
         </div>
         <button type="button" class="warning-modal-close" id="warningModalClose" aria-label="Tutup"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div>
       <div class="warning-modal-toolbar">
-        <div class="warning-modal-caption">Data mengikuti satuan kerja yang sedang dipilih di dashboard ITKP.</div>
+        <div class="warning-modal-caption">Data dan status sama dengan Monitoring Realisasi, sesuai satuan kerja yang dipilih.</div>
         <button type="button" class="warning-modal-button" id="warningModalExport">Export Status Ini</button>
         <button type="button" class="warning-modal-button warning-modal-button--all" id="warningModalExportAll">Export Semua Paket</button>
       </div>
@@ -1561,7 +1492,6 @@ function analyzeDashboardData(raw) {
   const itkpAllRows = raw.itkp || [];
   const planningRows = raw.perencanaan || [];
   const realRows = raw.realisasi || [];
-  const allprogAllRows = raw.allprog || [];
 
   const getSatker = (row) => getField(row, ['Satuan Kerja', 'Nama Satuan Kerja', 'nama_satker']);
   const getMetode = (row) => getField(row, ['Metode Pengadaan', 'mtd_pemilihan', 'Sumber Transaksi']);
@@ -1613,14 +1543,14 @@ function analyzeDashboardData(raw) {
   const topItkp = [...scoreRows].sort((a, b) => b.score - a.score).slice(0, 8);
   const lowItkp = [...scoreRows].sort((a, b) => a.score - b.score).slice(0, 8);
 
-  const scopedAllprogRows = mapAllprogRows(allprogAllRows, selectedProfile.name, selectedIsCity);
-  const warningSummary = buildAllprogWarningSummary(scopedAllprogRows);
+  const monitoringWarningRows = scopeDashboardMonitoringRows(raw.monitoringRows || [], selectedProfile.name, selectedIsCity);
+  const warningSummary = buildMonitoringWarningSummary(monitoringWarningRows);
 
   return {
     itkpRows: itkpOpdRows,
     planningRows,
     realRows,
-    allprogRaw: allprogAllRows,
+    monitoringAllRows: raw.monitoringRows || [],
     totalOpd: itkpOpdRows.length,
     scopeName: selectedProfile.name,
     scopeIsCity: selectedIsCity,
@@ -1646,7 +1576,7 @@ function analyzeDashboardData(raw) {
     topItkp,
     lowItkp,
     warningSummary,
-    allprogRows: scopedAllprogRows
+    monitoringWarningRows
   };
 }
 
@@ -1668,15 +1598,14 @@ async function loadDashboardData(force = false) {
         fetchSheetRows(DASHBOARD_SHEETS.realisasi, force)
       ]);
       if (generation !== dashboardLoadGeneration) return DASHBOARD_STATE.data;
-      const data = analyzeDashboardData({itkp, perencanaan, realisasi, allprog: []});
-      // Tampilkan status loading khusus Paket Warning; jangan menyajikan
-      // angka nol yang seolah-olah sudah diverifikasi.
-      data.allprogPending = true;
-      data.allprogError = '';
+      const data = analyzeDashboardData({itkp, perencanaan, realisasi, monitoringRows: dashboardMonitoringRows || []});
+      // Status belum tersedia bukan nol, tunggu mesin Monitoring Realisasi.
+      data.monitoringPending = !dashboardMonitoringRows;
+      data.monitoringError = '';
       DASHBOARD_STATE.data = data;
       DASHBOARD_STATE.loadedAt = new Date();
-      // ALLPROG/Paket Warning sengaja dimulai SETELAH loading Kepka 74
-      // agar request Spreadsheet besar tidak berebut bandwidth/jalur kritis.
+      // Mesin Monitoring Realisasi dimulai SETELAH loading Kepka 74.
+      // Tidak ikut menahan loading awal Dashboard.
       return data;
     } catch (error) {
       DASHBOARD_STATE.error = error;
@@ -1690,22 +1619,66 @@ async function loadDashboardData(force = false) {
   return task;
 }
 
+// Mesin data mengambil sumber yang sama dengan Monitoring Realisasi,
+// sehingga status/rekap dashboard bukan lagi hasil sheet ALLPROG.
+function ensureDashboardMonitoringEngine() {
+  if (typeof window.SippbjMonitoringWarningService === 'function') return Promise.resolve();
+  if (dashboardMonitoringEnginePromise) return dashboardMonitoringEnginePromise;
+  dashboardMonitoringEnginePromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = cacheBust(APP_ROUTES['monitoring-perencanaan'].js);
+    script.dataset.dashboardMonitoringEngine = 'true';
+    script.onload = () => {
+      if (typeof window.SippbjMonitoringWarningService === 'function') resolve();
+      else reject(new Error('Mesin Monitoring Realisasi belum tersedia.'));
+    };
+    script.onerror = () => reject(new Error('Gagal memuat mesin Monitoring Realisasi.'));
+    document.body.appendChild(script);
+  }).catch(error => {
+    dashboardMonitoringEnginePromise = null;
+    throw error;
+  });
+  return dashboardMonitoringEnginePromise;
+}
+
+async function getDashboardMonitoringRows(force = false) {
+  if (dashboardMonitoringRows && !force) return dashboardMonitoringRows;
+  if (dashboardMonitoringRowsPromise) return dashboardMonitoringRowsPromise;
+  dashboardMonitoringRowsPromise = (async () => {
+    await ensureDashboardMonitoringEngine();
+    const rows = await window.SippbjMonitoringWarningService({
+      force,
+      onUpdate(updatedRows) {
+        // Pembaruan live diselesaikan setelah promise snapshot, agar data
+        // baru tidak tertimpa data lama bila Google Sheet sangat cepat.
+        window.setTimeout(() => {
+          dashboardMonitoringRows = updatedRows;
+          if (!DASHBOARD_STATE.data) return;
+          updateDashboardWarningScope(DASHBOARD_STATE.data, updatedRows);
+          updateDashboardWarningCard();
+        }, 0);
+      }
+    });
+    dashboardMonitoringRows = rows;
+    return rows;
+  })().finally(() => { dashboardMonitoringRowsPromise = null; });
+  return dashboardMonitoringRowsPromise;
+}
+
 async function loadDashboardWarnings(force = false, generation = dashboardLoadGeneration) {
   if (dashboardWarningPromise) return dashboardWarningPromise;
   dashboardWarningPromise = (async () => {
     try {
-      const rows = await fetchSheetRows(DASHBOARD_SHEETS.allprog, force);
+      const rows = await getDashboardMonitoringRows(force);
       if (generation !== dashboardLoadGeneration || !DASHBOARD_STATE.data) return;
-      const data = DASHBOARD_STATE.data;
-      data.allprogRaw = rows;
-      updateDashboardWarningScope(data);
-      data.allprogError = '';
-      data.allprogPending = false;
+      updateDashboardWarningScope(DASHBOARD_STATE.data, rows);
+      DASHBOARD_STATE.data.monitoringError = '';
+      DASHBOARD_STATE.data.monitoringPending = false;
     } catch (error) {
       if (generation !== dashboardLoadGeneration || !DASHBOARD_STATE.data) return;
-      console.warn('Paket Warning belum dapat dimuat:', error);
-      DASHBOARD_STATE.data.allprogPending = false;
-      DASHBOARD_STATE.data.allprogError = error.message || 'Sumber data belum tersedia.';
+      console.warn('Paket Warning Monitoring Realisasi belum dapat dimuat:', error);
+      DASHBOARD_STATE.data.monitoringPending = false;
+      DASHBOARD_STATE.data.monitoringError = error.message || 'Sumber Monitoring Realisasi belum tersedia.';
     } finally {
       if (generation === dashboardLoadGeneration) {
         dashboardWarningPromise = null;
@@ -1716,9 +1689,10 @@ async function loadDashboardWarnings(force = false, generation = dashboardLoadGe
   return dashboardWarningPromise;
 }
 
-function updateDashboardWarningScope(data) {
-  data.allprogRows = mapAllprogRows(data.allprogRaw, data.selectedProfile.name, data.scopeIsCity);
-  data.warningSummary = buildAllprogWarningSummary(data.allprogRows);
+function updateDashboardWarningScope(data, rows = dashboardMonitoringRows || []) {
+  data.monitoringAllRows = rows;
+  data.monitoringWarningRows = scopeDashboardMonitoringRows(rows, data.selectedProfile.name, data.scopeIsCity);
+  data.warningSummary = buildMonitoringWarningSummary(data.monitoringWarningRows);
 }
 
 function updateDashboardWarningCard() {
@@ -2087,8 +2061,8 @@ function bindDashboardWarningEvents() {
   });
   document.querySelector('#dashboardWarningCard [data-warning-retry]')?.addEventListener('click', () => {
     if (!DASHBOARD_STATE.data || dashboardWarningPromise) return;
-    DASHBOARD_STATE.data.allprogPending = true;
-    DASHBOARD_STATE.data.allprogError = '';
+    DASHBOARD_STATE.data.monitoringPending = true;
+    DASHBOARD_STATE.data.monitoringError = '';
     updateDashboardWarningCard();
     void loadDashboardWarnings(true);
   });
@@ -2118,10 +2092,10 @@ function bindDashboardEvents() {
           : previousData.itkpRows,
         perencanaan: previousData.planningRows,
         realisasi: previousData.realRows,
-        allprog: previousData.allprogPending ? [] : previousData.allprogRaw
+        monitoringRows: previousData.monitoringAllRows
       });
-      DASHBOARD_STATE.data.allprogPending = previousData.allprogPending;
-      DASHBOARD_STATE.data.allprogError = previousData.allprogError;
+      DASHBOARD_STATE.data.monitoringPending = previousData.monitoringPending;
+      DASHBOARD_STATE.data.monitoringError = previousData.monitoringError;
       renderDashboardReady(DASHBOARD_STATE.data);
       bindDashboardEvents();
       initScrollAnimation();
@@ -2347,17 +2321,9 @@ function renderInfoStat(label, value, desc, tone = '', meta = '') {
 }
 
 function renderQuickSummaryCard(data, scopeLabel, scopeDesc) {
-  const warning = data.warningSummary || {
-    totalPaket: (data.allprogRows || []).length,
-    selesai: 0,
-    sedangBerjalan: 0,
-    belumBerjalan: 0,
-    melewatiWaktuPemilihan: 0,
-    melebihiTargetPemilihan: 0
-  };
-
-  const pending = Boolean(data.allprogPending);
-  const failed = Boolean(data.allprogError);
+  const warning = data.warningSummary || buildMonitoringWarningSummary(data.monitoringWarningRows || []);
+  const pending = Boolean(data.monitoringPending);
+  const failed = Boolean(data.monitoringError);
   const renderWarningCard = (type, label, value, desc, tone) => `
     <button type="button" class="summary-stat ${pending || failed ? '' : 'summary-stat--clickable'} ${tone && !pending && !failed ? `summary-stat--${tone}` : ''}" ${pending || failed ? 'disabled aria-busy="true"' : `data-warning-type="${type}"`}>
       <span class="summary-stat-label">${escapeHtml(label)}</span>
@@ -2370,20 +2336,22 @@ function renderQuickSummaryCard(data, scopeLabel, scopeDesc) {
     <div class="card" id="dashboardWarningCard">
       <div class="section-title-row">
         <div>
-          <span class="section-kicker">Paket Warning · ${escapeHtml(scopeLabel)}</span>
+          <span class="section-kicker">Monitoring Realisasi · ${escapeHtml(scopeLabel)}</span>
           <h3>Paket Warning</h3>
-          <p class="section-subnote">${failed ? 'Data belum bisa dimuat. Coba kembali mengambil data.' : pending ? 'Menyiapkan data Paket Warning tanpa menahan dashboard.' : 'Klik salah satu status untuk melihat daftar paketnya.'}</p>
+          <p class="section-subnote">${failed ? 'Data belum bisa dimuat. Silakan coba lagi.' : pending ? 'Memuat hasil Monitoring Realisasi...' : 'Status sama dengan menu Monitoring Realisasi. Klik untuk melihat paketnya.'}</p>
         </div>
         <span class="soft-pill">${pending ? 'Memuat...' : failed ? 'Belum tersedia' : `${formatNumber(warning.totalPaket)} paket`}</span>
       </div>
       ${failed ? `<button class="lux-button lux-button--ghost" type="button" data-warning-retry="1">Coba Muat Ulang</button>` : ''}
-
+      ${!pending && !failed && (warning.perluSesuaikanRup || warning.perluCekRiwayat) ?
+        `<p class="section-subnote">${warning.perluSesuaikanRup ? `${formatNumber(warning.perluSesuaikanRup)} paket perlu penyesuaian Kode RUP.` : ''} ${warning.perluCekRiwayat ? `${formatNumber(warning.perluCekRiwayat)} paket perlu cek riwayat.` : ''}</p>` : ''}
       <div class="summary-stat-grid summary-stat-grid--warning">
-        ${renderWarningCard('selesai', 'Selesai', warning.selesai, 'Paket sudah selesai/prosesnya sudah tuntas.', warning.selesai > 0 ? 'success' : '')}
-        ${renderWarningCard('sedangBerjalan', 'Sedang Berjalan', warning.sedangBerjalan, 'Paket sudah ada proses/realisasi dan masih berjalan.', warning.sedangBerjalan > 0 ? 'info' : '')}
-        ${renderWarningCard('belumBerjalan', 'Belum Berjalan', warning.belumBerjalan, 'Paket belum memasuki waktu pemilihan.', 'muted')}
-        ${renderWarningCard('melewatiWaktuPemilihan', 'Melewati Waktu Pemilihan', warning.melewatiWaktuPemilihan, 'Jadwal pemilihan sudah lewat, tapi paket belum selesai/bergerak sesuai data.', warning.melewatiWaktuPemilihan > 0 ? 'danger' : '')}
-        ${renderWarningCard('melebihiTargetPemilihan', 'Melebihi Target Pemilihan', warning.melebihiTargetPemilihan, 'Realisasi/proses muncul lebih cepat dari jadwal pemilihan yang direncanakan.', warning.melebihiTargetPemilihan > 0 ? 'warning' : '')}
+        ${renderWarningCard('selesai', 'Selesai', warning.selesai, 'Paket telah selesai sesuai status monitoring.', 'success')}
+        ${renderWarningCard('sedangBerjalan', 'Berjalan', warning.sedangBerjalan, 'Paket sudah punya realisasi dan masih berjalan.', 'info')}
+        ${renderWarningCard('belumBerjalan', 'Belum Berjalan', warning.belumBerjalan, 'Belum ditemukan realisasi paket.', 'muted')}
+        ${renderWarningCard('selesaiPemilihan', 'Selesai Proses Pemilihan', warning.selesaiPemilihan, 'Pemilihan selesai, menunggu kelengkapan penyelesaian.', 'success')}
+        ${renderWarningCard('melewatiWaktuPemilihan', 'Melewati Waktu Pemilihan', warning.melewatiWaktuPemilihan, 'Belum ada realisasi dan jadwal pemilihan telah lewat.', 'danger')}
+        ${renderWarningCard('melebihiPagu', 'Melebihi Pagu', warning.melebihiPagu, 'Nilai kontrak melebihi pagu RUP.', 'warning')}
       </div>
     </div>
   `;
