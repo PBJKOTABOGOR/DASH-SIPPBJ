@@ -21,6 +21,8 @@
     let filteredRows = [];
     let currentPage = 1;
     let sortWaktuAsc = true;
+    let sortMode = 'waktu';
+    let sortPaguDesc = true;
     let groupedRealByKode = {};
     let semicolonHistoryLookup = {};
     let groupedPaymentsByPackage = {};
@@ -1384,14 +1386,37 @@
 
     function applySort(rows) {
       return [...rows].sort((a, b) => {
-        if (sortWaktuAsc) {
-          if (a.waktu_pemilihan_order !== b.waktu_pemilihan_order) return a.waktu_pemilihan_order - b.waktu_pemilihan_order;
+        if (sortMode === 'pagu') {
+          const pa = Number(a.pagu) || 0;
+          const pb = Number(b.pagu) || 0;
+          if (pa !== pb) return sortPaguDesc ? pb - pa : pa - pb;
         } else {
-          if (a.waktu_pemilihan_order !== b.waktu_pemilihan_order) return b.waktu_pemilihan_order - a.waktu_pemilihan_order;
+          const wa = Number(a.waktu_pemilihan_order) || 0;
+          const wb = Number(b.waktu_pemilihan_order) || 0;
+          if (wa !== wb) return sortWaktuAsc ? wa - wb : wb - wa;
         }
-
-        return String(a.satuan_kerja || '').localeCompare(String(b.satuan_kerja || ''), 'id');
+        // Tie-break supaya urutan tetap stabil saat pagu atau bulan sama.
+        return String(a.kode_rup || '').localeCompare(String(b.kode_rup || ''), 'id', { numeric: true });
       });
+    }
+
+    function updateSortLabels() {
+      const waktuActive = sortMode === 'waktu';
+      setText('sortWaktuLabel', waktuActive ? (sortWaktuAsc ? 'Terlama → Terbaru' : 'Terbaru → Terlama') : 'Terlama / Terbaru');
+      setText('sortWaktuArrow', waktuActive ? (sortWaktuAsc ? '↑' : '↓') : '↕');
+      setText('sortPaguArrow', !waktuActive ? (sortPaguDesc ? '↓' : '↑') : '↕');
+      const waktuHeader = qs('sortWaktuHeader');
+      const paguHeader = qs('sortPaguHeader');
+      if (waktuHeader) waktuHeader.setAttribute('aria-sort', waktuActive ? (sortWaktuAsc ? 'ascending' : 'descending') : 'none');
+      if (paguHeader) paguHeader.setAttribute('aria-sort', waktuActive ? 'none' : (sortPaguDesc ? 'descending' : 'ascending'));
+    }
+
+    function sortVisibleRows() {
+      // Data sudah di memori: klik kolom cukup urutkan, tidak fetch atau tampilkan loader.
+      filteredRows = applySort(filteredRows);
+      currentPage = 1;
+      updateSortLabels();
+      updateTableOnly();
     }
 
     function renderPagination(totalRows) {
@@ -1486,10 +1511,18 @@
     }
 
     function toggleSortWaktu() {
-      sortWaktuAsc = !sortWaktuAsc;
-      setText('sortWaktuLabel', sortWaktuAsc ? 'Terlama → Terbaru' : 'Terbaru → Terlama');
-      setText('sortWaktuArrow', sortWaktuAsc ? '↑' : '↓');
-      runMonitoringFast(false);
+      if (sortMode === 'waktu') sortWaktuAsc = !sortWaktuAsc;
+      else sortMode = 'waktu';
+      sortVisibleRows();
+    }
+
+    function toggleSortPagu() {
+      if (sortMode === 'pagu') sortPaguDesc = !sortPaguDesc;
+      else {
+        sortMode = 'pagu';
+        sortPaguDesc = true; // Klik pertama: pagu terbesar dulu.
+      }
+      sortVisibleRows();
     }
 
     function runMonitoring() {
@@ -1508,7 +1541,7 @@
 
       currentPage = 1;
 
-      filteredRows = applySort(allRows).filter(row => {
+      filteredRows = allRows.filter(row => {
         if (satker && row.satuan_kerja !== satker) return false;
         if (pengadaan && row.pengadaan !== pengadaan) return false;
         if (metode && row.metode !== metode) return false;
@@ -1543,6 +1576,8 @@
         return true;
       });
 
+      filteredRows = applySort(filteredRows);
+      updateSortLabels();
       renderSummary(filteredRows);
       updateTableOnly();
     }
@@ -1569,6 +1604,10 @@
       });
 
       updateSubKegiatanOptions(false);
+      sortMode = 'waktu';
+      sortWaktuAsc = true;
+      sortPaguDesc = true;
+      updateSortLabels();
       runMonitoringFast(false);
     }
 
@@ -1732,99 +1771,106 @@
       }
     }
 
+    // Excel dibuat ringkas: lembar utama untuk laporan, lembar kedua hanya paket yang perlu ditindaklanjuti.
+    // Nilai keuangan tetap angka Excel agar bisa dijumlah / diurutkan OPD.
+    function shortExportAction(row) {
+      if (row.kecocokan_rup === 'Perlu Penyesuaian') {
+        return `Cek RUP realisasi ${row.kode_rup_realisasi || '-'}, sesuaikan dengan ${row.kode_rup}`;
+      }
+      if (row.kecocokan_rup === 'Perlu Verifikasi') {
+        return 'Cek hubungan kode RUP dan paket realisasi sebelum mengakui nilainya';
+      }
+      return row.tindak_lanjut || '-';
+    }
+
     function buildExportRows() {
-      const sourceRows = filteredRows;
-      return sourceRows.map((row, index) => ({
-        No: index + 1,
+      return filteredRows.map((row, index) => ({
+        'No': index + 1,
         'Kode RUP': row.kode_rup,
-        'Kode RUP di Realisasi': row.kode_rup_realisasi,
-        'Kesesuaian RUP': row.kecocokan_rup,
-        'Riwayat Perubahan RUP': row.riwayat_kode_rup,
-        'Tindak Lanjut RUP': row.tindak_lanjut_rup,
-        'Sumber Riwayat RUP': historySourceNote,
         'Nama Paket': row.nama_paket,
         'Satuan Kerja': row.satuan_kerja,
-        'Program': row.program,
-        'Kegiatan': row.kegiatan,
-        'Sub Kegiatan': row.sub_kegiatan,
-        'Pengadaan': row.pengadaan,
-        'Jenis Pengadaan': row.jenis,
-        'Metode': row.metode,
+        'Metode Pengadaan': row.metode,
         'Waktu Pemilihan': row.waktu_pemilihan_label,
-        'Pagu RUP': Number(row.pagu || 0),
-        'Nilai Kontrak': Number(row.nilai_kontrak || 0),
-        'Realisasi Keuangan': Number(row.realisasi_keuangan || 0),
-        'Persentase Realisasi': Number(row.persentase || 0),
-        'Jumlah Pembayaran': Number(row.payment_count || 0),
-        'Sumber Realisasi Keuangan': row.financial_mode === 'tokodaring' ? 'Import Toko Daring' : (row.financial_mode === 'pembayaran' ? 'CMBNTNONT_BAST' : 'Nilai Kontrak'),
-        'Rincian Pembayaran': row.financial_mode === 'pembayaran'
-          ? (row.payment_rows || []).map((item, i) => `${i + 1}. ${item.cara_pembayaran || '-'}: ${formatMoney(item.besar_pembayaran)}`).join(' | ')
-          : row.financial_mode === 'tokodaring'
-            ? (row.toko_daring_rows || []).map((item, i) => `${i + 1}. ${item.purchase_order_no || item.po_id || '-'}: ${formatMoney(item.realisasi)}`).join(' | ')
-            : 'Mengikuti Nilai Kontrak',
-        'Recall Paket': Number(row.recall_paket || 0),
-        'Sisa Pagu': Number(row.sisa_pagu || 0),
-        'Status': row.status,
-        'Progres': row.progres,
-        'Posisi Jadwal': row.posisi_jadwal,
-        'Warning': row.warning,
-        'Keterangan Jadwal': row.ket_jadwal,
-        'Tindak Lanjut': row.tindak_lanjut
+        'Pagu RUP (Rp)': Number(row.pagu || 0),
+        'Nilai Kontrak (Rp)': Number(row.nilai_kontrak || 0),
+        'Realisasi Keuangan (Rp)': Number(row.realisasi_keuangan || 0),
+        'Realisasi (%)': Number(row.persentase || 0),
+        'Status Paket': row.status,
+        'Kesesuaian Kode RUP': row.kecocokan_rup,
+        'Kode RUP Realisasi': row.kecocokan_rup === 'Belum Ada Realisasi' ? '-' : (row.kode_rup_realisasi || row.kode_rup),
+        'Tindak Lanjut': shortExportAction(row)
       }));
+    }
+
+    function buildExportActionRows() {
+      return filteredRows
+        .filter(row => row.kecocokan_rup === 'Perlu Penyesuaian' || row.kecocokan_rup === 'Perlu Verifikasi')
+        .map((row, index) => ({
+          'No': index + 1,
+          'Satuan Kerja': row.satuan_kerja,
+          'Nama Paket': row.nama_paket,
+          'Kode RUP Perencanaan': row.kode_rup,
+          'Kode RUP Realisasi': row.kode_rup_realisasi || '-',
+          'Kondisi': row.kecocokan_rup === 'Perlu Penyesuaian' ? 'Perlu Sesuaikan RUP' : 'Perlu Cek Riwayat',
+          'Yang Perlu Dilakukan': row.tindak_lanjut_rup || '-',
+          'Riwayat Kode RUP': row.riwayat_kode_rup || '-',
+          'Nilai Kontrak (Rp)': Number(row.nilai_kontrak || 0)
+        }));
+    }
+
+    function configureExportSheet(sheet, widths, numericColumns) {
+      sheet['!cols'] = widths.map(wch => ({ wch }));
+      const used = XLSX.utils.decode_range(sheet['!ref'] || 'A1:A1');
+      sheet['!autofilter'] = { ref: XLSX.utils.encode_range({s: {r: 0, c: 0}, e: {r: used.e.r, c: used.e.c}}) };
+      // Hindari mengukur ribuan sel hanya untuk lebar kolom; pakai lebar yang sudah diketahui.
+      for (let row = 1; row <= used.e.r; row++) {
+        numericColumns.forEach(col => {
+          const cell = sheet[XLSX.utils.encode_cell({r: row, c: col})];
+          if (cell && cell.t === 'n') cell.z = '#,##0';
+        });
+      }
     }
 
     async function exportMonitoringExcel() {
       try {
         const rows = buildExportRows();
-
         if (!rows.length) {
-          alert('Tidak ada data untuk diexport.');
+          alert('Tidak ada data untuk diekspor.');
           return;
         }
 
         setText('monitoringStatus', 'Menyiapkan file Excel...');
         await ensureXlsxLoaded();
+        if (moduleDestroyed) return;
 
-        const worksheet = XLSX.utils.json_to_sheet(rows);
         const workbook = XLSX.utils.book_new();
-
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        configureExportSheet(worksheet,
+          [6, 16, 44, 32, 21, 18, 21, 21, 24, 15, 23, 23, 19, 56],
+          [6, 7, 8]);
+        // Nilai persentase disimpan sebagai 75,50 bukan 0,7550; format tampil sesuai data dashboard.
+        for (let row = 1; row <= rows.length; row++) {
+          const cell = worksheet[`J${row + 1}`];
+          if (cell && cell.t === 'n') cell.z = '0.00"%"';
+        }
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Monitoring');
-        const actionRows = rows.filter(row => row['Kesesuaian RUP'] === 'Perlu Penyesuaian' || row['Kesesuaian RUP'] === 'Perlu Verifikasi');
-        if (actionRows.length) XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(actionRows), 'Perlu Tindak Lanjut');
 
-        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
-        const colWidths = [];
-
-        for (let col = range.s.c; col <= range.e.c; col++) {
-          let maxLength = 10;
-
-          for (let row = range.s.r; row <= range.e.r; row++) {
-            const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-            const cell = worksheet[cellAddress];
-
-            if (cell && cell.v != null) {
-              maxLength = Math.max(maxLength, String(cell.v).length);
-            }
-          }
-
-          colWidths.push({ wch: Math.min(maxLength + 2, 45) });
+        const actionRows = buildExportActionRows();
+        if (actionRows.length) {
+          const actionSheet = XLSX.utils.json_to_sheet(actionRows);
+          configureExportSheet(actionSheet,
+            [6, 30, 44, 22, 22, 25, 64, 54, 23], [8]);
+          XLSX.utils.book_append_sheet(workbook, actionSheet, 'Tindak Lanjut OPD');
         }
 
-        worksheet['!cols'] = colWidths;
-
         const now = new Date();
-        const stamp = [
-          now.getFullYear(),
-          String(now.getMonth() + 1).padStart(2, '0'),
-          String(now.getDate()).padStart(2, '0')
-        ].join('');
-
+        const stamp = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('');
         XLSX.writeFile(workbook, `monitoring-perencanaan-${stamp}.xlsx`);
-        setText('monitoringStatus', `${rows.length} data berhasil diexport ke Excel.`);
+        setText('monitoringStatus', `${rows.length} data berhasil diekspor ke Excel${actionRows.length ? ` • ${actionRows.length} perlu tindak lanjut` : ''}.`);
       } catch (err) {
         console.error(err);
-        alert('Gagal export Excel: ' + (err.message || String(err)));
-        setText('monitoringStatus', 'Gagal export Excel.');
+        alert('Gagal ekspor Excel: ' + (err.message || String(err)));
+        setText('monitoringStatus', 'Gagal ekspor Excel.');
       }
     }
 
@@ -1843,8 +1889,7 @@
         allRows = buildMonitoringData(perencanaanRows, realisasiRows, pembayaranRows, tokoDaringRows, historyRows);
         renderHistorySource();
         buildFilterOptions(allRows);
-        setText('sortWaktuLabel', sortWaktuAsc ? 'Terlama → Terbaru' : 'Terbaru → Terlama');
-        setText('sortWaktuArrow', sortWaktuAsc ? '↑' : '↓');
+        updateSortLabels();
         runMonitoring();
         hideMonitoringLoader();
 
@@ -1899,6 +1944,7 @@
     window.runMonitoring = runMonitoring;
     window.runMonitoringFast = runMonitoringFast;
     window.toggleSortWaktu = toggleSortWaktu;
+    window.toggleSortPagu = toggleSortPagu;
     window.resetMonitoring = resetMonitoring;
     window.openDetailModal = openDetailModal;
     window.closeDetailModal = closeDetailModal;
@@ -1942,6 +1988,7 @@
       if (window.runMonitoring === runMonitoring) window.runMonitoring = undefined;
       if (window.runMonitoringFast === runMonitoringFast) window.runMonitoringFast = undefined;
       if (window.toggleSortWaktu === toggleSortWaktu) window.toggleSortWaktu = undefined;
+      if (window.toggleSortPagu === toggleSortPagu) window.toggleSortPagu = undefined;
       if (window.resetMonitoring === resetMonitoring) window.resetMonitoring = undefined;
       if (window.openDetailModal === openDetailModal) window.openDetailModal = undefined;
       if (window.closeDetailModal === closeDetailModal) window.closeDetailModal = undefined;

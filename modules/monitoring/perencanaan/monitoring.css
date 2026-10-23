@@ -694,3 +694,45 @@
 .rup-sync-update{color:#8a4b10;border-color:#fed7aa;background:#fff7ed}
 .rup-sync-review{color:#9a3412;border-color:#fecaca;background:#fff1f2}
 @media(max-width:800px){.rup-match-controls{align-items:stretch;flex-direction:column}.rup-match-controls select{width:100%;max-width:none}}
+
+/* Filter monitoring: semua pilihan dalam dua baris yang sejajar, tanpa panel RUP terpisah. */
+.monitoring-module .monitoring-filter-secondary{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.monitoring-module .monitoring-filter-secondary > div{min-width:0;}
+.monitoring-module .monitoring-filter-search,
+.monitoring-module .monitoring-filter-rup{grid-column:span 2;}
+.monitoring-module .monitoring-filter-secondary input,
+.monitoring-module .monitoring-filter-secondary select{width:100%;min-width:0;}
+.monitoring-module .monitoring-actions{margin-top:12px;}
+.monitoring-module .monitoring-filter-info{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:5px 20px;
+  border-top:1px solid #e9eef5;
+  margin-top:12px;
+  padding-top:10px;
+}
+.monitoring-module .rup-match-counts{gap:15px;}
+.monitoring-module .rup-match-counts span+span::before{content:'·';margin-right:12px;color:#94a3b8;}
+.monitoring-module .rup-history-source{margin:0;}
+.monitoring-module .status{font-size:12px;font-weight:650;margin-top:6px;}
+.monitoring-module .sort-btn-right{justify-content:flex-end;width:100%;}
+.monitoring-module th[aria-sort='ascending'] .sort-btn,
+.monitoring-module th[aria-sort='descending'] .sort-btn{color:#fff;}
+.monitoring-module th[aria-sort='none'] .sort-btn{color:#deebfa;}
+.monitoring-module .sort-btn:hover{text-decoration:underline;}
+.monitoring-module .sort-btn:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:2px;}
+@media(max-width:1280px){
+  .monitoring-module .monitoring-filter-secondary{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media(max-width:800px){
+  .monitoring-module .monitoring-filter-secondary{grid-template-columns:1fr;}
+  .monitoring-module .monitoring-filter-search,
+  .monitoring-module .monitoring-filter-rup{grid-column:span 1;}
+  .monitoring-module .monitoring-filter-info{align-items:flex-start;flex-direction:column;}
+}

@@ -91,52 +91,54 @@
         </div>
       </div>
 
-      <div class="grid grid-4 monitoring-filter-secondary" style="margin-top:12px;">
-        <div>
-          <label>Search Kode RUP</label>
-          <input type="text" id="filter_koderup" placeholder="Cari Kode RUP / Nama Paket / Satuan Kerja">
+      <div class="grid monitoring-filter-secondary" aria-label="Filter tambahan">
+        <div class="monitoring-filter-search">
+          <label for="filter_koderup">Cari Paket / Kode RUP</label>
+          <input type="search" id="filter_koderup" placeholder="Kode RUP, nama paket, atau satuan kerja" autocomplete="off">
         </div>
         <div>
-          <label>Jenis Pengadaan</label>
+          <label for="filter_jenis">Jenis Pengadaan</label>
           <select id="filter_jenis"><option value="">Semua</option></select>
         </div>
         <div>
-          <label>Sub Kegiatan</label>
+          <label for="filter_sub_kegiatan">Sub Kegiatan</label>
           <select id="filter_sub_kegiatan" disabled><option value="">Pilih Satuan Kerja</option></select>
         </div>
         <div>
-          <label>Filter Warning</label>
+          <label for="filter_warning">Perhatian</label>
           <select id="filter_warning">
             <option value="">Semua</option>
             <option value="OK">OK</option>
             <option value="PERLU">Perlu Perhatian</option>
           </select>
         </div>
+        <div class="monitoring-filter-rup">
+          <label for="filter_kecocokan_rup">Kesesuaian Kode RUP</label>
+          <select id="filter_kecocokan_rup">
+            <option value="">Semua</option>
+            <option value="Perlu Penyesuaian">Perlu Sesuaikan RUP</option>
+            <option value="Perlu Verifikasi">Perlu Cek Riwayat</option>
+            <option value="Sesuai">Kode RUP Cocok</option>
+            <option value="Belum Ada Realisasi">Belum Ada Realisasi</option>
+          </select>
+        </div>
       </div>
 
-      <div class="inline-actions">
+      <div class="inline-actions monitoring-actions">
         <button onclick="runMonitoringFast(false)">Tampilkan</button>
         <button class="secondary" onclick="toggleSortWaktu()">Urut Waktu: <span id="sortWaktuLabel">Terlama → Terbaru</span></button>
         <button class="secondary" onclick="resetMonitoring()">Reset</button>
         <button class="secondary" onclick="exportMonitoringExcel()">Export Excel</button>
       </div>
 
-      <div class="rup-match-controls">
-        <label for="filter_kecocokan_rup">Kesesuaian Kode RUP</label>
-        <select id="filter_kecocokan_rup">
-          <option value="">Semua</option>
-          <option value="Perlu Penyesuaian">Perlu Sesuaikan RUP</option>
-          <option value="Perlu Verifikasi">Perlu Cek Riwayat</option>
-          <option value="Sesuai">Kode RUP Cocok</option>
-          <option value="Belum Ada Realisasi">Belum Ada Realisasi</option>
-        </select>
+      <div class="monitoring-filter-info" aria-live="polite">
         <div class="rup-match-counts">
-          <span><b id="sumRupLinked">0</b> perlu sesuaikan kode</span>
+          <span><b id="sumRupLinked">0</b> perlu sesuaikan RUP</span>
           <span><b id="sumRupReview">0</b> perlu cek riwayat</span>
         </div>
+        <div id="rupHistorySource" class="rup-history-source">Memuat riwayat kode RUP...</div>
       </div>
-      <div id="rupHistorySource" class="rup-history-source">Memuat riwayat kode RUP...</div>
-      <div id="monitoringStatus" class="status"></div>
+      <div id="monitoringStatus" class="status" aria-live="polite"></div>
     </div>
 
     <div class="card">
@@ -152,13 +154,18 @@
               <th>Satuan Kerja</th>
               <th>Pengadaan</th>
               <th>Metode</th>
-              <th>
-                <button class="sort-btn" onclick="toggleSortWaktu()">
+              <th id="sortWaktuHeader" aria-sort="ascending">
+                <button type="button" class="sort-btn" onclick="toggleSortWaktu()" title="Urutkan berdasarkan waktu pemilihan">
                   Waktu Pemilihan
-                  <span id="sortWaktuArrow">↑</span>
+                  <span id="sortWaktuArrow" aria-hidden="true">↑</span>
                 </button>
               </th>
-              <th>Pagu RUP</th>
+              <th id="sortPaguHeader" aria-sort="none" class="right">
+                <button type="button" class="sort-btn sort-btn-right" onclick="toggleSortPagu()" title="Klik untuk urut pagu terbesar, klik lagi untuk terkecil">
+                  Pagu RUP
+                  <span id="sortPaguArrow" aria-hidden="true">↕</span>
+                </button>
+              </th>
               <th>Nilai Kontrak</th>
               <th>Realisasi Keuangan</th>
               <th>% Realisasi</th>
