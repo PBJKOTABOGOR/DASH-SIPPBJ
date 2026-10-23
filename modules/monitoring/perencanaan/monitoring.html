@@ -121,6 +121,21 @@
         <button class="secondary" onclick="exportMonitoringExcel()">Export Excel</button>
       </div>
 
+      <div class="rup-match-controls">
+        <label for="filter_kecocokan_rup">Kesesuaian Kode RUP</label>
+        <select id="filter_kecocokan_rup">
+          <option value="">Semua</option>
+          <option value="Perlu Penyesuaian">Perlu Sesuaikan RUP</option>
+          <option value="Perlu Verifikasi">Perlu Cek Riwayat</option>
+          <option value="Sesuai">Kode RUP Cocok</option>
+          <option value="Belum Ada Realisasi">Belum Ada Realisasi</option>
+        </select>
+        <div class="rup-match-counts">
+          <span><b id="sumRupLinked">0</b> perlu sesuaikan kode</span>
+          <span><b id="sumRupReview">0</b> perlu cek riwayat</span>
+        </div>
+      </div>
+      <div id="rupHistorySource" class="rup-history-source">Memuat riwayat kode RUP...</div>
       <div id="monitoringStatus" class="status"></div>
     </div>
 
@@ -183,6 +198,18 @@
           <div class="meta-box history-rup-box">
             <div class="meta-label">History Kode RUP</div>
             <div class="meta-value compact history-rup-text" id="detailHistoryKodeRup">-</div>
+          </div>
+          <div class="meta-box">
+            <div class="meta-label">Kesesuaian Kode RUP</div>
+            <div class="meta-value compact" id="detailKecocokanRup">-</div>
+          </div>
+          <div class="meta-box">
+            <div class="meta-label">Kode RUP pada Realisasi</div>
+            <div class="meta-value compact" id="detailAsalRup">-</div>
+          </div>
+          <div class="meta-box">
+            <div class="meta-label">Tindak Lanjut Kode RUP</div>
+            <div class="meta-value compact" id="detailTindakLanjutRup">-</div>
           </div>
           <div class="meta-box">
             <div class="meta-label">Nama Paket</div>

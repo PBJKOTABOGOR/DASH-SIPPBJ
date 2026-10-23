@@ -680,3 +680,17 @@
 .payment-table-wrap{border-radius:14px}
 .payment-table{min-width:760px}
 .payment-table th,.payment-table td{padding:9px 10px}
+
+
+/* Kesesuaian riwayat RUP: informasi singkat dan sejalan dengan desain monitoring. */
+.rup-match-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 7px;padding:10px 12px;border:1px solid #dbe5f0;background:#f8fbff;border-radius:12px}
+.rup-match-controls label{margin:0;font-size:11px;color:#334155}
+.rup-match-controls select{width:auto;min-width:180px;max-width:260px;padding:8px 10px;font-size:12px}
+.rup-match-counts{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#475569}
+.rup-match-counts b{color:#123a72;font-weight:800}
+.rup-history-source{font-size:11px;color:#64748b;margin:4px 0 0}
+.rup-source-code{margin-top:5px;font-size:11px;font-weight:600;color:#475569;white-space:normal}
+.rup-sync{display:inline-block;font-size:10px;font-weight:700;line-height:1.4;border:1px solid transparent;border-radius:6px;padding:2px 6px;margin-top:4px;white-space:normal}
+.rup-sync-update{color:#8a4b10;border-color:#fed7aa;background:#fff7ed}
+.rup-sync-review{color:#9a3412;border-color:#fecaca;background:#fff1f2}
+@media(max-width:800px){.rup-match-controls{align-items:stretch;flex-direction:column}.rup-match-controls select{width:100%;max-width:none}}

@@ -3,6 +3,8 @@
 
   const CONFIG = {
     SHEET_ID: '1ccDgtXNATxSYMZuDgd3polvRiTFNiFnjIGMP7b9qmrU',
+    HISTORY_SHEET_ID: '1kp6tPQs18YfzBqUvnvsdQyps2VTy42Hc_qwbUgaITQ0',
+    HISTORY_SHEET: 'HISTORYRUP',
     SHEETS: {
       perencanaan: 'D_PERENCANAAN',
       realisasi: 'D_REALISASI_MAP',
@@ -24,6 +26,8 @@
     let groupedPaymentsByPackage = {};
     let groupedPaymentsByRup = {};
     let groupedTokoDaringByRup = {};
+    let historyIndex = null;
+    let historySourceNote = 'Riwayat belum dimuat';
     let moduleDestroyed = false;
     let filterApplyToken = 0;
     let searchDebounceTimer = null;
@@ -103,9 +107,9 @@
       return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&cache_bust=${cacheBust}`;
     }
 
-    async function fetchSheet(sheetName) {
+    async function fetchSheet(sheetName, sheetId = CONFIG.SHEET_ID) {
       if (!window.Papa) throw new Error('Library PapaParse belum tersedia.');
-      const text = await window.SippbjFastData.fetchText(csvUrlBySheetName(CONFIG.SHEET_ID, sheetName), {ttlMs:120000});
+      const text = await window.SippbjFastData.fetchText(csvUrlBySheetName(sheetId, sheetName), {ttlMs:120000});
       const result = Papa.parse(text, {header:true, skipEmptyLines:true});
       if (result.errors?.some(error => error.type === 'Quotes')) {
         console.warn('Periksa CSV pada sheet ' + sheetName, result.errors[0]);
@@ -152,6 +156,191 @@
       return fetchSheet(CONFIG.SHEETS.realisasi);
     }
 
+
+
+    // Riwayat kaji ulang dipakai sebagai jembatan Kode RUP, bukan nilai realisasi tambahan.
+    // Hubungan satu-ke-banyak, banyak-ke-satu, atau beberapa asal realisasi tidak dijumlah otomatis.
+    let historyFromSnapshot = false;
+    async function fetchLiveHistoryRup() {
+      try {
+        const rows = await Promise.race([
+          fetchSheet(CONFIG.HISTORY_SHEET, CONFIG.HISTORY_SHEET_ID),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Batas waktu HISTORYRUP')), 8000))
+        ]);
+        const valid = normalizeRows(rows).filter(row => normalizeKodeValue(row.kd_rup_lama) && normalizeKodeValue(row.kd_rup_baru));
+        if (!valid.length) throw new Error('Data HISTORYRUP kosong');
+        historySourceNote = 'HISTORYRUP • Google Sheet langsung';
+        return valid;
+      } catch (error) {
+        console.warn('Pembacaan HISTORYRUP Google Sheet belum berhasil.', error);
+        if (historyFromSnapshot) historySourceNote = 'Cadangan 23 Okt 2026 • HISTORYRUP Google Sheet belum terbaca';
+        return null;
+      }
+    }
+
+    async function fetchHistoryRup() {
+      // Tampilkan monitoring lebih cepat dari salinan ringkas di ZIP.
+      // Satu permintaan live ke HISTORYRUP berjalan setelah tabel tampil.
+      try {
+        const response = await fetch('assets/data/history-rup-2026.json', { cache: 'no-cache' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const snapshot = await response.json();
+        if (!Array.isArray(snapshot.rows) || !Array.isArray(snapshot.columns)) throw new Error('Format HISTORYRUP tidak valid');
+        historyFromSnapshot = true;
+        historySourceNote = 'Riwayat 23 Okt 2026 • memeriksa pembaruan Google Sheet';
+        return snapshot.rows.map(row => Object.fromEntries(snapshot.columns.map((key, index) => [key, row[index]])));
+      } catch (error) {
+        console.warn('Salinan HISTORYRUP tidak terbaca, memakai Google Sheet langsung.', error);
+        historyFromSnapshot = false;
+        const live = await fetchLiveHistoryRup();
+        if (live) return live;
+        historySourceNote = 'HISTORYRUP belum tersedia • hanya mencocokkan Kode RUP yang sama';
+        return [];
+      }
+    }
+
+    function historyFingerprint(rows) {
+      const changed = new Set();
+      (rows || []).forEach(row => {
+        const oldCode = normalizeKodeValue(row.kd_rup_lama);
+        const newCode = normalizeKodeValue(row.kd_rup_baru);
+        if (oldCode && newCode && oldCode !== newCode) changed.add(oldCode + '>' + newCode);
+      });
+      return [...changed].sort().join('|');
+    }
+
+    function buildHistoryIndex(rawRows) {
+      const incoming = new Map();
+      const outgoing = new Map();
+      const events = new Map();
+      const seenEdge = new Set();
+      let changes = 0;
+
+      (rawRows || []).forEach(raw => {
+        const row = raw || {};
+        const oldCode = normalizeKodeValue(row.kd_rup_lama);
+        const newCode = normalizeKodeValue(row.kd_rup_baru);
+        if (!oldCode || !newCode) return;
+        const item = {
+          lama: oldCode,
+          baru: newCode,
+          jenis: String(row.jenis_revisi || ''),
+          tanggal: String(row.tgl_kaji_ulang || ''),
+          alasan: String(row.alasan_kajiulang || ''),
+          satker: String(row.nama_satker || '')
+        };
+        if (!events.has(oldCode)) events.set(oldCode, []);
+        events.get(oldCode).push(item);
+        if (!events.has(newCode)) events.set(newCode, []);
+        if (newCode !== oldCode) {
+          events.get(newCode).push(item);
+          const key = oldCode + '>' + newCode;
+          if (seenEdge.has(key)) return;
+          seenEdge.add(key);
+          changes++;
+          if (!outgoing.has(oldCode)) outgoing.set(oldCode, new Set());
+          outgoing.get(oldCode).add(newCode);
+          if (!incoming.has(newCode)) incoming.set(newCode, new Set());
+          incoming.get(newCode).add(oldCode);
+        }
+      });
+      return {incoming, outgoing, events, changes};
+    }
+
+    function getAncestorCodes(index, code) {
+      if (!index) return [];
+      const visited = new Set([code]);
+      const pending = [code];
+      while (pending.length && visited.size < 500) {
+        const here = pending.pop();
+        (index.incoming.get(here) || []).forEach(parent => {
+          if (visited.has(parent)) return;
+          visited.add(parent);
+          pending.push(parent);
+        });
+      }
+      visited.delete(code);
+      return [...visited];
+    }
+
+    function getStraightHistoryPath(index, source, destination) {
+      if (!index || source === destination) return source === destination ? [source] : null;
+      const path = [source];
+      const used = new Set(path);
+      let current = source;
+      while (path.length < 50 && current !== destination) {
+        const nextSet = index.outgoing.get(current);
+        if (!nextSet || nextSet.size !== 1) return null;
+        const next = [...nextSet][0];
+        const predecessors = index.incoming.get(next);
+        if (!predecessors || predecessors.size !== 1 || used.has(next)) return null;
+        path.push(next);
+        used.add(next);
+        current = next;
+      }
+      return current === destination ? path : null;
+    }
+
+    function prepareHistoryMatches(plans, realGroups, tokoGroups, index) {
+      const allPlanCodes = new Set(plans.map(row => normalizeKodeValue(row.kode_rup)).filter(Boolean));
+      const candidatesByPlan = new Map();
+      const claimants = new Map();
+      plans.forEach(plan => {
+        const code = normalizeKodeValue(plan.kode_rup);
+        if (!code || candidatesByPlan.has(code)) return;
+        const isToko = /e[ -]?purchasing/i.test(String(plan.metode_pengadaan || ''));
+        const ancestors = getAncestorCodes(index, code);
+        const available = ancestors.filter(old =>
+          (realGroups[old]?.recall_paket > 0) || (isToko && tokoGroups[old]?.order_count > 0));
+        candidatesByPlan.set(code, {ancestors, available});
+        available.forEach(old => {
+          if (!claimants.has(old)) claimants.set(old, new Set());
+          claimants.get(old).add(code);
+        });
+      });
+      const result = new Map();
+      for (const plan of plans) {
+        const code = normalizeKodeValue(plan.kode_rup);
+        if (!code || result.has(code)) continue;
+        const isToko = /e[ -]?purchasing/i.test(String(plan.metode_pengadaan || ''));
+        const direct = Boolean(realGroups[code]?.recall_paket > 0 || (isToko && tokoGroups[code]?.order_count > 0));
+        const info = candidatesByPlan.get(code) || {ancestors:[], available:[]};
+        const available = info.available;
+        let status = direct ? 'Sesuai' : 'Belum Ada Realisasi';
+        let origin = code;
+        let path = [code];
+        const hasRisk = available.some(old =>
+          allPlanCodes.has(old) ||
+          (claimants.get(old)?.size || 0) > 1 ||
+          (realGroups[old]?.gabungan_count || 0) > 0 ||
+          !getStraightHistoryPath(index, old, code));
+        if ((direct && available.length > 0) || available.length > 1 || (available.length > 0 && hasRisk)) {
+          status = 'Perlu Verifikasi';
+        } else if (!direct && available.length === 1) {
+          origin = available[0];
+          path = getStraightHistoryPath(index, origin, code) || [origin, code];
+          status = 'Perlu Penyesuaian';
+        }
+        const relatedCodes = [...new Set([code, ...info.ancestors, ...available])];
+        result.set(code, {status, origin, path, candidates:available, relatedCodes});
+      }
+      return result;
+    }
+
+    function historyMatchMessage(match, planCode) {
+      if (!match) return '';
+      if (match.status === 'Perlu Penyesuaian') {
+        return `Realisasi ditemukan pada RUP ${match.origin}, sementara perencanaan memakai ${planCode}. Cek dan sesuaikan kode RUP pada paket realisasi sesuai ketentuan aplikasi.`;
+      }
+      if (match.status === 'Perlu Verifikasi') {
+        return `Realisasi terdeteksi pada kode terkait (${match.candidates.join(', ')}). Ada beberapa kemungkinan riwayat atau sumber. Periksa kode paket di Detail sebelum mengaitkan nilainya agar tidak terhitung ganda.`;
+      }
+      return '';
+    }
+
+    function renderHistorySource() {
+      setText('rupHistorySource', historySourceNote);
+    }
 
     function showMonitoringLoader(text) {
       const loader = qs('monitoringLoader') || document.getElementById('monitoringLoader');
@@ -577,7 +766,7 @@
       // Pertama: ambil dari baris realisasi yang sudah match kode tersebut.
       const matched = (realRows || []).find(item => {
         const h = String(item.history_kode_rup || '').trim();
-        return h && /[;|,]/.test(h);
+        return h && /[;|,]/.test(h) && splitHistoryKode(h).includes(kode);
       });
 
       if (matched) {
@@ -849,7 +1038,7 @@
       return normalized.includes('toko daring') || normalized.replace(/\s+/g, '').includes('tokodaring');
     }
 
-    function getPaymentRowsForRup(kodeRup, detailRows) {
+    function getPaymentRowsForRup(kodeRup, detailRows, kodeAsal = '') {
       const packageIds = [...new Set((detailRows || [])
         .map(item => normalizeKodeValue(item.kode_paket))
         .filter(Boolean))];
@@ -862,7 +1051,7 @@
 
       // Fallback berdasarkan Kode RUP hanya bila Kode Paket belum ditemukan.
       if (!rows.length) {
-        const fallback = groupedPaymentsByRup[normalizeKodeValue(kodeRup)];
+        const fallback = groupedPaymentsByRup[normalizeKodeValue(kodeAsal || kodeRup)];
         if (fallback && Array.isArray(fallback.rows)) rows.push(...fallback.rows);
       }
       return rows;
@@ -883,7 +1072,7 @@
       return 'kontrak';
     }
 
-    function buildMonitoringData(perencanaanRows, realisasiRows, pembayaranRows, tokoDaringRows) {
+    function buildMonitoringData(perencanaanRows, realisasiRows, pembayaranRows, tokoDaringRows, historyRows) {
       const planRows = normalizeRows(perencanaanRows);
       const realRows = normalizeRows(realisasiRows);
 
@@ -894,18 +1083,23 @@
       groupedPaymentsByRup = paymentGroups.byRup;
       groupedTokoDaringByRup = groupTokoDaring(tokoDaringRows || []);
 
+      historyIndex = buildHistoryIndex(historyRows || []);
+      const historyMatches = prepareHistoryMatches(planRows, groupedRealByKode, groupedTokoDaringByRup, historyIndex);
       const currentOrder = getCurrentMonthOrder();
 
       return planRows.filter(r => String(r.kode_rup || '').trim()).map(r => {
         const kodeRup = String(r.kode_rup || '').trim();
         const pagu = parseMoney(r.nilai_pagu || r.pagu || r.total_pagu || r.nilai || r.pagu_rup || r['nilai_pagu_(rp)'] || 0);
-        const real = groupedRealByKode[kodeRup] || { recall_paket: 0, total_realisasi: 0, rows: [], first_order: null };
+        const historyMatch = historyMatches.get(normalizeKodeValue(kodeRup)) || { status:'Belum Ada Realisasi', origin:kodeRup, path:[kodeRup], candidates:[], relatedCodes:[kodeRup] };
+        const isLinked = historyMatch.status === 'Perlu Penyesuaian';
+        const realSourceKode = isLinked ? historyMatch.origin : kodeRup;
+        const real = groupedRealByKode[realSourceKode] || { recall_paket: 0, total_realisasi: 0, rows: [], first_order: null };
         const totalRealisasiFullOriginal = Number(real.total_realisasi_full || real.total_realisasi || 0);
         const detailRows = real.rows || [];
 
         const metodePerencanaan = String(r.metode_pengadaan || '').toLowerCase();
         const isEPurchasingPlan = metodePerencanaan.includes('e-purchasing') || metodePerencanaan.includes('e purchasing');
-        const tokoGroup = groupedTokoDaringByRup[normalizeKodeValue(kodeRup)] || null;
+        const tokoGroup = groupedTokoDaringByRup[normalizeKodeValue(realSourceKode)] || null;
         const tokoRowsExisting = detailRows.filter(item => isTokoDaringSource(item.sumber_transaksi));
         const nonTokoRows = detailRows.filter(item => !isTokoDaringSource(item.sumber_transaksi));
         const useTokoDaringImport = Boolean(isEPurchasingPlan && tokoGroup && Number(tokoGroup.order_count || 0) > 0);
@@ -923,7 +1117,7 @@
 
         if (Number(real.gabungan_count || 0) > 0 && pagu > 0) nilaiKontrak = Math.min(nilaiKontrak, pagu);
 
-        const paymentRows = getPaymentRowsForRup(kodeRup, detailRows);
+        const paymentRows = getPaymentRowsForRup(kodeRup, detailRows, realSourceKode);
         const financialMode = useTokoDaringImport ? 'tokodaring' : getFinancialMode(r.metode_pengadaan || '', detailRows);
         let realisasiKeuangan = nilaiKontrak;
 
@@ -950,7 +1144,10 @@
         const waktuPemilihanLabel = monthYearLabel(r.waktu_pemilihan || '-');
         const waktuPemilihanOrder = getWaktuOrder(waktuPemilihanLabel);
         const detailSummary = analyzePackageStatuses(statusRows, r.metode_pengadaan || '');
-        const historyDisplay = getSemicolonHistoryForKode(kodeRup, detailRows, semicolonHistoryLookup);
+        const originalHistoryDisplay = getSemicolonHistoryForKode(kodeRup, detailRows, semicolonHistoryLookup);
+        const historyDisplay = historyMatch.path.length > 1
+          ? historyMatch.path.join(' → ')
+          : (originalHistoryDisplay !== '-' ? originalHistoryDisplay : (historyMatch.relatedCodes.length > 1 ? historyMatch.relatedCodes.join(' / ') : '-'));
 
         let status = 'Belum Berjalan';
         if (recallPaket > 0) {
@@ -979,6 +1176,13 @@
         if (isEPurchasing && persentase >= 99.99 && detailSummary.onProcess > 0) {
           warning = 'Realisasi sudah 100%, namun masih ada paket on process. Perlu tindak lanjut penyelesaian di sistem.';
         }
+        const kodeAction = historyMatchMessage(historyMatch, kodeRup);
+        if (kodeAction) {
+          const kodeShortWarning = historyMatch.status === 'Perlu Penyesuaian'
+            ? `Kode RUP di realisasi masih ${historyMatch.origin}. Perlu penyesuaian.`
+            : 'Ada realisasi pada kode riwayat. Perlu cek agar tidak terhitung ganda.';
+          warning = kodeShortWarning + (warning !== 'OK' ? ' ' + warning : '');
+        }
 
         let ketJadwal = '-';
         if (recallPaket > 0 && real.first_order && waktuPemilihanOrder > 0) {
@@ -992,9 +1196,19 @@
           tindakLanjut = `Realisasi Toko Daring memakai ${Number(tokoGroup.order_count || 0).toLocaleString('id-ID')} pesanan dari ${Number(tokoGroup.line_count || 0).toLocaleString('id-ID')} rincian belanja. ` + tindakLanjut;
         }
         if (ketJadwal !== '-') tindakLanjut = ketJadwal + '. ' + tindakLanjut;
+        if (kodeAction) tindakLanjut = kodeAction + ' ' + tindakLanjut;
+        if (isLinked) {
+          // Detail membaca berdasarkan kode perencanaan; penempatan alias hanya untuk paket yang cocok dengan pasti.
+          groupedRealByKode[kodeRup] = real;
+        }
 
         return {
           kode_rup: kodeRup,
+          kode_rup_realisasi: historyMatch.status === 'Perlu Verifikasi' ? historyMatch.candidates.join(', ') : (recallPaket > 0 ? realSourceKode : '-'),
+          kecocokan_rup: historyMatch.status === 'Sesuai' && recallPaket === 0 ? 'Belum Ada Realisasi' : historyMatch.status,
+          riwayat_kode_rup: historyMatch.path.join(' → '),
+          kode_rup_terkait: historyMatch.relatedCodes.join(' '),
+          tindak_lanjut_rup: kodeAction || '-',
           nama_paket: String(r.nama_paket || '').trim(),
           satuan_kerja: String(r.nama_satuan_kerja || '').trim(),
           program: String(r.program || '').trim() || '-',
@@ -1109,7 +1323,9 @@
         berjalan: 0,
         selesai: 0,
         selesaiPemilihan: 0,
-        over: 0
+        over: 0,
+        matched: 0,
+        review: 0
       };
 
       rows.forEach(r => {
@@ -1118,6 +1334,8 @@
         if (r.status === 'Selesai') sum.selesai++;
         if (r.status === 'Selesai Proses Pemilihan') sum.selesaiPemilihan++;
         if (r.progres === 'Melebihi Pagu') sum.over++;
+        if (r.kecocokan_rup === 'Perlu Penyesuaian') sum.matched++;
+        if (r.kecocokan_rup === 'Perlu Verifikasi') sum.review++;
       });
 
       setText('sumTotalRup', String(sum.total));
@@ -1126,6 +1344,8 @@
       setText('sumSelesai', String(sum.selesai));
       setText('sumSelesaiPemilihan', String(sum.selesaiPemilihan));
       setText('sumOver', String(sum.over));
+      setText('sumRupLinked', String(sum.matched));
+      setText('sumRupReview', String(sum.review));
     }
 
     function renderRows(rows) {
@@ -1139,7 +1359,11 @@
       rows.forEach(row => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="bold"><a class="rup-link" href="javascript:void(0)" onclick="openDetailModal('${escapeHtml(row.kode_rup)}')">${escapeHtml(row.kode_rup)}</a></td>
+          <td class="bold"><a class="rup-link" href="javascript:void(0)" onclick="openDetailModal('${escapeHtml(row.kode_rup)}')">${escapeHtml(row.kode_rup)}</a>${row.kecocokan_rup === 'Perlu Penyesuaian'
+            ? `<div class="rup-source-code">Realisasi: ${escapeHtml(row.kode_rup_realisasi)}</div><span class="rup-sync rup-sync-update">Perlu sesuaikan RUP</span>`
+            : row.kecocokan_rup === 'Perlu Verifikasi'
+              ? `<div class="rup-source-code">Riwayat: ${escapeHtml(row.kode_rup_realisasi)}</div><span class="rup-sync rup-sync-review">Perlu cek riwayat</span>`
+              : ''}</td>
           <td>${escapeHtml(row.nama_paket)}</td>
           <td>${escapeHtml(row.satuan_kerja)}</td>
           <td>${escapeHtml(row.pengadaan)}</td>
@@ -1279,6 +1503,7 @@
       const posisiJadwal = qs('filter_posisi_jadwal')?.value || '';
       const waktuPemilihan = qs('filter_waktu_pemilihan')?.value || '';
       const filterWarning = qs('filter_warning')?.value || '';
+      const filterKecocokan = qs('filter_kecocokan_rup')?.value || '';
       const keyword = (qs('filter_koderup')?.value || '').trim().toLowerCase();
 
       currentPage = 1;
@@ -1294,12 +1519,15 @@
         if (posisiJadwal && row.posisi_jadwal !== posisiJadwal) return false;
         if (waktuPemilihan && row.waktu_pemilihan_label !== waktuPemilihan) return false;
 
+        if (filterKecocokan && row.kecocokan_rup !== filterKecocokan) return false;
         if (filterWarning === 'OK' && row.warning !== 'OK') return false;
         if (filterWarning === 'PERLU' && row.warning === 'OK') return false;
 
         if (keyword) {
           const haystack = [
             row.kode_rup,
+            row.kode_rup_realisasi,
+            row.kode_rup_terkait,
             row.nama_paket,
             row.satuan_kerja,
             row.program,
@@ -1331,6 +1559,7 @@
         'filter_posisi_jadwal',
         'filter_waktu_pemilihan',
         'filter_warning',
+        'filter_kecocokan_rup',
         'filter_koderup'
       ];
 
@@ -1405,6 +1634,9 @@
       setText('detailTitle', 'Detail Kode RUP ' + row.kode_rup);
       setText('detailKodeRup', row.kode_rup);
       setText('detailHistoryKodeRup', row.history_display || '-');
+      setText('detailKecocokanRup', row.kecocokan_rup || '-');
+      setText('detailAsalRup', row.kode_rup_realisasi || '-');
+      setText('detailTindakLanjutRup', row.tindak_lanjut_rup || 'Tidak ada penyesuaian kode RUP yang perlu diperiksa.');
       setText('detailNamaPaket', row.nama_paket);
       setText('detailSatker', row.satuan_kerja);
       setText('detailProgram', row.program);
@@ -1501,10 +1733,15 @@
     }
 
     function buildExportRows() {
-      const sourceRows = filteredRows && filteredRows.length ? filteredRows : allRows;
+      const sourceRows = filteredRows;
       return sourceRows.map((row, index) => ({
         No: index + 1,
         'Kode RUP': row.kode_rup,
+        'Kode RUP di Realisasi': row.kode_rup_realisasi,
+        'Kesesuaian RUP': row.kecocokan_rup,
+        'Riwayat Perubahan RUP': row.riwayat_kode_rup,
+        'Tindak Lanjut RUP': row.tindak_lanjut_rup,
+        'Sumber Riwayat RUP': historySourceNote,
         'Nama Paket': row.nama_paket,
         'Satuan Kerja': row.satuan_kerja,
         'Program': row.program,
@@ -1552,6 +1789,8 @@
         const workbook = XLSX.utils.book_new();
 
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Monitoring');
+        const actionRows = rows.filter(row => row['Kesesuaian RUP'] === 'Perlu Penyesuaian' || row['Kesesuaian RUP'] === 'Perlu Verifikasi');
+        if (actionRows.length) XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(actionRows), 'Perlu Tindak Lanjut');
 
         const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
         const colWidths = [];
@@ -1593,19 +1832,34 @@
       try {
         showMonitoringLoader('Mengambil data dari Google Sheet...');
         setText('monitoringStatus', 'Memuat data dari Google Sheet...');
-        const [perencanaanRows, realisasiRows, pembayaranRows, tokoDaringRows] = await Promise.all([
+        const [perencanaanRows, realisasiRows, pembayaranRows, tokoDaringRows, historyRows] = await Promise.all([
           fetchSheet(CONFIG.SHEETS.perencanaan),
           fetchRealisasiSheet(),
           fetchSheet(CONFIG.SHEETS.pembayaran),
-          fetchTokoDaringSheet()
+          fetchTokoDaringSheet(),
+          fetchHistoryRup()
         ]);
         if (moduleDestroyed) return;
-        allRows = buildMonitoringData(perencanaanRows, realisasiRows, pembayaranRows, tokoDaringRows);
+        allRows = buildMonitoringData(perencanaanRows, realisasiRows, pembayaranRows, tokoDaringRows, historyRows);
+        renderHistorySource();
         buildFilterOptions(allRows);
         setText('sortWaktuLabel', sortWaktuAsc ? 'Terlama → Terbaru' : 'Terbaru → Terlama');
         setText('sortWaktuArrow', sortWaktuAsc ? '↑' : '↓');
         runMonitoring();
         hideMonitoringLoader();
+
+        if (historyFromSnapshot) {
+          // Tidak mengambil ulang Perencanaan, Realisasi, BAST, atau Toko Daring.
+          // Hanya perubahan relasi RUP yang menyebabkan pencocokan ulang dari data di memori.
+          void fetchLiveHistoryRup().then(liveRows => {
+            if (moduleDestroyed) return;
+            if (liveRows && historyFingerprint(liveRows) !== historyFingerprint(historyRows)) {
+              allRows = buildMonitoringData(perencanaanRows, realisasiRows, pembayaranRows, tokoDaringRows, liveRows);
+              runMonitoring();
+            }
+            renderHistorySource();
+          });
+        }
       } catch (err) {
         console.error(err);
         hideMonitoringLoader();
@@ -1631,7 +1885,8 @@
         'filter_waktu_pemilihan',
         'filter_jenis',
         'filter_sub_kegiatan',
-        'filter_warning'
+        'filter_warning',
+        'filter_kecocokan_rup'
       ].forEach(id => on(qs(id), 'change', () => runMonitoringFast(false)));
 
       // Pencarian teks tetap otomatis, diberi debounce pendek agar ringan saat mengetik cepat.
