@@ -65,6 +65,37 @@ def fetch_one(spreadsheet_id, sheet, range_, required_header):
     return {'headers': headers, 'rows': rows}
 
 
+def calculate_transaksional(raw):
+    """Hitung PL/Penunjukan hanya dari metode + sumber Non Tender.
+
+    Pencatatan Non Tender sengaja tidak dihitung di sini; barisnya tetap
+    dipertahankan utuh di RAW dan rincian Digitalisasi PBJ.
+    """
+    headers = raw['headers']
+    required = ('Nama Satuan Kerja','Metode Pengadaan','Sumber Transaksi','Total Nilai (Rp)')
+    if any(field not in headers for field in required):
+        raise ValueError('Kolom wajib agregat transaksional tidak ditemukan')
+    i_opd, i_metode, i_sumber, i_nilai = (headers.index(field) for field in required)
+    totals = {}
+    for row in raw['rows']:
+        value = lambda idx: row[idx].strip() if len(row) > idx else ''
+        if value(i_sumber) != 'Non Tender':
+            continue
+        method = value(i_metode)
+        metric = 'pl' if method == 'Pengadaan Langsung' else ('penunjukan' if method == 'Penunjukan Langsung' else None)
+        opd = value(i_opd)
+        if not metric or not opd:
+            continue
+        try:
+            amount = float(value(i_nilai).replace(',', '') or '0')
+        except (ValueError, TypeError) as error:
+            raise ValueError(f'Nilai transaksi Non Tender tidak sah pada {opd}: {value(i_nilai)!r}') from error
+        if amount < 0:
+            raise ValueError(f'Nilai transaksi negatif pada {opd}')
+        totals.setdefault(opd, {'pl': 0, 'penunjukan': 0})[metric] += amount
+    return totals
+
+
 def write_if_changed(path, content):
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() and path.read_text('utf-8') == content:
@@ -161,6 +192,11 @@ def main():
     codes = set()
     if rup_col is not None:
         codes = {row[rup_col].strip().removesuffix('.0') for row in toko['rows'] if len(row)>rup_col and row[rup_col].strip()}
+    # RAW ini wajib agar snapshot skor PL/Penunjukan tidak pernah memakai
+    # angka gabungan V5 dari sheet. Bila gagal, pertahankan snapshot lama.
+    raw = fetch_one(DATA_ID, 'RAW_REALISASI', 'A1:J12000', 'Nama Satuan Kerja')
+    transaksional = calculate_transaksional(raw)
+    print(f'  Agregat transaksional: {len(transaksional)} OPD', flush=True)
     toko_map = {}
     # MASTER is read only once and reused for both the Toko Daring lookup
     # and per-OPD detail snapshots. RAW is separate and is never sent on boot.
@@ -175,7 +211,6 @@ def main():
                 if code in codes: toko_map[code] = row[opd_idx].strip()
             print(f'  MASTER lookup ringkas: {len(toko_map)} kode RUP ditemukan', flush=True)
         try:
-            raw = fetch_one(DATA_ID, 'RAW_REALISASI', 'A1:J12000', 'Nama Satuan Kerja')
             publish_detail_snapshots(master, raw)
         except Exception as error:
             # Keep last known good per-OPD snapshots. The browser falls back
@@ -183,7 +218,7 @@ def main():
             print(f'  Detail snapshot belum diperbarui: {error}', flush=True)
     except Exception as error:
         print(f'  MASTER lookup / detail snapshot belum tersedia: {error}', flush=True)
-    canonical = json.dumps({'sources':sources,'tokoMap':toko_map}, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+    canonical = json.dumps({'sources':sources,'tokoMap':toko_map,'transaksionalByOpd':transaksional}, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
     digest = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
     existing = None
     if OUTPUT.exists():
@@ -205,6 +240,7 @@ def main():
         'generatedAt': datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z'),
         'digest': digest,
         'tokoMasterOpdByRup': toko_map if toko_map else None,
+        'transaksionalByOpd': transaksional,
         'sources': sources,
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
