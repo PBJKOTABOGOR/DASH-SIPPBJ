@@ -404,7 +404,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-const SIPPBJ_ASSET_VERSION = '20261010-speed06-detail-per-opd';
+const SIPPBJ_ASSET_VERSION = '20261028-itkp74-pl-nontender-only';
 function cacheBust(url) {
   const joiner = url.includes('?') ? '&' : '?';
   return `${url}${joiner}v=${SIPPBJ_ASSET_VERSION}`;
@@ -2983,7 +2983,8 @@ async function restoreItkp74Snapshot(onProgress) {
   const response = await fetch(`${ITKP74_SNAPSHOT_URL}?b=${bucket}`, {cache: 'default'});
   if (!response.ok) throw new Error(`Snapshot Kepka 74 belum tersedia (HTTP ${response.status}).`);
   const payload = await response.json();
-  if (payload?.version !== 1 || !payload.generatedAt || !payload.sources) {
+  if (payload?.version !== 1 || !payload.generatedAt || !payload.sources ||
+      !payload.transaksionalByOpd || typeof payload.transaksionalByOpd !== 'object') {
     throw new Error('Format snapshot Kepka 74 tidak valid.');
   }
   const age = Date.now() - Date.parse(payload.generatedAt);
@@ -3017,6 +3018,7 @@ async function restoreItkp74Snapshot(onProgress) {
     window.__itkp74DataCache[cacheKey] = {time: now, rows};
     onProgress?.({name, completed:i+1, total:staged.length, failed:0, snapshot:true});
   }
+  window.__itkp74TransaksionalTotals = payload.transaksionalByOpd;
   window.__itkp74SnapshotGeneratedAt = payload.generatedAt;
   window.__itkp74TokoMasterMap = payload.tokoMasterOpdByRup || null;
   return {total:staged.length, completed:staged.length, failed:0, snapshot:true};
