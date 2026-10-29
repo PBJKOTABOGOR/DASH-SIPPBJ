@@ -30,8 +30,8 @@
     penyedia: {title:'RUP Penyedia', subtitle:'Porsi RUP melalui penyedia terhadap seluruh RUP yang diumumkan.'},
     'rup-tp': {title:'RUP e-Tendering + e-Purchasing', subtitle:'Porsi rencana pengadaan melalui e-Tendering dan e-Purchasing.'},
     'realisasi-tp': {title:'Realisasi e-Tendering + e-Purchasing', subtitle:'Nilai realisasi e-Tendering dan e-Purchasing terhadap RUP Penyedia.'},
-    pl: {title:'Pengadaan Langsung Transaksional', subtitle:'Realisasi Pengadaan Langsung yang terekam pada Non Tender dan Pencatatan Non Tender.'},
-    penunjukan: {title:'Penunjukan Langsung Transaksional', subtitle:'Realisasi Penunjukan Langsung yang terekam pada Non Tender dan Pencatatan Non Tender.'},
+    pl: {title:'Pengadaan Langsung Transaksional', subtitle:'Hanya realisasi Pengadaan Langsung melalui Non Tender transaksional yang dihitung untuk indikator ini.'},
+    penunjukan: {title:'Penunjukan Langsung Transaksional', subtitle:'Hanya realisasi Penunjukan Langsung melalui Non Tender transaksional yang dihitung untuk indikator ini.'},
     digitalisasi: {title:'Digitalisasi PBJ', subtitle:'Realisasi yang terekam pada sistem pengadaan, termasuk e-Katalog, Toko Daring, Tender, Non Tender, Pencatatan Non Tender, dan Swakelola.'},
     kontrol: {title:'Kontrol Data ITKP', subtitle:'Pemeriksaan Kode RUP, sumber transaksi, dan selisih perhitungan.'}
   };
@@ -153,9 +153,17 @@
         }
 
         // Prioritaskan satu request rekap agar tampilan pertama cepat muncul.
-        const rekapRows=await fetchSheet(CFG.sheets.rekap,force);
+        // Koreksi nilai yang masih digabung pada sheet sumber menggunakan
+        // agregat Non Tender. Snapshot ringkas menghindari fetch RAW 8k baris
+        // saat kondisi normal; refresh paksa membaca RAW terbaru.
+        const [rekapRows,transaksional]=await Promise.all([
+          fetchSheet(CFG.sheets.rekap,force),
+          loadTransaksionalTotals(force)
+        ]);
         if(state.destroyed)return;
-        state.rekap=normalizeRekap(rekapRows);state.rekapLoaded=true;
+        state.rekap=normalizeRekap(rekapRows);
+        state.rekap.forEach(r=>applyTransaksionalTotals(r,transaksional[r.opd]));
+        state.rekapLoaded=true;
         applyAdminEditsToLoadedData();
         buildOpdOptions();
         if(!rekapSudahSiap) hideLoading();render();
@@ -302,7 +310,7 @@
         </div>
         <div class="itkp74-insights">
           <div class="itkp74-insight-card good"><div class="itkp74-insight-label">Capai Nilai Maksimal</div><div class="itkp74-insight-value">${fmtInt(maxCount)} OPD</div><div class="itkp74-insight-note">Sudah berada pada rentang nilai tertinggi indikator ini.</div></div>
-          <div class="itkp74-insight-card warn"><div class="itkp74-insight-label">Nilai Masih 0</div><div class="itkp74-insight-value">${fmtInt(zeroCount)} OPD</div><div class="itkp74-insight-note">Perlu dilihat paket dan transaksi yang belum tercatat.</div></div>
+          <div class="itkp74-insight-card warn"><div class="itkp74-insight-label">Nilai Masih 0</div><div class="itkp74-insight-value">${fmtInt(zeroCount)} OPD</div><div class="itkp74-insight-note">${key==='pl'||key==='penunjukan'?'Cek transaksi Non Tender yang belum terealisasi.':'Perlu dilihat paket dan transaksi yang belum tercatat.'}</div></div>
           <div class="itkp74-insight-card ${naCount?'warn':'good'}"><div class="itkp74-insight-label">Tidak Ada Denominator</div><div class="itkp74-insight-value">${fmtInt(naCount)} OPD</div><div class="itkp74-insight-note">Penunjukan tanpa RUP ditampilkan 100%. PL tanpa RUP tetap ditandai N/A.</div></div>
         </div>
         <section class="itkp74-panel itkp74-section-gap">
@@ -310,7 +318,7 @@
             <div><h3>Rekap ${esc(metric.label)} per Perangkat Daerah</h3><p>Nilai, persentase, target berikutnya, dan kebutuhan rupiah.</p></div>
           </div>
           <div class="itkp74-thresholds">${metric.thresholds.map(t=>`<div class="itkp74-threshold"><strong>${esc(t[0])}</strong><span>${fmtScore(t[1])} poin</span></div>`).join('')}</div>
-          ${(key==='pl'||key==='penunjukan')?`<div class="itkp74-analysis-box itkp74-section-gap"><strong>Catatan perhitungan:</strong> nilai realisasi memakai transaksi <strong>Non Tender + Pencatatan Non Tender</strong>. Jika satu Kode RUP tercatat pada kedua sumber, paket ditandai <strong>DOUBEL INPUT</strong> agar segera dikoreksi.</div>`:''}
+          ${(key==='pl'||key==='penunjukan')?`<div class="itkp74-analysis-box itkp74-section-gap"><strong>Catatan perhitungan:</strong> poin indikator hanya menghitung <strong>Non Tender transaksional</strong>. <strong>Pencatatan Non Tender</strong> ditampilkan sebagai pembanding dan tetap masuk Digitalisasi PBJ, bukan nilai indikator ini. Kode RUP pada kedua sumber ditandai <strong>DOUBEL INPUT</strong>.</div>`:''}
           ${((key==='realisasi-tp'||key==='digitalisasi')&&state.tokoApplied)?`<div class="itkp74-analysis-box itkp74-section-gap"><strong>Toko Daring aktif:</strong> ${fmtInt(state.tokoRows.length)} rincian import sudah digabungkan berdasarkan Kode RUP.</div>`:''}
           ${selected?`<div class="itkp74-analysis-box itkp74-section-gap">${analysisForMetric(selected,key)}</div>`:''}
           <div class="itkp74-table-wrap itkp74-section-gap"><table class="itkp74-table">
@@ -483,8 +491,43 @@
       const manual=state.adminEdits.manual||[];if(!manual.length)return;
       if(state.raw.length&&state.adminMode){manual.forEach(x=>{if(!state.raw.some(r=>r.manual&&r.kodePaket===x.id))state.raw.push({opd:x.opd,kodeRup:x.kodeRup||'',kodePaket:x.id,jenis:'Input Admin',metode:x.metode,nama:x.nama,penyedia:'-',statusPaket:'INPUT MANUAL',nilai:num(x.nilai),sumber:x.sumber,manual:true});});}
       const byOpd=new Map(state.rekap.map(r=>[r.opd,r]));
-      manual.forEach(x=>{const r=byOpd.get(x.opd);if(!r)return;const v=num(x.nilai);r.realDigital+=v;if(['E-Katalog Versi 6.0','Toko Daring','Tender'].includes(x.sumber))r.realTp+=v;if(x.metode==='Pengadaan Langsung'&&['Non Tender','Pencatatan Non Tender'].includes(x.sumber))r.realPl+=v;if(x.metode==='Penunjukan Langsung'&&['Non Tender','Pencatatan Non Tender'].includes(x.sumber))r.realPenunjukan+=v;if(x.sumber==='Pencatatan Non Tender')r.pencatatanNt+=v;if(x.sumber==='Swakelola')r.swakelola+=v;if(x.sumber==='Toko Daring'){r.tokoDaring+=v;r.jumlahToko+=1;}});
+      manual.forEach(x=>{const r=byOpd.get(x.opd);if(!r)return;const v=num(x.nilai);r.realDigital+=v;if(['E-Katalog Versi 6.0','Toko Daring','Tender'].includes(x.sumber))r.realTp+=v;if(x.metode==='Pengadaan Langsung'&&x.sumber==='Non Tender')r.realPl+=v;if(x.metode==='Penunjukan Langsung'&&x.sumber==='Non Tender')r.realPenunjukan+=v;if(x.sumber==='Pencatatan Non Tender')r.pencatatanNt+=v;if(x.sumber==='Swakelola')r.swakelola+=v;if(x.sumber==='Toko Daring'){r.tokoDaring+=v;r.jumlahToko+=1;}});
       state.rekap.forEach(recalcRekapRow);
+    }
+
+    function applyTransaksionalTotals(r,source){
+      // Jangan gunakan angka PL dari ITKP_REKAP_OPD: sheet ini masih menjumlahkan
+      // Non Tender + Pencatatan Non Tender (V5). Klasifikasi hanya dari RAW.
+      const total=source||{pl:0,penunjukan:0};
+      r.realPl=Math.max(0,num(total.pl));
+      r.realPenunjukan=Math.max(0,num(total.penunjukan));
+      r.pctPl=r.rupPl>0?r.realPl/r.rupPl:0;
+      r.pctPenunjukan=r.rupPenunjukan>0?r.realPenunjukan/r.rupPenunjukan:1;
+      r.scorePl=scoreForPct('pl',r.pctPl);
+      r.scorePenunjukan=scoreForPct('penunjukan',r.pctPenunjukan);
+      r.totalScore=r.scorePengumuman+r.scorePenyedia+r.scoreRupTp+r.scoreRealTp+r.scorePl+r.scorePenunjukan+r.scoreDigital;
+    }
+
+    async function loadTransaksionalTotals(force){
+      const current=window.__itkp74TransaksionalTotals;
+      if(!force&&current&&typeof current==='object')return current;
+      // Fallback / refresh: baca RAW hanya bila snapshot singkat tidak tersedia
+      // atau pengguna meminta refresh. Hindari menampilkan skor gabungan.
+      const rows=await fetchSheet(CFG.sheets.raw,force);
+      if(!rows.length)throw new Error('RAW_REALISASI kosong; skor transaksional tidak dapat diverifikasi.');
+      const totals=Object.create(null);
+      for(const row of rows){
+        if(String(row['Sumber Transaksi']||'').trim()!=='Non Tender')continue;
+        const method=String(row['Metode Pengadaan']||'').trim();
+        const field=method==='Pengadaan Langsung'?'pl':method==='Penunjukan Langsung'?'penunjukan':null;
+        if(!field)continue;
+        const opd=String(row['Nama Satuan Kerja']||'').trim();
+        if(!opd)continue;
+        if(!totals[opd])totals[opd]={pl:0,penunjukan:0};
+        totals[opd][field]+=n(row,'Total Nilai (Rp)');
+      }
+      window.__itkp74TransaksionalTotals=totals;
+      return totals;
     }
 
     function recalcRekapRow(r){
@@ -521,10 +564,10 @@
       const metricLabel=d.key==='all'?'Semua Paket':METRICS[d.key]?.label||'Paket';
       const transLabel='Non Tender';
       const summary=showNtBreakdown
-        ? `<div class="itkp74-detail-summary nt"><div class="itkp74-detail-mini"><span>Jumlah Paket / Transaksi</span><strong>${fmtInt(rows.length)}</strong></div><div class="itkp74-detail-mini"><span>Total Pagu RUP</span><strong>${fmtRp(totalPagu)}</strong></div><div class="itkp74-detail-mini"><span>${esc(transLabel)}</span><strong>${fmtRp(totalTrans)}</strong></div><div class="itkp74-detail-mini"><span>Pencatatan Non Tender</span><strong>${fmtRp(totalPenc)}</strong></div><div class="itkp74-detail-mini"><span>Total Realisasi</span><strong>${fmtRp(totalReal)}</strong></div></div>`
+        ? `<div class="itkp74-detail-summary nt"><div class="itkp74-detail-mini"><span>Jumlah Paket / Transaksi</span><strong>${fmtInt(rows.length)}</strong></div><div class="itkp74-detail-mini"><span>Total Pagu RUP</span><strong>${fmtRp(totalPagu)}</strong></div><div class="itkp74-detail-mini"><span>${isNtMetric?'Dihitung untuk Indikator':'Non Tender'}</span><strong>${fmtRp(totalTrans)}</strong></div><div class="itkp74-detail-mini"><span>Pencatatan Non Tender</span><strong>${fmtRp(totalPenc)}</strong></div><div class="itkp74-detail-mini"><span>Total Terekam</span><strong>${fmtRp(totalReal)}</strong></div></div>`
         : `<div class="itkp74-detail-summary"><div class="itkp74-detail-mini"><span>Jumlah Paket / Transaksi</span><strong>${fmtInt(rows.length)}</strong></div><div class="itkp74-detail-mini"><span>Total Pagu RUP</span><strong>${fmtRp(totalPagu)}</strong></div><div class="itkp74-detail-mini"><span>Total Terekam</span><strong>${fmtRp(totalReal)}</strong></div><div class="itkp74-detail-mini"><span>Sisa Pagu</span><strong>${fmtRp(totalSisa)}</strong></div></div>`;
       const statusOptions=isNtMetric
-        ? `<option value="DONE" ${d.status==='DONE'?'selected':''}>Sudah Tercatat</option><option value="DOUBLE" ${d.status==='DOUBLE'?'selected':''}>DOUBEL INPUT</option><option value="TODO" ${d.status==='TODO'?'selected':''}>Belum Tercatat</option><option value="NO_RUP" ${d.status==='NO_RUP'?'selected':''}>Tanpa Kode RUP</option><option value="SISA" ${d.status==='SISA'?'selected':''}>Masih Ada Sisa Pagu</option>`
+        ? `<option value="DONE" ${d.status==='DONE'?'selected':''}>Sudah Transaksional</option><option value="DOUBLE" ${d.status==='DOUBLE'?'selected':''}>DOUBEL INPUT</option><option value="TODO" ${d.status==='TODO'?'selected':''}>Belum Transaksional</option><option value="NO_RUP" ${d.status==='NO_RUP'?'selected':''}>Tanpa Kode RUP</option><option value="SISA" ${d.status==='SISA'?'selected':''}>Masih Ada Sisa Pagu</option>`
         : `<option value="DONE" ${d.status==='DONE'?'selected':''}>Sudah Tercatat</option><option value="DOUBLE" ${d.status==='DOUBLE'?'selected':''}>DOUBEL INPUT</option><option value="TODO" ${d.status==='TODO'?'selected':''}>Belum Tercatat</option><option value="NO_RUP" ${d.status==='NO_RUP'?'selected':''}>Tanpa Kode RUP</option><option value="SISA" ${d.status==='SISA'?'selected':''}>Masih Ada Sisa Pagu</option>`;
       const tableHead=isNtMetric
         ? `<tr><th>No</th><th>Kode RUP</th><th>Kode Paket</th><th>Nama Paket</th><th>Program / Kegiatan / Sub Kegiatan</th><th>Metode</th><th>Pagu RUP</th><th>Non Tender</th><th>Pencatatan Non Tender</th><th>Total Realisasi</th><th>Sisa</th><th>Status</th></tr>`
@@ -532,7 +575,7 @@
       const colspan=isNtMetric?12:11;
       return `<section class="itkp74-panel itkp74-section-gap" id="itkp74DetailPanel">
         <div class="itkp74-panel-head"><div><h3>Detail Paket - ${esc(d.opd)}</h3><p>${esc(metricLabel)} • ${fmtInt(rows.length)} paket/transaksi sesuai filter.</p></div><div class="itkp74-panel-actions"><button class="itkp74-btn itkp74-btn-soft" data-close-detail>Tutup Detail</button><button class="itkp74-btn itkp74-btn-primary" data-export-detail>Export Detail XLSX</button></div></div>
-        ${isNtMetric?`<div class="itkp74-analysis-box"><strong>Realisasi indikator</strong> merupakan total <strong>Non Tender + Pencatatan Non Tender</strong>. Jika keduanya tercatat pada Kode RUP yang sama, status menjadi <strong>DOUBEL INPUT</strong> dan baris ditandai merah.</div>`:''}
+        ${isNtMetric?`<div class="itkp74-analysis-box"><strong>Nilai indikator hanya dari Non Tender transaksional.</strong> Pencatatan Non Tender tetap ditampilkan untuk pemeriksaan dan masuk Digitalisasi PBJ. Kolom Total Realisasi adalah total yang terekam, <strong>bukan</strong> numerator indikator. Jika kedua sumber ada pada satu Kode RUP, statusnya DOUBEL INPUT.</div>`:''}
         ${d.key==='all'?`<div class="itkp74-analysis-box"><strong>Catatan:</strong> Detail semua paket menampilkan seluruh nilai yang terekam. Pilih metode <strong>Pengadaan Langsung</strong> atau <strong>Penunjukan Langsung</strong> untuk melihat pemisahan realisasi transaksional dan pencatatan.</div>`:''}
         ${summary}
         <div class="itkp74-detail-filter">
@@ -556,8 +599,8 @@
       const isNtMetric=key==='pl'||key==='penunjukan';
       if(isNtMetric){
         const trans=num(r.realisasiTransaksional),penc=num(r.realisasiPencatatan),double=(num(r.sourceCount)>1)||(trans>0&&penc>0);
-        const rowClass=!r.kodeRup?'row-danger':double?'row-danger':(trans>0||penc>0)?'row-success':'row-warning';
-        const status=!r.kodeRup?'PERLU CEK KODE RUP':double?'DOUBEL INPUT':(trans>0||penc>0)?'SUDAH TERCATAT':'BELUM TERCATAT';
+        const rowClass=!r.kodeRup?'row-danger':double?'row-danger':trans>0?'row-success':'row-warning';
+        const status=!r.kodeRup?'PERLU CEK KODE RUP':double?'DOUBEL INPUT':trans>0?'SUDAH TRANSAKSIONAL':penc>0?'HANYA PENCATATAN':'BELUM TERCATAT';
         return `<tr class="${rowClass}"><td>${no}</td><td>${esc(r.kodeRup||'-')}</td><td>${esc(r.kodePaket||'-')}</td><td class="pkg-name">${esc(r.name||'-')}</td><td class="planning-cell">${planningPathHtml(r)}</td><td>${esc(r.method||'-')}</td><td class="num">${r.pagu>0?fmtRp(r.pagu):'-'}</td><td class="num strong">${fmtRp(trans)}</td><td class="num">${fmtRp(penc)}</td><td class="num strong">${fmtRp(r.realisasi)}</td><td class="num">${r.pagu>0?fmtRp(r.sisa):'-'}</td><td>${statusBadge(status)}</td></tr>`;
       }
       const double=num(r.sourceCount)>1;
@@ -573,9 +616,10 @@
         if(d.subKegiatan&&r.subKegiatan!==d.subKegiatan)return false;
         if(isNtMetric){
           const trans=num(r.realisasiTransaksional),penc=num(r.realisasiPencatatan),double=(num(r.sourceCount)>1)||(trans>0&&penc>0);
-          if(d.status==='DONE'&&(!(trans>0||penc>0)||double))return false;
+          if(d.status==='DONE'&&(!(trans>0)||double))return false;
           if(d.status==='DOUBLE'&&!double)return false;
-          if(d.status==='TODO'&&!(trans<=0&&penc<=0))return false;
+          // Pencatatan saja belum memenuhi indikator transaksional.
+          if(d.status==='TODO'&&!(trans<=0))return false;
         }else{
           const double=num(r.sourceCount)>1;
           if(d.status==='DONE'&&(r.realisasi<=0||double))return false;
@@ -800,7 +844,7 @@
         if(pct>=1.1)return 'Periksa RUP yang berpotensi ganda atau basis belanja yang belum sesuai.';
         return 'Pertahankan kesesuaian RUP dengan total belanja PBJ.';
       }
-      const verb=key==='realisasi-tp'?'Dorong realisasi e-Tendering/e-Purchasing':key==='pl'?'Lengkapi realisasi Pengadaan Langsung pada Non Tender atau Pencatatan Non Tender':key==='penunjukan'?'Lengkapi realisasi Penunjukan Langsung pada Non Tender atau Pencatatan Non Tender':key==='digitalisasi'?'Lengkapi pencatatan transaksi pada sistem':key==='rup-tp'?'Arahkan rencana penyedia ke e-Tendering/e-Purchasing yang sesuai':'Lengkapi RUP melalui penyedia';
+      const verb=key==='realisasi-tp'?'Dorong realisasi e-Tendering/e-Purchasing':key==='pl'?'Dorong Pengadaan Langsung transaksional melalui Non Tender':key==='penunjukan'?'Dorong Penunjukan Langsung transaksional melalui Non Tender':key==='digitalisasi'?'Lengkapi pencatatan transaksi pada sistem':key==='rup-tp'?'Arahkan rencana penyedia ke e-Tendering/e-Purchasing yang sesuai':'Lengkapi RUP melalui penyedia';
       return `${verb}. Target ${target.label}, kekurangan sekitar ${fmtRp(target.gap)}; nilai berikutnya ${fmtScore(nextScore)} poin.`;
     }
 
@@ -811,6 +855,18 @@
         if(pct>=.9&&pct<1.1)return {pct:pct,label:'Rentang terbaik',gap:0,isMax:true};
         if(pct>=1.5)return {pct:.9,label:'Perlu koreksi data',gap:0,isMax:false};
         return {pct:.9,label:'Kembali ke 90%–<110%',gap:0,isMax:false};
+      }
+      // Target dari sheet masih memakai rumus V5 gabungan. Untuk dua
+      // indikator transaksional, hitung dari numerator terkoreksi agar
+      // target, kekurangan, analisis, dan export tidak ikut salah.
+      if(key==='pl'||key==='penunjukan'){
+        const den=metricDenominator(row,key),real=num(row[METRICS[key].numerator]);
+        if(den<=0)return {pct:null,label:'Tidak ada RUP',gap:0,isMax:true};
+        const pct=real/den;
+        for(const threshold of [.1,.2,.3,.4,.5]){
+          if(pct<threshold-1e-10)return {pct:threshold,label:fmtPct(threshold),gap:Math.max(0,Math.ceil(threshold*den-real)),isMax:false};
+        }
+        return {pct:null,label:'Maksimal',gap:0,isMax:true};
       }
       const m=METRICS[key],t=state.targetByOpd.get(row.opd);if(!t)return {pct:null,label:'-',gap:0,isMax:false};
       const raw=t[m.targetKey],gap=Math.max(0,num(t[m.gapKey]));
@@ -911,7 +967,7 @@
       await ensureXlsx();const rows=filteredDetailRows();if(!rows.length)throw new Error('Tidak ada detail untuk diexport.');
       const isNtMetric=state.detail.key==='pl'||state.detail.key==='penunjukan';
       const out=isNtMetric
-        ? rows.map((r,i)=>{const trans=num(r.realisasiTransaksional),penc=num(r.realisasiPencatatan),double=(num(r.sourceCount)>1)||(trans>0&&penc>0),status=!r.kodeRup?'PERLU CEK KODE RUP':double?'DOUBEL INPUT':(trans>0||penc>0)?'SUDAH TERCATAT':'BELUM TERCATAT';return {'No':i+1,'Kode RUP':r.kodeRup||'','Kode Paket':r.kodePaket||'','Nama Paket':r.name||'','Program':r.program||'','Kegiatan':r.kegiatan||'','Sub Kegiatan':r.subKegiatan||'','Metode':r.method||'','Pagu RUP':r.pagu||0,'Non Tender':trans,'Pencatatan Non Tender':penc,'Total Realisasi':r.realisasi||0,'Sisa Pagu':r.sisa||0,'Status':status};})
+        ? rows.map((r,i)=>{const trans=num(r.realisasiTransaksional),penc=num(r.realisasiPencatatan),double=(num(r.sourceCount)>1)||(trans>0&&penc>0),status=!r.kodeRup?'PERLU CEK KODE RUP':double?'DOUBEL INPUT':trans>0?'SUDAH TRANSAKSIONAL':penc>0?'HANYA PENCATATAN':'BELUM TERCATAT';return {'No':i+1,'Kode RUP':r.kodeRup||'','Kode Paket':r.kodePaket||'','Nama Paket':r.name||'','Program':r.program||'','Kegiatan':r.kegiatan||'','Sub Kegiatan':r.subKegiatan||'','Metode':r.method||'','Pagu RUP':r.pagu||0,'Non Tender':trans,'Pencatatan Non Tender':penc,'Total Realisasi':r.realisasi||0,'Sisa Pagu':r.sisa||0,'Status':status};})
         : rows.map((r,i)=>({'No':i+1,'Kode RUP':r.kodeRup||'','Kode Paket':r.kodePaket||'','Nama Paket':r.name||'','Program':r.program||'','Kegiatan':r.kegiatan||'','Sub Kegiatan':r.subKegiatan||'','Metode':r.method||'','Sumber Transaksi':r.source||'','Pagu RUP':r.pagu||0,'Realisasi':r.realisasi||0,'Sisa Pagu':r.sisa||0,'Status':!r.kodeRup?'PERLU CEK KODE RUP':num(r.sourceCount)>1?'DOUBEL INPUT':'TERHUBUNG'}));
       writeXlsx(out,`${safeFile(state.detail.opd)}_${safeFile(state.detail.key)}_${dateStamp()}.xlsx`,'Detail Paket');
     }
@@ -1060,7 +1116,7 @@
   function scorePill(v,max){const value=num(v),ratio=max?value/max:0,cls=ratio>=.99?'good':ratio>=.5?'warn':value>0?'info':'bad';return `<span class="itkp74-score-pill ${cls}">${fmtScore(value)} / ${fmtScore(max)}</span>`;}
   function metricTone(key,pct,score,maxScore,den){if(key==='penunjukan'&&den<=0)return 'good';if(key==='pl'&&den<=0)return 'neutral';if(key==='pengumuman')return pct>=.9&&pct<1.1?'good':pct>=.8&&pct<1.5?'warn':'bad';const ratio=maxScore?score/maxScore:0;return ratio>=.99?'good':ratio>=.6?'info':ratio>0?'warn':'bad';}
   function pctBadge(v){const p=num(v),cls=p>=.8?'good':p>=.5?'info':p>=.3?'warn':'bad';return `<span class="itkp74-badge ${cls}">${fmtPct(p)}</span>`;}
-  function statusBadge(v){const t=String(v||'-'),u=t.toUpperCase();const cls=u==='OK'||u.includes('SUDAH')||u.includes('TERHUBUNG')?'good':u.includes('PERLU')||u.includes('SELISIH')||u.includes('DOUBLE')||u.includes('DOUBEL')?'bad':u.includes('BELUM')?'warn':u==='INFO'||u==='N/A'?'info':'neutral';return `<span class="itkp74-badge ${cls}">${esc(t)}</span>`;}
+  function statusBadge(v){const t=String(v||'-'),u=t.toUpperCase();const cls=u==='OK'||u.includes('SUDAH')||u.includes('TERHUBUNG')?'good':u.includes('PERLU')||u.includes('SELISIH')||u.includes('DOUBLE')||u.includes('DOUBEL')?'bad':u.includes('BELUM')||u.includes('HANYA PENCATATAN')?'warn':u==='INFO'||u==='N/A'?'info':'neutral';return `<span class="itkp74-badge ${cls}">${esc(t)}</span>`;}
   function paginationHtml(total,page,pages){return `<div class="itkp74-pagination"><span>${fmtInt(total)} perangkat daerah • halaman ${page} dari ${pages}</span><div class="itkp74-pagination-actions"><button class="itkp74-page-btn" data-page-dir="-1" ${page<=1?'disabled':''}>Sebelumnya</button><button class="itkp74-page-btn" data-page-dir="1" ${page>=pages?'disabled':''}>Berikutnya</button></div></div>`;}
   function dataPaginationHtml(total,page,pages){return `<div class="itkp74-pagination"><span>${fmtInt(total)} transaksi • halaman ${page} dari ${pages}</span><div class="itkp74-pagination-actions"><button class="itkp74-page-btn" data-data-page-dir="-1" ${page<=1?'disabled':''}>Sebelumnya</button><button class="itkp74-page-btn" data-data-page-dir="1" ${page>=pages?'disabled':''}>Berikutnya</button></div></div>`;}
   function doublePaginationHtml(total,page,pages){return `<div class="itkp74-pagination"><span>${fmtInt(total)} paket • 10 baris per halaman • halaman ${page} dari ${pages}</span><div class="itkp74-pagination-actions"><button class="itkp74-page-btn" data-double-page-dir="-1" ${page<=1?'disabled':''}>Sebelumnya</button><button class="itkp74-page-btn" data-double-page-dir="1" ${page>=pages?'disabled':''}>Berikutnya</button></div></div>`;}
