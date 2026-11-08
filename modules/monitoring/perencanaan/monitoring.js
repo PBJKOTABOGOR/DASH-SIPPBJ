@@ -924,35 +924,76 @@
       return grouped;
     }
 
+    // CMBNTNONT_BAST: 1 baris per paket, tetapi tiap paket bisa punya banyak termin.
+    // Untuk Tender / Non Tender gunakan seluruh entri bapbast_history_json.
+    // Field besar_pembayaran utama hanya fallback saat tidak ada riwayat pembayaran.
     function groupPembayaran(paymentRows) {
       const byPackage = {};
       const byRup = {};
+      const seenPayments = new Set();
 
       normalizeRows(paymentRows || []).forEach(r => {
-        const kodePaket = normalizeKodeValue(r.kd_nontender || r.kode_paket || '');
-        const rupParts = splitHistoryKode(r.kd_rup || r.kode_rup || '');
-        const amount = parseMoney(r.besar_pembayaran || 0);
-        const detail = {
-          kode_paket: kodePaket,
-          kd_rup: String(r.kd_rup || r.kode_rup || '').trim(),
-          no_bast: String(r.no_bast || '').trim(),
-          nama_paket: String(r.nama_paket || '').trim(),
-          nama_satker: String(r.nama_satker || '').trim(),
-          cara_pembayaran: String(r.cara_pembayaran_kontrak || r.cara_pembayaran || '').trim() || '-',
-          besar_pembayaran: amount,
-          tgl_bapbast: String(r.tgl_bapbast || r.tanggal_bapbast || '').trim()
-        };
+        const kodePaket = normalizeKodeValue(r.kd_nontender || r.kd_tender || r.kode_paket || '');
+        if (!kodePaket || kodePaket === '-') return;
 
-        if (kodePaket) {
+        const rupParts = [...new Set(splitHistoryKode(r.kd_rup || r.kode_rup || '').filter(k => k !== '-'))];
+        const rawHistory = r.bapbast_history_json;
+        let history = [];
+        if (Array.isArray(rawHistory)) {
+          history = rawHistory;
+        } else if (String(rawHistory || '').trim()) {
+          try {
+            const parsed = JSON.parse(String(rawHistory).trim());
+            if (Array.isArray(parsed)) history = parsed;
+          } catch (error) {
+            console.warn('Riwayat BAP/BAST tidak valid pada kode paket ' + kodePaket, error);
+          }
+        }
+
+        // Abaikan entri riwayat yang tidak memuat nilai pembayaran.
+        // Kalau riwayat sudah ada, jangan ikut menjumlah besar_pembayaran induk.
+        const validHistory = history.filter(item => item && typeof item === 'object' &&
+          Number.isFinite(parseMoney(item.besar_pembayaran)) && parseMoney(item.besar_pembayaran) > 0);
+        const entries = validHistory.length ? validHistory : [null];
+
+        entries.forEach(entry => {
+          const amount = parseMoney(entry ? entry.besar_pembayaran : r.besar_pembayaran);
+          if (!Number.isFinite(amount) || amount <= 0) return;
+
+          const noBast = String(entry ? entry.no_bast || '' : r.no_bast || '').trim();
+          const noBap = String(entry ? entry.no_bap || '' : r.no_bap || '').trim();
+          const tanggal = String((entry && (entry.tgl_bast || entry.tgl_bap)) ||
+            r.tgl_bapbast || r.tanggal_bapbast || '').trim();
+          const detail = {
+            kode_paket: kodePaket,
+            kd_rup: String(r.kd_rup || r.kode_rup || '').trim(),
+            no_bast: noBast,
+            no_bap: noBap,
+            nama_paket: String(r.nama_paket || '').trim(),
+            nama_satker: String(r.nama_satker || '').trim(),
+            cara_pembayaran: String(r.cara_pembayaran_kontrak || r.cara_pembayaran || '').trim() || '-',
+            besar_pembayaran: amount,
+            tgl_bapbast: tanggal
+          };
+
+          // Kalau kode paket muncul lebih dari sekali di Sheet, pembayaran yang sama
+          // tetap dihitung satu kali, tetapi termin berbeda tidak digabung.
+          const documentId = noBast && noBast !== '-' ? 'BAST:' + noBast.toUpperCase()
+            : noBap && noBap !== '-' ? 'BAP:' + noBap.toUpperCase()
+            : 'TANGGAL:' + tanggal + '|NILAI:' + amount;
+          const uniqueKey = kodePaket + '|' + documentId;
+          if (seenPayments.has(uniqueKey)) return;
+          seenPayments.add(uniqueKey);
+
           if (!byPackage[kodePaket]) byPackage[kodePaket] = { total: 0, rows: [] };
           byPackage[kodePaket].total += amount;
           byPackage[kodePaket].rows.push(detail);
-        }
 
-        rupParts.forEach(kodeRup => {
-          if (!byRup[kodeRup]) byRup[kodeRup] = { total: 0, rows: [] };
-          byRup[kodeRup].total += amount;
-          byRup[kodeRup].rows.push(detail);
+          rupParts.forEach(kodeRup => {
+            if (!byRup[kodeRup]) byRup[kodeRup] = { total: 0, rows: [] };
+            byRup[kodeRup].total += amount;
+            byRup[kodeRup].rows.push(detail);
+          });
         });
       });
       return { byPackage, byRup };
@@ -1720,7 +1761,7 @@
           }
         } else if (row.financial_mode === 'pembayaran') {
           const paymentRows = Array.isArray(row.payment_rows) ? row.payment_rows : [];
-          if (paymentHead) paymentHead.innerHTML = '<th>No.</th><th>Kode Paket</th><th>No. BAST</th><th>Tanggal BAP/BAST</th><th>Cara Pembayaran</th><th>Besar Pembayaran</th>';
+          if (paymentHead) paymentHead.innerHTML = '<th>No.</th><th>Kode Paket</th><th>No. BAP/BAST</th><th>Tanggal BAP/BAST</th><th>Cara Pembayaran</th><th>Besar Pembayaran</th>';
           paymentSummary.innerText = `${paymentRows.length} kali pembayaran • Total ${formatMoney(row.realisasi_keuangan)}`;
           if (!paymentRows.length) {
             paymentBody.innerHTML = '<tr><td colspan="6">Belum ada realisasi keuangan pada CMBNTNONT_BAST.</td></tr>';
