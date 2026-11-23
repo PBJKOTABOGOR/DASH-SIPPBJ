@@ -189,22 +189,40 @@ const APP_ROUTES = {
 // Tautan langsung per ID Rapor: tetap menggunakan shell SIPPBJ yang sama.
 // Path dasar dibaca dari app.js, agar link modul dan aset tidak salah alamat.
 const SIPPBJ_ROOT_PATH = new URL('.', document.currentScript.src).pathname;
-const SIPPBJ_RAPOR_PREFIX = SIPPBJ_ROOT_PATH + 'raporpbj/';
+// Alamat resmi Rapor PBJ hanya /RaporPBJ dan /RaporPBJ/ID.
+const SIPPBJ_RAPOR_INDEX_PATH = SIPPBJ_ROOT_PATH + 'RaporPBJ';
+const SIPPBJ_RAPOR_DETAIL_PREFIX = SIPPBJ_RAPOR_INDEX_PATH + '/';
+// URL huruf kecil /raporpbj sengaja dinonaktifkan; TIDAK dialihkan otomatis.
+const SIPPBJ_RAPOR_DISABLED_PREFIX = SIPPBJ_ROOT_PATH + 'raporpbj';
+function isDisabledRaporPath() {
+  const pathname = window.location.pathname;
+  return pathname === SIPPBJ_RAPOR_DISABLED_PREFIX ||
+    pathname.startsWith(SIPPBJ_RAPOR_DISABLED_PREFIX + '/');
+}
+function isRaporListPath() {
+  return window.location.pathname.replace(/\/$/, '') === SIPPBJ_RAPOR_INDEX_PATH;
+}
 function getRaporIdFromPath() {
   const pathname = window.location.pathname;
-  if (!pathname.startsWith(SIPPBJ_RAPOR_PREFIX)) return '';
+  if (!pathname.startsWith(SIPPBJ_RAPOR_DETAIL_PREFIX)) return '';
   let id;
-  try { id = decodeURIComponent(pathname.slice(SIPPBJ_RAPOR_PREFIX.length).replace(/\/$/, '')); }
+  try { id = decodeURIComponent(pathname.slice(SIPPBJ_RAPOR_DETAIL_PREFIX.length).replace(/\/$/, '')); }
   catch (_) { return ''; }
   return /^[A-Za-z0-9_-]{5,80}$/.test(id) ? id : '';
+}
+function isRaporPath() {
+  // Termasuk alamat nonaktif agar klik menu lain mengganti URL lama di address bar.
+  return isRaporListPath() || !!getRaporIdFromPath() || isDisabledRaporPath();
 }
 function setRaporAddress(raporId, options = {}) {
   const id = String(raporId || '').trim();
   if (id && !/^[A-Za-z0-9_-]{5,80}$/.test(id)) return;
-  const target = id ? SIPPBJ_RAPOR_PREFIX + encodeURIComponent(id) : SIPPBJ_ROOT_PATH;
+  const page = options.page || 'rapor-pbj';
+  const target = id ? SIPPBJ_RAPOR_DETAIL_PREFIX + encodeURIComponent(id)
+    : page === 'rapor-pbj' ? SIPPBJ_RAPOR_INDEX_PATH : SIPPBJ_ROOT_PATH;
   if (window.location.pathname === target && !window.location.search && !window.location.hash) return;
   const method = options.replace ? 'replaceState' : 'pushState';
-  window.history[method]({sippbjPage: options.page || 'rapor-pbj', raporId: id}, '', target);
+  window.history[method]({sippbjPage: page, raporId: id}, '', target);
 }
 window.__sippbjSetRaporUrl = setRaporAddress;
 
@@ -3214,8 +3232,8 @@ async function loadPage(key, options = {}) {
     if (key === 'rapor-pbj' && typeof window.__sippbjShowRaporRoute === 'function') {
       window.__sippbjShowRaporRoute(requestedRaporId);
     }
-    if (!options.fromHistory && getRaporIdFromPath()) {
-      setRaporAddress(null, {page:key});
+    if (!options.fromHistory && (key === 'rapor-pbj' || isRaporPath())) {
+      setRaporAddress(requestedRaporId, {page:key});
     }
     updateActiveMenu(key);
     return;
@@ -3249,9 +3267,9 @@ async function loadPage(key, options = {}) {
 
     if (success) {
       activePageKey = key;
-      // Pindah ke menu lain dari detail Rapor mengembalikan URL ke dashboard.
-      if (!options.fromHistory && getRaporIdFromPath()) {
-        setRaporAddress(null, {page:key});
+      // Menu Rapor memakai /RaporPBJ; menu lain kembali ke URL dasar SIPPBJ.
+      if (!options.fromHistory && (key === 'rapor-pbj' || isRaporPath())) {
+        setRaporAddress(requestedRaporId, {page:key});
       }
     }
 
@@ -3546,20 +3564,39 @@ document.querySelector('.sidebar-nav')?.addEventListener('focusin', (event) => {
   warmModuleRoute(key);
 });
 
-// Tautan /raporpbj/ID dapat ditempel, dibuka langsung, di-refresh,
-// dan ditelusuri melalui tombol Back/Forward tanpa keluar dari aplikasi.
+// Tautan langsung untuk /RaporPBJ memakai fallback 404.html GitHub Pages.
+// URL /raporpbj dan /raporpbj/ID lama hanya menampilkan pesan tidak berlaku.
+function showDisabledRaporRoute() {
+  if (!isDisabledRaporPath()) return false;
+  dashboardRenderToken++;
+  activeModuleToken++;
+  cleanupDynamicModule();
+  activePageKey = '__rapor_url_tidak_berlaku__';
+  loadingPageKey = '';
+  updateActiveMenu('');
+  contentArea.classList.remove('module-mode', 'iframe-internal-rapor-mode', 'iframe-fullpage-mode');
+  contentArea.innerHTML = `
+    <section style="max-width:720px;margin:50px auto;padding:28px 30px;background:#fff;border:1px solid #dae3ef;border-radius:16px;box-shadow:0 3px 16px rgba(15,23,42,.06);">
+      <h2 style="margin:0 0 12px;color:#174b80;">Tautan Rapor tidak berlaku</h2>
+      <p style="margin:0;line-height:1.7;color:#475569;">Alamat Rapor PBJ yang lama sudah dinonaktifkan. Silakan buka melalui menu <strong>Rapor PBJ</strong> pada sidebar SIPPBJ.</p>
+    </section>`;
+  document.title = 'Tautan Rapor Tidak Berlaku - SIPPBJ';
+  return true;
+}
 window.addEventListener('popstate', (event) => {
+  if (showDisabledRaporRoute()) return;
   const id = getRaporIdFromPath();
   const key = event.state?.sippbjPage;
-  if (id) {
+  if (id || isRaporListPath()) {
     loadPage('rapor-pbj', {raporId:id, fromHistory:true});
   } else if (key && key !== 'rapor-pbj' && APP_ROUTES[key]) {
     loadPage(key, {fromHistory:true});
-  } else if (activePageKey === 'rapor-pbj' || key === 'rapor-pbj') {
-    loadPage('rapor-pbj', {fromHistory:true});
   } else {
     loadPage('dashboard', {fromHistory:true});
   }
 });
 const initialRaporId = getRaporIdFromPath();
-loadPage(initialRaporId ? 'rapor-pbj' : 'dashboard', initialRaporId ? {raporId:initialRaporId,fromHistory:true} : {});
+const initialRaporPage = !!initialRaporId || isRaporListPath();
+if (!showDisabledRaporRoute()) {
+  loadPage(initialRaporPage ? 'rapor-pbj' : 'dashboard', initialRaporPage ? {raporId:initialRaporId,fromHistory:true} : {});
+}
