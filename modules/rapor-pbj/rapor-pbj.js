@@ -444,9 +444,9 @@
     const val = String(text || '').trim();
     if (!val || val === '-') return '<div class="rp-note-box rp-muted">Tidak ada analisis manual.</div>';
     // Tampilkan Kesimpulan dan Saran sebagai paragraf biasa, bukan daftar bertitik.
-    // Nomor bagian, teks dan tautan tetap dipertahankan.
+    // Nomor, tanda titik/strip/bullet yang diketik, teks dan tautan tetap dipertahankan.
     const lines = val.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-    return `<div class="rp-note-box">${lines.map((line) => `<p class="rp-report-paragraph">${linkifyText(line.replace(/^[-•]\s*/, ''))}</p>`).join('')}</div>`;
+    return `<div class="rp-note-box">${lines.map((line) => `<p class="rp-report-paragraph">${linkifyText(line)}</p>`).join('')}</div>`;
   }
 
   function renderReportShell(id) {
