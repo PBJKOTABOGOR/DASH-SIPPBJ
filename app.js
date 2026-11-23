@@ -186,6 +186,28 @@ const APP_ROUTES = {
   }
 };
 
+// Tautan langsung per ID Rapor: tetap menggunakan shell SIPPBJ yang sama.
+// Path dasar dibaca dari app.js, agar link modul dan aset tidak salah alamat.
+const SIPPBJ_ROOT_PATH = new URL('.', document.currentScript.src).pathname;
+const SIPPBJ_RAPOR_PREFIX = SIPPBJ_ROOT_PATH + 'raporpbj/';
+function getRaporIdFromPath() {
+  const pathname = window.location.pathname;
+  if (!pathname.startsWith(SIPPBJ_RAPOR_PREFIX)) return '';
+  let id;
+  try { id = decodeURIComponent(pathname.slice(SIPPBJ_RAPOR_PREFIX.length).replace(/\/$/, '')); }
+  catch (_) { return ''; }
+  return /^[A-Za-z0-9_-]{5,80}$/.test(id) ? id : '';
+}
+function setRaporAddress(raporId, options = {}) {
+  const id = String(raporId || '').trim();
+  if (id && !/^[A-Za-z0-9_-]{5,80}$/.test(id)) return;
+  const target = id ? SIPPBJ_RAPOR_PREFIX + encodeURIComponent(id) : SIPPBJ_ROOT_PATH;
+  if (window.location.pathname === target && !window.location.search && !window.location.hash) return;
+  const method = options.replace ? 'replaceState' : 'pushState';
+  window.history[method]({sippbjPage: options.page || 'rapor-pbj', raporId: id}, '', target);
+}
+window.__sippbjSetRaporUrl = setRaporAddress;
+
 const contentArea = document.getElementById('contentArea');
 const sidebar = document.getElementById('sidebar');
 const sidebarToggleButton = document.getElementById('sidebarToggleButton');
@@ -404,7 +426,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-const SIPPBJ_ASSET_VERSION = '20261028-itkp74-pl-nontender-only';
+const SIPPBJ_ASSET_VERSION = '20261123-rapor-id-route-v1';
 function cacheBust(url) {
   const joiner = url.includes('?') ? '&' : '?';
   return `${url}${joiner}v=${SIPPBJ_ASSET_VERSION}`;
@@ -3173,11 +3195,12 @@ async function renderModulePage(page) {
   }
 }
 
-async function loadPage(key) {
+async function loadPage(key, options = {}) {
   if ((key === 'itkp74-kontrol' || key === 'admin-toko-daring') && !window.__sippbjIsAdmin?.()) {
     key = 'itkp74-ringkasan';
   }
   const page = APP_ROUTES[key] || APP_ROUTES.dashboard;
+  const requestedRaporId = key === 'rapor-pbj' ? String(options.raporId || '') : '';
   if (key !== 'dashboard') {
     dashboardRenderToken++;
     if (dashboardBootOverlayEl?.classList.contains('show')) hideDashboardBootLoading(false);
@@ -3188,6 +3211,12 @@ async function loadPage(key) {
   }
 
   if (activePageKey === key) {
+    if (key === 'rapor-pbj' && typeof window.__sippbjShowRaporRoute === 'function') {
+      window.__sippbjShowRaporRoute(requestedRaporId);
+    }
+    if (!options.fromHistory && getRaporIdFromPath()) {
+      setRaporAddress(null, {page:key});
+    }
     updateActiveMenu(key);
     return;
   }
@@ -3211,7 +3240,7 @@ async function loadPage(key) {
     if (page.type === 'iframe') {
       renderIframePage(page);
     } else if (page.type === 'module') {
-      success = await renderModulePage(page);
+      success = await renderModulePage(key === 'rapor-pbj' ? {...page, raporId:requestedRaporId} : page);
     } else if (page.type === 'placeholder') {
       renderPlaceholderPage(key, page);
     } else {
@@ -3220,6 +3249,10 @@ async function loadPage(key) {
 
     if (success) {
       activePageKey = key;
+      // Pindah ke menu lain dari detail Rapor mengembalikan URL ke dashboard.
+      if (!options.fromHistory && getRaporIdFromPath()) {
+        setRaporAddress(null, {page:key});
+      }
     }
 
     initScrollAnimation();
@@ -3513,4 +3546,20 @@ document.querySelector('.sidebar-nav')?.addEventListener('focusin', (event) => {
   warmModuleRoute(key);
 });
 
-loadPage('dashboard');
+// Tautan /raporpbj/ID dapat ditempel, dibuka langsung, di-refresh,
+// dan ditelusuri melalui tombol Back/Forward tanpa keluar dari aplikasi.
+window.addEventListener('popstate', (event) => {
+  const id = getRaporIdFromPath();
+  const key = event.state?.sippbjPage;
+  if (id) {
+    loadPage('rapor-pbj', {raporId:id, fromHistory:true});
+  } else if (key && key !== 'rapor-pbj' && APP_ROUTES[key]) {
+    loadPage(key, {fromHistory:true});
+  } else if (activePageKey === 'rapor-pbj' || key === 'rapor-pbj') {
+    loadPage('rapor-pbj', {fromHistory:true});
+  } else {
+    loadPage('dashboard', {fromHistory:true});
+  }
+});
+const initialRaporId = getRaporIdFromPath();
+loadPage(initialRaporId ? 'rapor-pbj' : 'dashboard', initialRaporId ? {raporId:initialRaporId,fromHistory:true} : {});

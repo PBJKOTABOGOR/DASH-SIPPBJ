@@ -27,6 +27,7 @@
   let allRows = [];
   let filteredRows = [];
   let currentPage = 1;
+  let reportRequestToken = 0;
   let aiVoiceText = '';
   let currentUtterance = null;
   let voiceProgressTimer = null;
@@ -292,6 +293,7 @@
   }
 
   function renderDashboardShell() {
+    reportRequestToken++; // Batalkan callback laporan lama ketika kembali ke daftar.
     shadow.innerHTML = `<style>${STYLE}</style>
       <div class="rp-wrap">
         <div class="rp-hero">
@@ -333,7 +335,7 @@
     setText('#dashboardStatus', 'Memuat data dashboard...');
     try {
       const rows = (await fetchSheet(CONFIG.SHEETS.index)).map(mapCsvRow).filter((row) => row.id_rapot);
-      if (destroyed) return;
+      if (destroyed || !$('#filter_tahun')) return;
       allRows = rows;
       buildFilterOptions(allRows);
       runDashboard();
@@ -349,7 +351,12 @@
 
   function bindReportButtons() {
     $all('[data-report-id]').forEach((btn) => {
-      btn.addEventListener('click', () => loadReportData(btn.dataset.reportId));
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.reportId;
+        if (!id) return;
+        window.__sippbjSetRaporUrl?.(id);
+        loadReportData(id);
+      });
     });
   }
 
@@ -457,7 +464,10 @@
           <div class="rp-report-page" id="narasi_ai_section"><div class="rp-page-head rp-narasi-head"><h2>Analisa AI</h2><button class="rp-head-toggle-btn" type="button" id="narasi_toggle_btn">Tampilkan</button></div><div class="rp-page-body rp-hidden" id="narasi_ai_body"><div id="narasi_ai_box" class="rp-note-box">Belum ada Analisa AI.</div><div style="height:14px;"></div><div id="voice_status_box" class="rp-link-box">Klik Play untuk membacakan analisa.</div><div class="rp-voice-panel"><div class="rp-voice-meta"><div id="voice_current_label">00:00</div><div id="voice_total_label">00:00</div></div><div class="rp-voice-progress"><div id="voice_progress_fill" class="rp-voice-progress-fill"></div></div></div><div class="rp-inline-actions"><button id="playNarasiButton" type="button">Play</button><button class="secondary" id="stopNarasiButton" type="button">Stop</button></div></div></div>
         </div>
       </div>`;
-    $('#backToDashboardButton')?.addEventListener('click', () => { stopNarasiAI(); renderDashboardShell(); loadDashboardData(); });
+    $('#backToDashboardButton')?.addEventListener('click', () => {
+      window.__sippbjSetRaporUrl?.(null);
+      showRaporRoute('');
+    });
     $('#printReportButton')?.addEventListener('click', () => window.print());
     $('#narasi_toggle_btn')?.addEventListener('click', toggleNarasiSection);
     $('#playNarasiButton')?.addEventListener('click', playNarasiAI);
@@ -474,6 +484,7 @@
   }
 
   async function loadReportData(id) {
+    const requestToken = ++reportRequestToken;
     renderReportShell(id);
     if (!id) { setText('#status', 'Parameter id kosong.'); return; }
     try {
@@ -481,7 +492,13 @@
         fetchSheet(CONFIG.SHEETS.index), fetchSheet(CONFIG.SHEETS.sirup), fetchSheet(CONFIG.SHEETS.perencanaan), fetchSheet(CONFIG.SHEETS.realisasi),
         fetchSheet(CONFIG.SHEETS.monitoring), fetchSheet(CONFIG.SHEETS.pelaku), fetchSheet(CONFIG.SHEETS.itkp), fetchSheet(CONFIG.SHEETS.analisis), fetchSheet(CONFIG.SHEETS.aiReport)
       ]);
+      if (destroyed || requestToken !== reportRequestToken) return;
       const index = findRowById(indexRows, id);
+      // Samakan batas akses dengan tombol Lihat: hanya laporan QC OK.
+      if (index.id_rapot && !canOpenDashboardReport(index.status_qc)) {
+        setText('#status', 'Rapor ini belum dapat dibuka karena status QC belum OK.');
+        return;
+      }
       const data = {
         index,
         sirup: findRowById(sirupRows, id),
@@ -496,6 +513,7 @@
       if (!data.index.id_rapot) { setText('#status', 'Data report tidak ditemukan untuk ID: ' + id); return; }
       renderReportData(data);
     } catch (err) {
+      if (destroyed || requestToken !== reportRequestToken) return;
       console.error(err);
       setText('#status', 'Error server: ' + (err?.message || String(err)));
     }
@@ -557,16 +575,24 @@
   function stopNarasiAI(){ if(!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); currentUtterance=null; stopVoiceProgress(); setText('#voice_status_box','Suara dihentikan.'); }
   function toggleNarasiSection(){ const body=$('#narasi_ai_body'); const btn=$('#narasi_toggle_btn'); if(!body||!btn) return; const hidden=body.classList.contains('rp-hidden'); body.classList.toggle('rp-hidden',!hidden); btn.innerText=hidden?'Minimize':'Tampilkan'; }
 
-  window.__moduleInit = function ({ container }) {
+  function showRaporRoute(id) {
+    stopNarasiAI();
+    if (id) loadReportData(id);
+    else { renderDashboardShell(); loadDashboardData(); }
+  }
+
+  window.__moduleInit = function ({ container, route }) {
     destroyed = false;
     host = container.querySelector('#raporPbjModuleRoot') || container;
     shadow = host.shadowRoot || host.attachShadow({ mode: 'open' });
-    renderDashboardShell();
-    loadDashboardData();
+    window.__sippbjShowRaporRoute = showRaporRoute;
+    showRaporRoute(String(route?.raporId || ''));
     return function destroy() {
       destroyed = true;
+      reportRequestToken++;
       stopNarasiAI();
       clearVoiceProgressTimer();
+      if (window.__sippbjShowRaporRoute === showRaporRoute) window.__sippbjShowRaporRoute = null;
       if (shadow) shadow.innerHTML = '';
     };
   };
